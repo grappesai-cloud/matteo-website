@@ -279,6 +279,44 @@ const {
       const heroSonic = document.querySelector<HTMLElement>('[data-hero-sonic]');
       const heroMark = document.querySelector<HTMLElement>('[data-hero-mark]');
       const heroMain = document.querySelector<HTMLElement>('.hero-main');
+
+      // Fit-to-width — measure rendered width at 100px and scale to fill container
+      const fitMark = () => {
+        if (!heroMark || !heroMain) return;
+        const wrap = heroMark; // .hero-echo-wrap
+        const containerW = wrap.clientWidth;
+        if (containerW === 0) return;
+        const tester = document.createElement('span');
+        tester.style.cssText = [
+          'position:fixed', 'visibility:hidden', 'pointer-events:none',
+          'left:-9999px', 'top:0',
+          "font-family:'Unbounded','Inter',sans-serif",
+          'font-weight:900', "font-variation-settings:'wght' 900",
+          'letter-spacing:-0.035em', 'text-transform:uppercase',
+          'white-space:nowrap', 'font-size:100px',
+        ].join(';');
+        tester.textContent = 'MATTMAN';
+        document.body.appendChild(tester);
+        const renderedAt100 = tester.getBoundingClientRect().width;
+        document.body.removeChild(tester);
+        if (renderedAt100 === 0) return;
+        // target width = 96% of container, scale font-size accordingly
+        const targetWidth = containerW * 0.96;
+        const idealPx = (targetWidth / renderedAt100) * 100;
+        // hard cap at ~288px (18rem) so it doesn't go absurd on huge displays
+        const finalPx = Math.max(28, Math.min(288, idealPx));
+        const els = [heroMain, ...wrap.querySelectorAll<HTMLElement>('.hero-echo')];
+        els.forEach((el) => {
+          el.style.fontSize = `${finalPx}px`;
+        });
+      };
+      if (heroMark) {
+        fitMark();
+        window.addEventListener('resize', fitMark, { passive: true });
+        // refit when fonts finish loading (Unbounded)
+        document.fonts.ready.then(() => fitMark());
+      }
+
       if (heroSonic && heroMark && heroMain) {
         const chars = Array.from(heroMain.querySelectorAll<HTMLElement>('.hm-char'));
         const echoes = Array.from(heroSonic.querySelectorAll<HTMLElement>('.hero-echo'));

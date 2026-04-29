@@ -381,14 +381,18 @@ const roster = [
     font-family: 'Unbounded', 'Inter', sans-serif;
     font-weight: 900;
     line-height: 0.85;
-    letter-spacing: -0.04em;
+    letter-spacing: -0.035em;
     text-transform: uppercase;
     margin: 0;
     width: 100%;
     text-align: center;
     white-space: nowrap;
-    font-size: clamp(2.4rem, 17vw, 18rem);
+    font-size: 18rem;
     font-variation-settings: 'wght' 900;
+  }
+  .hero-echo-wrap {
+    /* enable JS-driven fit-to-width */
+    container-type: inline-size;
   }
   .hero-main {
     position: relative;
@@ -472,13 +476,11 @@ const roster = [
   /* Mobile */
   @media (max-width: 720px) {
     .hero-sonic { gap: 0.8rem; min-height: 70svh; }
-    .hero-main, .hero-echo { font-size: clamp(2.4rem, 18vw, 5.5rem); }
     .hero-sub { gap: 0.7rem; }
     .hero-sub-text { font-size: 0.82rem; gap: 0.5em; }
     .hero-echo-3, .hero-echo-4 { display: none; }
   }
   @media (max-width: 380px) {
-    .hero-main, .hero-echo { font-size: clamp(2.1rem, 19vw, 4rem); }
     .hero-sub-text { font-size: 0.74rem; }
     .hero-corner-br { font-size: 0.55rem; }
   }
