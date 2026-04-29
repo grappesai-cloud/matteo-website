@@ -1,0 +1,298 @@
+---
+import '../styles/global.css';
+
+interface Props {
+  title?: string;
+  description?: string;
+}
+
+const {
+  title = 'Matteo — Mattman Music',
+  description = 'Matteo. Aproape două decenii de hituri. Fondatorul Mattman Music — label independent unde autenticitatea este singura regulă.',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="ro">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="generator" content={Astro.generator} />
+    <meta name="description" content={description} />
+    <meta name="theme-color" content="#F2EBE0" />
+
+    <link rel="icon" type="image/png" href="/images/matteo/logo-black.png" />
+
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap"
+    />
+
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:image" content="/images/mattman/logo-black.png" />
+
+    <title>{title}</title>
+
+    <style is:inline>
+      :root { --font-display: 'Fraunces', 'Times New Roman', serif; }
+      .huge { font-family: 'Fraunces', serif !important; }
+      .display { font-family: 'Fraunces', serif !important; }
+    </style>
+  </head>
+  <body>
+    <div class="grain" aria-hidden="true"></div>
+    <div class="cursor" id="cursor" aria-hidden="true"></div>
+
+    <slot />
+
+    <script>
+      import Lenis from 'lenis';
+      import { gsap } from 'gsap';
+      import { ScrollTrigger } from 'gsap/ScrollTrigger';
+
+      gsap.registerPlugin(ScrollTrigger);
+
+      // === LENIS SMOOTH SCROLL ===
+      const lenis = new Lenis({
+        duration: 1.15,
+        easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+        smoothWheel: true,
+      });
+      lenis.on('scroll', ScrollTrigger.update);
+      gsap.ticker.add((time) => lenis.raf(time * 1000));
+      gsap.ticker.lagSmoothing(0);
+
+      // === CURSOR ===
+      const cursor = document.getElementById('cursor');
+      let mx = window.innerWidth / 2;
+      let my = window.innerHeight / 2;
+      let cx = mx, cy = my;
+      window.addEventListener('mousemove', (e) => {
+        mx = e.clientX; my = e.clientY;
+      });
+      const tick = () => {
+        cx += (mx - cx) * 0.18;
+        cy += (my - cy) * 0.18;
+        if (cursor) cursor.style.transform = `translate(${cx}px, ${cy}px) translate(-50%, -50%)`;
+        requestAnimationFrame(tick);
+      };
+      tick();
+      document.querySelectorAll('a, button, .hover-target').forEach((el) => {
+        el.addEventListener('mouseenter', () => cursor?.classList.add('is-hover'));
+        el.addEventListener('mouseleave', () => cursor?.classList.remove('is-hover'));
+      });
+
+      // === MAGNETIC EFFECT ===
+      document.querySelectorAll<HTMLElement>('[data-magnetic]').forEach((el) => {
+        const strength = parseFloat(el.dataset.magnetic || '0.3');
+        const reset = () => gsap.to(el, { x: 0, y: 0, duration: 0.6, ease: 'elastic.out(1, 0.4)' });
+        el.addEventListener('mousemove', (e) => {
+          const r = el.getBoundingClientRect();
+          const x = (e.clientX - (r.left + r.width / 2)) * strength;
+          const y = (e.clientY - (r.top + r.height / 2)) * strength;
+          gsap.to(el, { x, y, duration: 0.4, ease: 'power3.out' });
+        });
+        el.addEventListener('mouseleave', reset);
+      });
+
+      // === HERO LOGO MOUSE-TILT ===
+      const heroLogoImg = document.querySelector<HTMLElement>('.hero-logo');
+      if (heroLogoImg) {
+        const stage = heroLogoImg.parentElement!;
+        stage.addEventListener('mousemove', (e) => {
+          const r = stage.getBoundingClientRect();
+          const px = (e.clientX - r.left) / r.width - 0.5;
+          const py = (e.clientY - r.top) / r.height - 0.5;
+          gsap.to(heroLogoImg, {
+            rotationY: px * 18,
+            rotationX: -py * 12,
+            x: px * 30,
+            y: py * 20,
+            duration: 0.9,
+            ease: 'power3.out',
+            transformPerspective: 1000,
+          });
+        });
+        stage.addEventListener('mouseleave', () => {
+          gsap.to(heroLogoImg, { rotationY: 0, rotationX: 0, x: 0, y: 0, duration: 1.2, ease: 'elastic.out(1, 0.5)' });
+        });
+      }
+
+      // === SCRAMBLE TEXT ON HOVER ===
+      const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%';
+      document.querySelectorAll<HTMLElement>('[data-scramble]').forEach((el) => {
+        const original = el.textContent || '';
+        let frame = 0;
+        let raf: number | null = null;
+        const scramble = () => {
+          const total = 22;
+          const animate = () => {
+            frame++;
+            const out = original
+              .split('')
+              .map((c, i) => {
+                if (frame > i + 6) return original[i];
+                if (c === ' ') return ' ';
+                return chars[Math.floor(Math.random() * chars.length)];
+              })
+              .join('');
+            el.textContent = out;
+            if (frame < total) raf = requestAnimationFrame(animate);
+            else el.textContent = original;
+          };
+          frame = 0;
+          if (raf) cancelAnimationFrame(raf);
+          animate();
+        };
+        const parent = el.closest('[data-scramble-trigger]') || el;
+        parent.addEventListener('mouseenter', scramble);
+      });
+
+      // === COUNTER ANIMATION ===
+      document.querySelectorAll<HTMLElement>('[data-counter]').forEach((el) => {
+        const target = parseFloat(el.dataset.counter || '0');
+        const suffix = el.dataset.suffix || '';
+        const decimals = parseInt(el.dataset.decimals || '0');
+        const obj = { val: 0 };
+        gsap.to(obj, {
+          val: target,
+          duration: 2.4,
+          ease: 'power3.out',
+          scrollTrigger: { trigger: el, start: 'top 80%', once: true },
+          onUpdate: () => {
+            el.textContent = obj.val.toFixed(decimals).replace(/\B(?=(\d{3})+(?!\d))/g, ',') + suffix;
+          },
+        });
+      });
+
+      // === SECTION COUNTER (right-edge indicator) ===
+      const sectionLabels = ['HERO', 'ARTIST', 'MUSIC', 'LABEL', 'ROSTER', 'BOOKING'];
+      const sectionEls = [
+        document.querySelector('.hero'),
+        document.querySelector('.about'),
+        document.querySelector('.discography'),
+        document.querySelector('.mattman'),
+        document.querySelector('.roster'),
+        document.querySelector('.booking'),
+      ].filter(Boolean) as HTMLElement[];
+      const sectionCounter = document.getElementById('section-counter');
+      const sectionLabel = document.getElementById('section-label');
+      sectionEls.forEach((el, i) => {
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 50%',
+          end: 'bottom 50%',
+          onEnter: () => updateSectionCounter(i),
+          onEnterBack: () => updateSectionCounter(i),
+        });
+      });
+      function updateSectionCounter(i: number) {
+        if (sectionCounter) sectionCounter.textContent = String(i + 1).padStart(2, '0') + ' / ' + String(sectionEls.length).padStart(2, '0');
+        if (sectionLabel) sectionLabel.textContent = sectionLabels[i];
+      }
+      updateSectionCounter(0);
+
+      // === SOUND BARS ANIMATION (marquee bars) ===
+      document.querySelectorAll<HTMLElement>('.sound-bar').forEach((bar, i) => {
+        gsap.to(bar, {
+          scaleY: 0.3 + Math.random() * 0.7,
+          duration: 0.4 + Math.random() * 0.4,
+          ease: 'sine.inOut',
+          repeat: -1,
+          yoyo: true,
+          delay: i * 0.05,
+          transformOrigin: '50% 100%',
+        });
+      });
+
+      // === REVEAL ANIMATIONS ===
+      document.querySelectorAll<HTMLElement>('[data-reveal]').forEach((el) => {
+        gsap.fromTo(
+          el,
+          { y: 60, opacity: 0 },
+          {
+            y: 0,
+            opacity: 1,
+            duration: 1.2,
+            ease: 'power3.out',
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 85%',
+              once: true,
+            },
+          }
+        );
+      });
+
+      // Split-line reveal for [data-reveal-lines]
+      document.querySelectorAll<HTMLElement>('[data-reveal-lines]').forEach((el) => {
+        const lines = el.querySelectorAll<HTMLElement>('.reveal-line > span');
+        gsap.fromTo(
+          lines,
+          { y: '110%' },
+          {
+            y: '0%',
+            duration: 1.4,
+            ease: 'expo.out',
+            stagger: 0.08,
+            scrollTrigger: {
+              trigger: el,
+              start: 'top 80%',
+              once: true,
+            },
+          }
+        );
+      });
+
+      // === SCROLL-SCRUBBED BG COLOR (cream → black on Mattman + Roster) ===
+      const darkAnchor = document.querySelector<HTMLElement>('[data-bg="dark"]');
+      const lightEnd = document.querySelector<HTMLElement>('[data-bg="light-end"]');
+      if (darkAnchor && lightEnd) {
+        ScrollTrigger.create({
+          trigger: darkAnchor,
+          start: 'top 60%',
+          endTrigger: lightEnd,
+          end: 'top 60%',
+          toggleClass: { targets: 'body', className: 'dark' },
+        });
+      }
+
+      // === HERO PARALLAX (logo) ===
+      const heroLogo = document.querySelector<HTMLElement>('[data-hero-logo]');
+      if (heroLogo) {
+        gsap.to(heroLogo, {
+          y: -120,
+          scale: 0.85,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: heroLogo,
+            start: 'top top',
+            end: 'bottom top',
+            scrub: 1,
+          },
+        });
+      }
+
+      // === HUGE TYPE PARALLAX ===
+      document.querySelectorAll<HTMLElement>('[data-parallax]').forEach((el) => {
+        const speed = parseFloat(el.dataset.parallax || '-0.2');
+        gsap.to(el, {
+          yPercent: speed * 100,
+          ease: 'none',
+          scrollTrigger: {
+            trigger: el,
+            start: 'top bottom',
+            end: 'bottom top',
+            scrub: 1,
+          },
+        });
+      });
+
+      // Refresh after fonts load
+      document.fonts.ready.then(() => ScrollTrigger.refresh());
+    </script>
+  </body>
+</html>

@@ -1,0 +1,632 @@
+---
+import Layout from '../layouts/Layout.astro';
+
+const tracks = [
+  { year: '2006', title: 'Departare', feat: 'feat. Loredana', note: 'Debut' },
+  { year: '2010', title: 'Lovaman', feat: 'EP', note: 'First EP' },
+  { year: '2012', title: 'Push It', feat: 'feat. Stella' },
+  { year: '2013', title: 'Amândoi' },
+  { year: '2013', title: 'Panama', note: '225M+ views', highlight: true },
+  { year: '2014', title: 'Andale' },
+  { year: '2015', title: 'Gândesc cu voce tare' },
+  { year: '2017', title: 'Bună, Marie!', feat: 'feat. Uddi' },
+  { year: '2018', title: 'Allegro Ventigo', feat: 'feat. Dan Bălan', highlight: true },
+  { year: '2021', title: 'Copacul', feat: 'feat. Theo Rose' },
+  { year: '2023', title: 'Lato Lato Song', feat: 'feat. Sean Al' },
+  { year: '2025', title: 'Gypsy Reggae', feat: 'EP', note: 'New genre. New era.', highlight: true },
+];
+
+const roster = [
+  {
+    slug: 'andrei',
+    name: 'Andrei Bănuță',
+    tagline: 'An artist of contrasts.',
+    bio: 'Andrei Bănuță has solidified his status as one of the most in-demand artists one song at a time. His songwriting alternates between deep, meaningful lyrics and vibrant, playful songs. Best known for "Suflet de Bagabond" (90M+ views) and "Old Friend" with Vescan — over 10 weeks leading the Media Forest Chart.',
+    photo: '/images/roster/andrei.jpg',
+    photoAlt: '/images/roster/andrei-2.jpg',
+  },
+  {
+    slug: 'georgiana',
+    name: 'Georgiana Neagu',
+    tagline: 'The new wave of balkan pop.',
+    bio: 'Georgiana Neagu represents the new wave of Romanian balkan pop music. Her contemporary sound and relatable lyrics have quickly connected with a young audience. "M-am Îndrăgostit de Tine (Vreau să facem o fetiță)" — viral on TikTok, over 2.2M views on YouTube.',
+    photo: '/images/roster/georgiana.jpg',
+    photoAlt: '/images/roster/georgiana-2.jpg',
+  },
+  {
+    slug: 'emily',
+    name: 'Emily Istrate',
+    tagline: 'Beautiful, talented, charismatic.',
+    bio: 'Singer, songwriter, actress from the Republic of Moldova. International recognition with "If You Want To" and "Panic" — UK Pop Club Charts #4 and #5. 2023 saw her climb to the top of all major Romanian music charts with "Bye Bye Boy" and "În Mintea Mea".',
+    photo: '/images/roster/emily.jpg',
+    photoAlt: '/images/roster/emily-2.jpg',
+  },
+];
+---
+<Layout>
+  <!-- NAV -->
+  <nav class="nav">
+    <a href="#top" class="nav-logo hover-target" data-magnetic="0.4">
+      <img src="/images/matteo/logo-black.png" alt="Matteo" />
+    </a>
+    <ul class="nav-links mono">
+      <li><a href="#about">About</a></li>
+      <li><a href="#music">Music</a></li>
+      <li><a href="#mattman">Label</a></li>
+      <li><a href="#roster">Roster</a></li>
+      <li><a href="#booking">Booking</a></li>
+    </ul>
+    <div class="nav-meta mono">EST. 2006</div>
+  </nav>
+
+  <!-- SECTION COUNTER -->
+  <aside class="section-counter mono" aria-hidden="true">
+    <span id="section-counter">01 / 06</span>
+    <span class="section-divider"></span>
+    <span id="section-label">HERO</span>
+  </aside>
+
+  <!-- HERO -->
+  <section class="hero" id="top">
+    <div class="hero-meta mono">
+      <span>Romania / Worldwide</span>
+      <span>Two decades. Hit after hit.</span>
+    </div>
+
+    <div class="hero-stage" data-hero-logo>
+      <img class="hero-logo" src="/images/matteo/logo-black.png" alt="Matteo" />
+    </div>
+
+    <h1 class="hero-headline display">
+      <span class="reveal-line"><span>A career of</span></span>
+      <span class="reveal-line"><span><em>almost two</em></span></span>
+      <span class="reveal-line"><span>decades.</span></span>
+    </h1>
+
+    <div class="hero-bottom mono">
+      <span>Scroll</span>
+      <span class="hero-arrow">↓</span>
+      <span>Mattman Music · Founder</span>
+    </div>
+  </section>
+
+  <!-- MARQUEE -->
+  <div class="marquee" aria-hidden="true">
+    <div class="marquee-track">
+      <span>Panama</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Allegro Ventigo</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Departare</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Andale</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Lato Lato</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Gypsy Reggae</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Copacul</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Bună, Marie</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Panama</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Allegro Ventigo</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Departare</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Andale</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Lato Lato</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Gypsy Reggae</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Copacul</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+      <span>Bună, Marie</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
+    </div>
+  </div>
+
+  <!-- STATS / NUMBERS -->
+  <section class="stats">
+    <div class="container stats-grid">
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="2" data-suffix="" data-decimals="0">0</span><span class="stat-plus">+</span></div>
+        <div class="stat-label mono">Decades<br>of hits</div>
+      </div>
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="225" data-suffix="M" data-decimals="0">0</span><span class="stat-plus">+</span></div>
+        <div class="stat-label mono">Views on Panama<br>across platforms</div>
+      </div>
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="12" data-suffix="" data-decimals="0">0</span></div>
+        <div class="stat-label mono">Charting<br>singles &amp; EPs</div>
+      </div>
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="9" data-suffix="" data-decimals="0">0</span><span class="stat-plus">+</span></div>
+        <div class="stat-label mono">Countries fueling<br>the trend abroad</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ABOUT -->
+  <section class="about" id="about">
+    <div class="container about-grid">
+      <aside class="about-side">
+        <span class="mono">[ 01 / Artist ]</span>
+        <h2 class="about-side-title display" data-reveal>Hit<br>after<br>hit.</h2>
+      </aside>
+
+      <div class="about-body" data-reveal>
+        <p class="about-lead">
+          With a career spanning <em>almost two decades</em>, Matteo has been putting out hit after hit for just as long. <strong>"Departare"</strong>, a highly successful feature with Romania's pop diva Loredana, was his debut back in 2006 — each single since has led national radio charts.
+        </p>
+        <p>
+          His first EP — <em>Lovaman</em> — arrived in 2010, followed by a series of thriving hits: <strong>Push It</strong> (feat. Stella), <strong>Amândoi</strong>, <strong>Panama</strong>, <strong>Andale</strong>, <strong>Gândesc cu voce tare</strong>, <strong>Bună, Marie!</strong> (feat. Uddi), <strong>Allegro Ventigo</strong> (feat. Dan Bălan), <strong>Copacul</strong> (feat. Theo Rose), <strong>Lato Lato Song</strong> (feat. Sean Al). All instantly fan favorites — at home and across continents.
+        </p>
+        <p>
+          His most viral single — <strong>"Panama"</strong> — has been making waves for more than nine years, amassing <em>over 225M views</em> across platforms. Fans in China, Vietnam, India, Cambodia, Indonesia, Thailand, Japan and Laos created TikTok trends, dance routines, flash mobs — the song was even featured on toys.
+        </p>
+        <p>
+          His latest venture introduces a new genre he penned himself: a fusion unlike any other — <span class="gold">Reggae &amp; Dancehall combined with traditional Gypsy music</span>. The EP <em>Gypsy Reggae</em> features King Kong, Anthony B, Loyal Flames and Johny Romano.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- DISCOGRAPHY -->
+  <section class="discography" id="music">
+    <div class="container">
+      <div class="section-head">
+        <span class="mono">[ 02 / Discography ]</span>
+        <h2 class="section-title display" data-reveal>
+          Two decades<br>of <em>noise</em>.
+        </h2>
+      </div>
+
+      <ol class="track-list">
+        {tracks.map((t) => (
+          <li class={`track ${t.highlight ? 'is-highlight' : ''}`} data-scramble-trigger>
+            <span class="track-year mono">{t.year}</span>
+            <span class="track-title display">
+              <span data-scramble>{t.title}</span>
+              {t.highlight && <span class="track-star">★</span>}
+            </span>
+            <span class="track-feat mono">{t.feat || ''}</span>
+            <span class="track-note mono">{t.note || ''}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- MATTMAN -->
+  <section class="mattman" id="mattman" data-bg="dark">
+    <div class="container">
+      <div class="mattman-head">
+        <span class="mono">[ 03 / Label ]</span>
+      </div>
+
+      <div class="mattman-stage">
+        <img class="mattman-logo" src="/images/mattman/logo-white.png" alt="Mattman Music" data-parallax="-0.15" />
+      </div>
+
+      <h2 class="mattman-statement display" data-reveal-lines>
+        <span class="reveal-line"><span>Un label independent</span></span>
+        <span class="reveal-line"><span>dedicat explorării</span></span>
+        <span class="reveal-line"><span><em>noilor frontiere sonore.</em></span></span>
+      </h2>
+
+      <div class="mattman-grid">
+        <div class="mattman-col" data-reveal>
+          <span class="mono gold">Manifest</span>
+          <p>
+            Combinăm <em>creativitatea brută</em> cu tehnologia de ultimă oră pentru a oferi artiștilor o platformă unde <span class="gold">autenticitatea este singura regulă</span>.
+          </p>
+          <p>
+            De la producție meticuloasă la promovare strategică, transformăm ideile în experiențe audio memorabile.
+          </p>
+        </div>
+
+        <div class="mattman-col" data-reveal>
+          <span class="mono gold">Crez</span>
+          <ul class="mattman-list">
+            <li><span class="mono">01</span> Authenticity over algorithm.</li>
+            <li><span class="mono">02</span> Sound first, image second.</li>
+            <li><span class="mono">03</span> Independent. Always.</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ROSTER -->
+  <section class="roster" id="roster">
+    <div class="container">
+      <div class="section-head">
+        <span class="mono gold">[ 04 / Roster ]</span>
+        <h2 class="section-title display" data-reveal>
+          Three voices.<br><em>One label.</em>
+        </h2>
+      </div>
+
+      <div class="roster-grid">
+        {roster.map((r, i) => (
+          <article class={`roster-card hover-target r-${r.slug}`}>
+            <div class="roster-num mono">{String(i + 1).padStart(2, '0')}</div>
+            <div class="roster-photo">
+              <img src={r.photo} alt={r.name} loading="lazy" />
+              <img class="roster-photo-alt" src={r.photoAlt} alt="" loading="lazy" />
+            </div>
+            <div class="roster-info">
+              <h3 class="roster-name display">{r.name}</h3>
+              <p class="roster-tagline mono gold">{r.tagline}</p>
+              <p class="roster-bio">{r.bio}</p>
+            </div>
+          </article>
+        ))}
+      </div>
+    </div>
+  </section>
+
+  <!-- BOOKING -->
+  <section class="booking" id="booking" data-bg="light-end">
+    <div class="container">
+      <span class="mono">[ 05 / Booking ]</span>
+      <h2 class="booking-title display" data-reveal-lines>
+        <span class="reveal-line"><span>Let's make</span></span>
+        <span class="reveal-line"><span>some <em>noise.</em></span></span>
+      </h2>
+
+      <div class="booking-grid">
+        <div class="booking-col">
+          <span class="mono">Booking &amp; Management</span>
+          <a class="booking-mail display hover-target" href="mailto:booking@mattmanmusic.com">
+            booking@mattmanmusic.com
+          </a>
+        </div>
+        <div class="booking-col">
+          <span class="mono">Press &amp; Label</span>
+          <a class="booking-mail display hover-target" href="mailto:hello@mattmanmusic.com">
+            hello@mattmanmusic.com
+          </a>
+        </div>
+      </div>
+
+      <div class="booking-cta">
+        <a class="btn-link hover-target" href="mailto:booking@mattmanmusic.com" data-magnetic="0.5">
+          Send brief <span>→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <img src="/images/mattman/logo-black.png" alt="Mattman Music" />
+        <span class="mono">© {new Date().getFullYear()} Mattman Music · All rights reserved</span>
+      </div>
+      <ul class="footer-social mono">
+        <li><a href="https://instagram.com/matteomusic" target="_blank" rel="noopener" class="hover-target">Instagram ↗</a></li>
+        <li><a href="https://www.youtube.com/@matteomusic" target="_blank" rel="noopener" class="hover-target">YouTube ↗</a></li>
+        <li><a href="https://open.spotify.com" target="_blank" rel="noopener" class="hover-target">Spotify ↗</a></li>
+        <li><a href="https://www.tiktok.com" target="_blank" rel="noopener" class="hover-target">TikTok ↗</a></li>
+      </ul>
+      <div class="footer-credit mono">
+        <span>Site by <a href="https://grappes.ai" target="_blank" rel="noopener" class="hover-target">Grappes</a></span>
+      </div>
+    </div>
+
+    <div class="footer-mega display" aria-hidden="true">MATTEO</div>
+  </footer>
+</Layout>
+
+<style>
+  /* NAV */
+  .nav {
+    position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+    display: grid; grid-template-columns: auto 1fr auto;
+    align-items: center; gap: 2rem;
+    padding: 1.4rem var(--pad-x);
+    pointer-events: none;
+  }
+  .nav > * { pointer-events: auto; }
+  .nav-logo img { height: 26px; width: auto; transition: filter 0.6s ease; }
+  body.dark .nav-logo img { filter: invert(1); }
+  .nav-links {
+    display: flex; gap: 1.6rem;
+    justify-self: center;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(10px);
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .nav-links a { transition: opacity 0.3s; }
+  .nav-links a:hover { opacity: 0.5; }
+  .nav-meta { opacity: 0.6; }
+
+  @media (max-width: 820px) {
+    .nav-links { display: none; }
+    .nav { grid-template-columns: auto auto; }
+  }
+
+  /* HERO */
+  .hero {
+    min-height: 100vh;
+    display: grid;
+    grid-template-rows: auto 1fr auto auto;
+    padding-block: 6rem 3rem;
+    position: relative;
+  }
+  .hero-meta {
+    display: flex; justify-content: space-between;
+    opacity: 0.55;
+  }
+  .hero-stage {
+    display: flex; align-items: center; justify-content: center;
+    padding-block: 2rem;
+    will-change: transform;
+  }
+  .hero-logo {
+    width: clamp(280px, 60vw, 880px);
+    height: auto;
+    filter: drop-shadow(0 30px 80px rgba(0,0,0,0.15));
+  }
+  .hero-headline {
+    font-size: clamp(2.2rem, 6.5vw, 6.5rem);
+    margin-block: 1rem;
+  }
+  .hero-headline em {
+    font-style: italic;
+    color: var(--burgundy);
+  }
+  .hero-bottom {
+    display: flex; justify-content: space-between; align-items: center;
+    opacity: 0.55;
+  }
+  .hero-arrow {
+    display: inline-block;
+    animation: bob 1.8s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  /* SECTION SCAFFOLD */
+  .section-head {
+    display: flex; flex-direction: column; gap: 1rem;
+    margin-bottom: clamp(3rem, 6vw, 6rem);
+  }
+  .section-title {
+    font-size: clamp(3rem, 9vw, 9rem);
+    line-height: 0.86;
+  }
+  .section-title em { font-style: italic; color: var(--burgundy); }
+  body.dark .section-title em { color: var(--gold); }
+
+  /* ABOUT */
+  .about {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: clamp(2rem, 6vw, 6rem);
+  }
+  .about-side { position: sticky; top: 6rem; align-self: start; display: flex; flex-direction: column; gap: 1rem; }
+  .about-side-title {
+    font-size: clamp(2.5rem, 6vw, 5.5rem);
+    line-height: 0.86;
+  }
+  .about-body {
+    display: flex; flex-direction: column; gap: 1.6rem;
+    font-size: clamp(1.05rem, 1.2vw, 1.25rem);
+    line-height: 1.55;
+    max-width: 56ch;
+  }
+  .about-body em { font-style: italic; }
+  .about-body strong { font-weight: 500; }
+  .about-lead { font-size: clamp(1.4rem, 2vw, 2rem); line-height: 1.35; font-family: var(--font-display); font-weight: 400; }
+  .about-lead em { font-style: italic; color: var(--burgundy); }
+  .gold { color: var(--gold); }
+
+  @media (max-width: 820px) {
+    .about-grid { grid-template-columns: 1fr; }
+    .about-side { position: static; }
+  }
+
+  /* DISCOGRAPHY */
+  .discography {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .track-list { display: flex; flex-direction: column; }
+  .track {
+    display: grid;
+    grid-template-columns: 6rem 1fr 1fr 1fr;
+    align-items: baseline;
+    gap: 1.5rem;
+    padding-block: 1.6rem;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+    transition: padding 0.4s ease, color 0.4s ease;
+  }
+  .track:last-child { border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); }
+  .track:hover { padding-inline-start: 1.4rem; color: var(--burgundy); }
+  .track-year { opacity: 0.5; }
+  .track-title {
+    font-size: clamp(1.8rem, 3.2vw, 3rem);
+    line-height: 1;
+    display: inline-flex; align-items: baseline; gap: 0.4em;
+  }
+  .track-star { color: var(--gold); font-size: 0.6em; }
+  .track-feat { opacity: 0.7; }
+  .track-note { opacity: 0.6; text-align: right; }
+  .track.is-highlight .track-title { font-style: italic; }
+  .track.is-highlight .track-note { color: var(--gold); opacity: 1; }
+
+  @media (max-width: 820px) {
+    .track { grid-template-columns: auto 1fr; gap: 0.6rem 1rem; }
+    .track-feat, .track-note { grid-column: 2; text-align: left; }
+  }
+
+  /* MATTMAN */
+  .mattman {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .mattman-head { margin-bottom: 4rem; }
+  .mattman-stage {
+    display: flex; justify-content: center;
+    padding-block: 3rem;
+  }
+  .mattman-logo {
+    width: clamp(240px, 50vw, 600px);
+    height: auto;
+    will-change: transform;
+  }
+  .mattman-statement {
+    font-size: clamp(2.4rem, 6.5vw, 7rem);
+    text-align: center;
+    margin-block: 4rem 6rem;
+  }
+  .mattman-statement em { font-style: italic; color: var(--gold); }
+  .mattman-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 6vw, 6rem);
+    max-width: 1200px;
+    margin-inline: auto;
+  }
+  .mattman-col {
+    display: flex; flex-direction: column; gap: 1.4rem;
+    font-size: 1.05rem; line-height: 1.6;
+  }
+  .mattman-col em { font-style: italic; }
+  .mattman-list { display: flex; flex-direction: column; gap: 1rem; }
+  .mattman-list li {
+    display: flex; gap: 1.5rem;
+    padding-block: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+    font-family: var(--font-display);
+    font-size: clamp(1.4rem, 2.2vw, 2rem);
+  }
+  .mattman-list li .mono { color: var(--gold); align-self: center; min-width: 2.5rem; }
+  @media (max-width: 820px) {
+    .mattman-grid { grid-template-columns: 1fr; }
+  }
+
+  /* ROSTER */
+  .roster {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .roster-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 0;
+  }
+  .roster-card {
+    display: grid;
+    grid-template-columns: 4rem 1fr 1fr;
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: start;
+    padding-block: 3rem;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+    position: relative;
+  }
+  .roster-card:last-child { border-bottom: 1px solid color-mix(in srgb, var(--fg) 18%, transparent); }
+  .roster-num {
+    color: var(--gold);
+    align-self: start;
+  }
+  .roster-photo {
+    position: relative;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background: var(--ink-soft);
+  }
+  .roster-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease;
+    filter: grayscale(0.5) contrast(1.05);
+  }
+  .roster-photo .roster-photo-alt {
+    position: absolute; inset: 0;
+    opacity: 0;
+  }
+  .roster-card:hover .roster-photo img { transform: scale(1.04); filter: grayscale(0) contrast(1.1); }
+  .roster-card:hover .roster-photo-alt { opacity: 1; }
+  .roster-info {
+    display: flex; flex-direction: column; gap: 1.2rem;
+  }
+  .roster-name {
+    font-size: clamp(2.2rem, 4.5vw, 4.5rem);
+    line-height: 0.92;
+  }
+  .roster-tagline { font-size: 0.78rem; }
+  .roster-bio { font-size: 1rem; line-height: 1.6; opacity: 0.85; max-width: 50ch; }
+
+  @media (max-width: 820px) {
+    .roster-card { grid-template-columns: 1fr; gap: 1.5rem; }
+    .roster-num { font-size: 1.2rem; }
+  }
+
+  /* BOOKING */
+  .booking {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .booking-title {
+    font-size: clamp(3.5rem, 11vw, 12rem);
+    line-height: 0.85;
+    margin-block: 2rem 4rem;
+  }
+  .booking-title em { font-style: italic; color: var(--burgundy); }
+  .booking-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 5vw, 5rem);
+    margin-bottom: 4rem;
+  }
+  .booking-col { display: flex; flex-direction: column; gap: 0.6rem; }
+  .booking-mail {
+    font-size: clamp(1.3rem, 2.5vw, 2.4rem);
+    line-height: 1.1;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 0.2em;
+    align-self: flex-start;
+    transition: color 0.4s, padding 0.4s;
+  }
+  .booking-mail:hover { color: var(--burgundy); padding-left: 0.4em; }
+  .booking-cta { margin-top: 2rem; }
+  @media (max-width: 720px) {
+    .booking-grid { grid-template-columns: 1fr; }
+  }
+
+  /* FOOTER */
+  .footer {
+    padding-block: 3rem 0;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+    overflow: hidden;
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 2rem;
+    align-items: end;
+    padding-bottom: 3rem;
+  }
+  .footer-brand { display: flex; flex-direction: column; gap: 1rem; }
+  .footer-brand img { height: 36px; width: auto; }
+  .footer-social { display: flex; gap: 1.4rem; justify-content: center; flex-wrap: wrap; }
+  .footer-social a { transition: opacity 0.3s; }
+  .footer-social a:hover { opacity: 0.5; }
+  .footer-credit { text-align: right; opacity: 0.6; }
+  .footer-credit a { border-bottom: 1px solid currentColor; }
+
+  .footer-mega {
+    font-size: clamp(8rem, 30vw, 28rem);
+    line-height: 0.85;
+    text-align: center;
+    margin-bottom: -0.18em;
+    letter-spacing: -0.06em;
+    opacity: 0.92;
+  }
+
+  @media (max-width: 820px) {
+    .footer-inner { grid-template-columns: 1fr; gap: 2rem; }
+    .footer-social { justify-content: flex-start; }
+    .footer-credit { text-align: left; }
+  }
+</style>
