@@ -26,7 +26,7 @@ const {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Unbounded:wght@600;700;800;900&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Unbounded:wght@200..900&display=swap"
     />
 
     <meta property="og:title" content={title} />
@@ -275,7 +275,7 @@ const {
         });
       }
 
-      // === HERO SONIC ECHO — load reveal + ripple + mouse-follow tilt ===
+      // === HERO SONIC ECHO + VARIABLE PROXIMITY (reactbits-style) ===
       const heroSonic = document.querySelector<HTMLElement>('[data-hero-sonic]');
       const heroMark = document.querySelector<HTMLElement>('[data-hero-mark]');
       const heroMain = document.querySelector<HTMLElement>('.hero-main');
@@ -288,7 +288,7 @@ const {
           y: 0,
           duration: 1.4,
           ease: 'expo.out',
-          stagger: 0.05,
+          stagger: 0.06,
           delay: 0.2,
           onStart: () => {
             heroMain.classList.add('is-loaded');
@@ -297,7 +297,7 @@ const {
           },
         });
 
-        // Echo ripple — concentric waves emanate continuously like sonar pings
+        // Sonar echoes — concentric ripples
         echoes.forEach((echo, i) => {
           const baseScale = 1 + (i + 1) * 0.08;
           const targetScale = baseScale + 0.18;
@@ -318,7 +318,6 @@ const {
                   ease: 'sine.inOut',
                   repeat: -1,
                   delay: i * 0.6,
-                  yoyo: false,
                   onRepeat: () => {
                     gsap.set(echo, { scale: baseScale, opacity: 0.35 - i * 0.07 });
                   },
@@ -328,41 +327,87 @@ const {
           );
         });
 
-        // Mouse-follow tilt with proximity gold glow
-        const goldHex = '#C9A24A';
-        const onMove = (e: MouseEvent) => {
+        // Variable Proximity — letters morph weight based on cursor distance
+        // Reactbits-inspired: gaussian falloff, interpolated 'wght' variation axis
+        const FROM_WGHT = 250;
+        const TO_WGHT = 900;
+        const RADIUS = 260;
+        const cursor = { x: -10000, y: -10000 };
+        let lastX = cursor.x, lastY = cursor.y;
+        let active = false;
+
+        const onMove = (e: PointerEvent) => {
+          cursor.x = e.clientX; cursor.y = e.clientY; active = true;
+        };
+        const onLeave = () => { active = false; };
+        window.addEventListener('pointermove', onMove);
+        heroMark.addEventListener('pointerleave', onLeave);
+
+        // Initial weight per char (light)
+        chars.forEach((ch) => {
+          ch.style.fontVariationSettings = `'wght' ${FROM_WGHT}`;
+        });
+
+        const tickWeight = () => {
+          if (cursor.x === lastX && cursor.y === lastY && !active) {
+            // gentle decay back to base when no movement detected
+            chars.forEach((ch) => {
+              const cur = parseFloat(ch.dataset.wght || String(FROM_WGHT));
+              const next = cur + (FROM_WGHT - cur) * 0.05;
+              ch.dataset.wght = String(next);
+              ch.style.fontVariationSettings = `'wght' ${next}`;
+            });
+            requestAnimationFrame(tickWeight);
+            return;
+          }
+          lastX = cursor.x; lastY = cursor.y;
           chars.forEach((ch) => {
             const r = ch.getBoundingClientRect();
             const cx = r.left + r.width / 2;
             const cy = r.top + r.height / 2;
-            const dx = e.clientX - cx;
-            const dy = e.clientY - cy;
-            const dist = Math.hypot(dx, dy);
-            const radius = 380;
-            const power = Math.max(0, 1 - dist / radius);
-            gsap.to(ch, {
-              rotation: (dx / radius) * 14 * power,
-              y: -power * 18,
-              x: (dx / radius) * 8 * power,
-              skewX: (dx / radius) * 6 * power,
-              color: power > 0.35 ? goldHex : '',
-              duration: 0.55,
-              ease: 'power3.out',
-              overwrite: 'auto',
-            });
+            const dist = Math.hypot(cursor.x - cx, cursor.y - cy);
+            // gaussian falloff for buttery bell curve
+            const sigma = RADIUS / 2;
+            const falloff = active ? Math.exp(-((dist / sigma) ** 2) / 2) : 0;
+            const wght = FROM_WGHT + (TO_WGHT - FROM_WGHT) * falloff;
+            ch.dataset.wght = String(wght);
+            ch.style.fontVariationSettings = `'wght' ${wght}`;
           });
+          requestAnimationFrame(tickWeight);
         };
-        const onLeave = () => {
-          gsap.to(chars, {
-            rotation: 0, x: 0, y: 0, skewX: 0, color: '',
-            duration: 0.9, ease: 'elastic.out(1, 0.45)',
-            stagger: 0.012,
-            overwrite: 'auto',
-          });
-        };
-        heroMark.addEventListener('mousemove', onMove);
-        heroMark.addEventListener('mouseleave', onLeave);
+        requestAnimationFrame(tickWeight);
       }
+
+      // === DECRYPTED TEXT on Catalog tracks (reactbits-inspired) ===
+      const cipher = '!@#$%&*()_+=[]{}|<>?ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+      document.querySelectorAll<HTMLElement>('[data-decrypt]').forEach((el) => {
+        const original = el.textContent || '';
+        let revealed = new Array(original.length).fill(false);
+        let raf: number | null = null;
+        const tick = () => {
+          let allRevealed = true;
+          const out = original
+            .split('')
+            .map((c, i) => {
+              if (c === ' ') return ' ';
+              if (revealed[i]) return original[i];
+              if (Math.random() < 0.04) revealed[i] = true;
+              else allRevealed = false;
+              return cipher[Math.floor(Math.random() * cipher.length)];
+            })
+            .join('');
+          el.textContent = out;
+          if (!allRevealed) raf = requestAnimationFrame(tick);
+          else el.textContent = original;
+        };
+        const start = () => {
+          if (raf) cancelAnimationFrame(raf);
+          revealed = new Array(original.length).fill(false);
+          tick();
+        };
+        const parent = el.closest('[data-scramble-trigger]') || el;
+        parent.addEventListener('mouseenter', start);
+      });
 
       // === HUGE TYPE PARALLAX ===
       document.querySelectorAll<HTMLElement>('[data-parallax]').forEach((el) => {

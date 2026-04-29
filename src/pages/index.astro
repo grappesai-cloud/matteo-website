@@ -225,7 +225,7 @@ const roster = [
           <li class={`track ${t.highlight ? 'is-highlight' : ''}`} data-scramble-trigger>
             <span class="track-year mono">{t.year}</span>
             <span class="track-title display">
-              <span data-scramble>{t.title}</span>
+              <span data-decrypt>{t.title}</span>
               {t.highlight && <span class="track-star">★</span>}
             </span>
             <span class="track-feat mono">{t.feat || ''}</span>
@@ -383,6 +383,7 @@ const roster = [
     text-align: center;
     white-space: nowrap;
     font-size: clamp(3.2rem, 16vw, 18rem);
+    font-variation-settings: 'wght' 900;
   }
   .hero-main {
     position: relative;
@@ -401,8 +402,9 @@ const roster = [
   .hm-char {
     display: inline-block;
     transform: translateY(110%);
-    will-change: transform, color;
-    transition: color 0.35s ease;
+    will-change: transform, font-variation-settings;
+    font-variation-settings: 'wght' 250;
+    transition: none;
   }
   .hero-main.is-loaded .hm-char,
   [data-hero-mark].is-loaded .hm-char { transform: translateY(0); }
