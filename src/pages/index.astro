@@ -362,40 +362,50 @@ const roster = [
     padding-block: 1rem;
   }
 
-  /* === MATTMAN MUSIC LABEL — letter-by-letter mark === */
+  /* === MATTMAN MUSIC LABEL — letter-by-letter premium mark === */
   .hero-mark {
+    font-family: 'Unbounded', 'Inter', sans-serif !important;
     margin: 0;
-    line-height: 0.82;
-    letter-spacing: -0.045em;
-    font-weight: 400;
+    line-height: 0.86;
+    letter-spacing: -0.035em;
+    font-weight: 900;
     color: var(--ink);
     user-select: none;
+    position: relative;
   }
   .hm-row {
     display: flex;
     flex-wrap: nowrap;
-    line-height: 0.85;
+    line-height: 0.86;
+    justify-content: center;
   }
   .hm-row-italic {
-    font-style: italic;
-    color: var(--burgundy);
-    padding-left: 0.06em;
-    margin-top: -0.04em;
+    /* outlined "MUSIC" — magazine-cover contrast */
+    font-style: normal;
+    color: transparent;
+    -webkit-text-stroke: clamp(1.5px, 0.18vw, 3px) var(--ink);
+    margin-top: -0.05em;
+  }
+  .hm-row-italic .hm-char {
+    color: transparent;
+    -webkit-text-stroke: inherit;
+    transition: -webkit-text-stroke-color 0.4s ease, color 0.4s ease;
   }
   .hm-row-tag {
-    margin-top: 1.4rem;
-    gap: 0.16em;
-    letter-spacing: 0.22em;
+    font-family: 'JetBrains Mono', ui-monospace, monospace !important;
+    font-weight: 500;
+    margin-top: 2rem;
+    gap: 0.05em;
+    letter-spacing: 0.32em;
     font-size: clamp(0.6rem, 0.85vw, 0.78rem);
     line-height: 1;
     opacity: 0.55;
     color: var(--ink);
-    font-style: normal;
   }
   .hm-mask {
     display: inline-block;
     overflow: hidden;
-    line-height: 0.85;
+    line-height: 0.86;
   }
   .hm-row-tag .hm-mask { line-height: 1; }
   .hm-char {
@@ -403,17 +413,21 @@ const roster = [
     transform: translateY(110%);
     transform-origin: 50% 100%;
     will-change: transform, color;
-    transition: color 0.35s ease;
-    font-size: clamp(3.5rem, 13.5vw, 16rem);
-    padding: 0 0.005em;
+    transition: color 0.35s ease, -webkit-text-stroke-color 0.35s ease;
+    font-size: clamp(3.5rem, 14.5vw, 17rem);
+    padding: 0 0.012em;
+    font-weight: 900;
   }
   .hm-row-tag .hm-char {
     font-size: inherit;
     padding: 0 0.04em;
+    font-weight: 500;
   }
   .hero-mark.is-loaded .hm-char { transform: translateY(0); }
 
-  body.dark .hm-row-italic { color: var(--gold); }
+  /* dark-mode variants */
+  body.dark .hero-mark { color: var(--cream); }
+  body.dark .hm-row-italic { -webkit-text-stroke-color: var(--cream); }
   .hero-portrait {
     position: relative;
     aspect-ratio: 3 / 4;

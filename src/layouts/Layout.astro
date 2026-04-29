@@ -26,7 +26,7 @@ const {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Unbounded:wght@600;700;800;900&display=swap"
     />
 
     <meta property="og:title" content={title} />
@@ -302,7 +302,8 @@ const {
           });
         });
 
-        // Mouse-follow tilt + gold proximity glow
+        // Mouse-follow tilt + gold proximity glow (works for both filled + outlined letters)
+        const goldHex = '#C9A24A';
         const onMove = (e: MouseEvent) => {
           chars.forEach((ch) => {
             const r = ch.getBoundingClientRect();
@@ -311,32 +312,67 @@ const {
             const dx = e.clientX - cx;
             const dy = e.clientY - cy;
             const dist = Math.hypot(dx, dy);
-            const radius = 320;
+            const radius = 360;
             const power = Math.max(0, 1 - dist / radius);
-            const tiltZ = (dx / radius) * 14 * power;
-            const liftY = -power * 16;
-            const liftX = (dx / radius) * 8 * power;
-            gsap.to(ch, {
+            const tiltZ = (dx / radius) * 18 * power;
+            const liftY = -power * 22;
+            const liftX = (dx / radius) * 10 * power;
+            const isOutlined = ch.parentElement?.parentElement?.classList.contains('hm-row-italic');
+            const props: gsap.TweenVars = {
               rotation: tiltZ,
               y: liftY,
               x: liftX,
-              color: power > 0.4 ? 'var(--gold)' : '',
+              skewX: tiltZ * 0.4,
               duration: 0.6,
               ease: 'power3.out',
               overwrite: 'auto',
-            });
+            };
+            if (isOutlined) {
+              ch.style.setProperty('-webkit-text-stroke-color', power > 0.35 ? goldHex : '');
+            } else {
+              props.color = power > 0.35 ? goldHex : '';
+            }
+            gsap.to(ch, props);
           });
         };
         const onLeave = () => {
+          chars.forEach((ch) => ch.style.removeProperty('-webkit-text-stroke-color'));
           gsap.to(chars, {
-            rotation: 0, x: 0, y: 0, color: '',
+            rotation: 0, x: 0, y: 0, skewX: 0, color: '',
             duration: 0.9, ease: 'elastic.out(1, 0.45)',
-            stagger: 0.01,
+            stagger: 0.012,
             overwrite: 'auto',
           });
         };
         heroMark.addEventListener('mousemove', onMove);
         heroMark.addEventListener('mouseleave', onLeave);
+
+        // Periodic shimmer wave — every ~7s a wave of gold sweeps across letters
+        const shimmer = () => {
+          chars.forEach((ch, i) => {
+            const isOutlined = ch.parentElement?.parentElement?.classList.contains('hm-row-italic');
+            gsap.timeline()
+              .to(ch, {
+                color: isOutlined ? '' : goldHex,
+                onStart: () => {
+                  if (isOutlined) ch.style.setProperty('-webkit-text-stroke-color', goldHex);
+                },
+                duration: 0.4,
+                delay: i * 0.045,
+                ease: 'power2.in',
+              })
+              .to(ch, {
+                color: '',
+                onStart: () => {
+                  if (isOutlined) ch.style.removeProperty('-webkit-text-stroke-color');
+                },
+                duration: 0.6,
+                ease: 'power2.out',
+              });
+          });
+        };
+        setInterval(shimmer, 7500);
+        setTimeout(shimmer, 1800);
       }
 
       // === HUGE TYPE PARALLAX ===
