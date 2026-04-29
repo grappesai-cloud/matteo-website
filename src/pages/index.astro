@@ -69,16 +69,6 @@ const roster = [
   <!-- HERO — sonic-echo composition -->
   <section class="hero" id="top">
     <div class="hero-sonic" data-hero-sonic>
-      <span class="hero-corner hero-corner-tl mono">
-        <span class="hero-corner-num">(01)</span>
-        <span>Independent label</span>
-      </span>
-      <span class="hero-corner hero-corner-tr mono">
-        <span>Bucharest</span>
-        <span class="hero-corner-dot">·</span>
-        <span>Worldwide</span>
-      </span>
-
       <div class="hero-echo-wrap" data-hero-mark>
         <span class="hero-echo hero-echo-4" aria-hidden="true">MATTMAN</span>
         <span class="hero-echo hero-echo-3" aria-hidden="true">MATTMAN</span>
@@ -104,12 +94,6 @@ const roster = [
         <span class="hero-sub-rule" aria-hidden="true"></span>
       </div>
 
-      <span class="hero-corner hero-corner-bl mono">
-        <span class="hero-corner-num">(02)</span>
-        <span>Four voices</span>
-        <span class="hero-corner-dot">·</span>
-        <span>One sound</span>
-      </span>
       <span class="hero-corner hero-corner-br mono">
         <span>Scroll</span>
         <span class="hero-corner-arrow">↓</span>
@@ -350,12 +334,11 @@ const roster = [
     margin-inline: auto;
     display: grid;
     grid-template-areas:
-      "tl tr"
-      "stage stage"
-      "sub sub"
-      "bl br";
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr auto auto;
+      "stage"
+      "sub"
+      "br";
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto auto;
     gap: clamp(1.2rem, 2.5vw, 2.4rem) 1rem;
     align-items: center;
     min-height: clamp(540px, 78svh, 900px);
@@ -374,10 +357,7 @@ const roster = [
   }
   .hero-corner-num { color: var(--gold); }
   .hero-corner-dot { color: var(--gold); opacity: 0.8; }
-  .hero-corner-tl { grid-area: tl; justify-self: start; }
-  .hero-corner-tr { grid-area: tr; justify-self: end; text-align: right; }
-  .hero-corner-bl { grid-area: bl; justify-self: start; }
-  .hero-corner-br { grid-area: br; justify-self: end; text-align: right; }
+  .hero-corner-br { grid-area: br; justify-self: center; text-align: center; }
   .hero-corner-arrow { display: inline-block; animation: bob 1.8s ease-in-out infinite; }
 
   /* Echo stack — main word + 4 fading echoes */
@@ -482,23 +462,9 @@ const roster = [
   }
   body.dark .hero-sub-italic { color: var(--gold); }
 
-  /* Mobile: lay out the stage taller, simpler corners */
+  /* Mobile */
   @media (max-width: 720px) {
-    .hero-sonic {
-      grid-template-areas:
-        "tl"
-        "stage"
-        "sub"
-        "bl"
-        "br";
-      grid-template-columns: 1fr;
-      grid-template-rows: auto 1fr auto auto auto;
-      gap: 1.4rem;
-      min-height: 80svh;
-    }
-    .hero-corner-tr,
-    .hero-corner-bl,
-    .hero-corner-br { justify-self: start; text-align: left; }
+    .hero-sonic { gap: 1.2rem; min-height: 78svh; }
     .hero-main, .hero-echo { font-size: clamp(2.6rem, 18vw, 5rem); }
     .hero-sub-text { font-size: 0.9rem; }
   }
