@@ -64,23 +64,10 @@ const roster = [
       <li><a href="#catalog">Catalog</a></li>
       <li><a href="#booking">Booking</a></li>
     </ul>
-    <div class="nav-meta mono">EST. 2006</div>
   </nav>
-
-  <!-- SECTION COUNTER -->
-  <aside class="section-counter mono" aria-hidden="true">
-    <span id="section-counter">01 / 06</span>
-    <span class="section-divider"></span>
-    <span id="section-label">HERO</span>
-  </aside>
 
   <!-- HERO -->
   <section class="hero" id="top">
-    <div class="hero-meta mono">
-      <span>Independent label · Bucharest / Worldwide</span>
-      <span>Four voices. One sound.</span>
-    </div>
-
     <div class="hero-grid">
       <div class="hero-text">
         <div class="hero-stage" data-hero-logo>
@@ -321,7 +308,7 @@ const roster = [
   /* NAV */
   .nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: grid; grid-template-columns: auto 1fr auto;
+    display: grid; grid-template-columns: auto 1fr;
     align-items: center; gap: 2rem;
     padding: 1.4rem var(--pad-x);
     pointer-events: none;
@@ -351,14 +338,10 @@ const roster = [
   .hero {
     min-height: 100vh;
     display: grid;
-    grid-template-rows: auto 1fr auto;
+    grid-template-rows: 1fr auto;
     padding-block: 6rem 2rem;
     position: relative;
     gap: 2rem;
-  }
-  .hero-meta {
-    display: flex; justify-content: space-between;
-    opacity: 0.55;
   }
   .hero-grid {
     display: grid;
