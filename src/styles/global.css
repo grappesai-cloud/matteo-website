@@ -28,8 +28,8 @@ ul, ol { list-style: none; }
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 
   --max-w: 1680px;
-  --pad-x: clamp(1.5rem, 4vw, 4rem);
-  --pad-y: clamp(4rem, 10vw, 10rem);
+  --pad-x: clamp(1rem, 4vw, 4rem);
+  --pad-y: clamp(3rem, 9vw, 10rem);
 }
 
 /* === FONTS (system stack first; webfonts swapped in via <link>) === */
@@ -141,12 +141,12 @@ section { position: relative; padding-inline: var(--pad-x); }
 .marquee {
   overflow: hidden;
   border-block: 1px solid currentColor;
-  padding-block: 1.4rem;
+  padding-block: clamp(0.9rem, 2vw, 1.4rem);
   display: flex;
   gap: 4rem;
   white-space: nowrap;
   font-family: var(--font-display);
-  font-size: clamp(2.5rem, 6vw, 6rem);
+  font-size: clamp(1.8rem, 6vw, 6rem);
   line-height: 1;
   letter-spacing: -0.03em;
 }
@@ -240,7 +240,14 @@ section { position: relative; padding-inline: var(--pad-x); }
 
 /* === MEDIA QUERIES === */
 @media (max-width: 768px) {
-  :root { --pad-y: 5rem; }
+  :root { --pad-y: clamp(3rem, 14vw, 5rem); }
+}
+@media (max-width: 480px) {
+  :root { --pad-x: 0.9rem; }
+  body { font-size: 15px; }
+  .marquee { gap: 2rem; padding-block: 0.7rem; }
+  .marquee-track { gap: 2rem; }
+  .marquee-track .bars { margin-inline: 0.7rem; }
 }
 
 @media (prefers-reduced-motion: reduce) {
