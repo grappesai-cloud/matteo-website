@@ -102,8 +102,8 @@ const roster = [
   </section>
 
   <!-- MARQUEE -->
-  <div class="marquee" aria-hidden="true">
-    <div class="marquee-track">
+  <div class="marquee" aria-hidden="true" data-scroll-velocity>
+    <div class="marquee-track" data-scroll-velocity-track>
       <span>Panama</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
       <span>Allegro Ventigo</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
       <span>Departare</span><span class="bars"><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i><i class="sound-bar"></i></span>
@@ -148,10 +148,15 @@ const roster = [
   <!-- MANIFEST (Mattman) -->
   <section class="mattman" id="manifest" data-bg="dark">
     <div class="container">
-      <h2 class="mattman-statement display" data-reveal-lines>
-        <span class="reveal-line"><span>Un label independent</span></span>
-        <span class="reveal-line"><span>dedicat explorării</span></span>
-        <span class="reveal-line"><span><em>noilor frontiere sonore.</em></span></span>
+      <h2 class="mattman-statement display" data-blur-text>
+        <span class="bt-word">Un</span>
+        <span class="bt-word">label</span>
+        <span class="bt-word">independent</span>
+        <span class="bt-word">dedicat</span>
+        <span class="bt-word">explorării</span>
+        <span class="bt-word"><em>noilor</em></span>
+        <span class="bt-word"><em>frontiere</em></span>
+        <span class="bt-word"><em>sonore.</em></span>
       </h2>
 
       <div class="mattman-grid">
@@ -183,7 +188,7 @@ const roster = [
       <div class="section-head">
         <span class="mono gold">[ 02 / Roster ]</span>
         <h2 class="section-title display" data-reveal>
-          Four voices.<br><em>One sound.</em>
+          Four voices.<br><em class="grad-text">One sound.</em>
         </h2>
       </div>
 
@@ -242,7 +247,7 @@ const roster = [
       <span class="mono">[ 04 / Booking ]</span>
       <h2 class="booking-title display" data-reveal-lines>
         <span class="reveal-line"><span>Let's make</span></span>
-        <span class="reveal-line"><span>some <em>noise.</em></span></span>
+        <span class="reveal-line"><span>some <em class="grad-text">noise.</em></span></span>
       </h2>
 
       <div class="booking-grid">

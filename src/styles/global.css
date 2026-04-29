@@ -62,6 +62,59 @@ html.lenis, html.lenis body { height: auto; }
 .lenis.lenis-smooth [data-lenis-prevent] { overscroll-behavior: contain; }
 .lenis.lenis-stopped { overflow: clip; }
 
+/* === BLUR TEXT (reactbits-style) === */
+[data-blur-text] {
+  display: inline;
+}
+.bt-word {
+  display: inline-block;
+  filter: blur(14px);
+  opacity: 0;
+  transform: translateY(28px);
+  transition: filter 1.2s cubic-bezier(0.2, 0.8, 0.2, 1),
+              opacity 1.2s ease,
+              transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1);
+  margin-right: 0.18em;
+}
+.bt-word.is-in {
+  filter: blur(0);
+  opacity: 1;
+  transform: none;
+}
+
+/* === GRADIENT TEXT (reactbits-style) === */
+.grad-text {
+  background: linear-gradient(110deg,
+    var(--gold) 0%,
+    var(--gold-bright) 18%,
+    var(--burgundy) 50%,
+    var(--gold-bright) 82%,
+    var(--gold) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  animation: gradTextSlide 6s ease-in-out infinite;
+  display: inline-block;
+}
+@keyframes gradTextSlide {
+  0%, 100% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+}
+body.dark .grad-text {
+  background: linear-gradient(110deg,
+    var(--gold-bright) 0%,
+    var(--gold) 30%,
+    var(--cream) 50%,
+    var(--gold) 70%,
+    var(--gold-bright) 100%);
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
 /* === GRAIN TEXTURE OVERLAY === */
 .grain {
   position: fixed; inset: 0; pointer-events: none; z-index: 9998;

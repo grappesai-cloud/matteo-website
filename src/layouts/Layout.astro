@@ -378,6 +378,62 @@ const {
         requestAnimationFrame(tickWeight);
       }
 
+      // === BLUR TEXT (reactbits-style) — word-by-word blur reveal ===
+      document.querySelectorAll<HTMLElement>('[data-blur-text]').forEach((el) => {
+        const words = el.querySelectorAll<HTMLElement>('.bt-word');
+        ScrollTrigger.create({
+          trigger: el,
+          start: 'top 80%',
+          once: true,
+          onEnter: () => {
+            words.forEach((w, i) => {
+              setTimeout(() => w.classList.add('is-in'), i * 110);
+            });
+          },
+        });
+      });
+
+      // === SCROLL VELOCITY MARQUEE (reactbits-style) ===
+      // Marquee speed scales with current scroll velocity; fast scrolls add a slight skew
+      const marqueeTrack = document.querySelector<HTMLElement>('[data-scroll-velocity-track]');
+      const marqueeWrap = document.querySelector<HTMLElement>('[data-scroll-velocity]');
+      if (marqueeTrack && marqueeWrap) {
+        marqueeTrack.style.animation = 'none';
+        let offset = 0;
+        let lastScroll = window.scrollY;
+        let velocity = 0;
+        let baseSpeed = 0.6;
+        let lastT = performance.now();
+
+        window.addEventListener('scroll', () => {
+          const cur = window.scrollY;
+          const v = cur - lastScroll;
+          lastScroll = cur;
+          velocity = v;
+        }, { passive: true });
+
+        const trackTick = () => {
+          const now = performance.now();
+          const dt = Math.min(40, now - lastT);
+          lastT = now;
+          // boost speed by abs velocity, decay velocity
+          const boost = Math.min(8, Math.abs(velocity) * 0.4);
+          const dir = velocity >= 0 ? 1 : -1;
+          const speed = (baseSpeed + boost) * dir;
+          offset -= speed * (dt / 16);
+          // half-width loop (track has 2x duplicated content)
+          const half = marqueeTrack.scrollWidth / 2;
+          if (-offset >= half) offset += half;
+          if (-offset < 0) offset -= half;
+          // skew during high velocity
+          const skew = Math.max(-6, Math.min(6, -velocity * 0.25));
+          marqueeTrack.style.transform = `translateX(${offset}px) skewX(${skew}deg)`;
+          velocity *= 0.92;
+          requestAnimationFrame(trackTick);
+        };
+        requestAnimationFrame(trackTick);
+      }
+
       // === DECRYPTED TEXT on Catalog tracks (reactbits-inspired) ===
       const cipher = '!@#$%&*()_+=[]{}|<>?ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
       document.querySelectorAll<HTMLElement>('[data-decrypt]').forEach((el) => {
