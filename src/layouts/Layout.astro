@@ -275,34 +275,60 @@ const {
         });
       }
 
-      // === MATTMAN MUSIC LABEL MARK — load reveal + mouse-follow + breathe ===
+      // === HERO SONIC ECHO — load reveal + ripple + mouse-follow tilt ===
+      const heroSonic = document.querySelector<HTMLElement>('[data-hero-sonic]');
       const heroMark = document.querySelector<HTMLElement>('[data-hero-mark]');
-      if (heroMark) {
-        const chars = Array.from(heroMark.querySelectorAll<HTMLElement>('.hm-char'));
+      const heroMain = document.querySelector<HTMLElement>('.hero-main');
+      if (heroSonic && heroMark && heroMain) {
+        const chars = Array.from(heroMain.querySelectorAll<HTMLElement>('.hm-char'));
+        const echoes = Array.from(heroSonic.querySelectorAll<HTMLElement>('.hero-echo'));
 
-        // Load reveal — letter by letter rise from below
+        // Load reveal — main letters rise from mask
         gsap.to(chars, {
           y: 0,
-          duration: 1.2,
+          duration: 1.4,
           ease: 'expo.out',
-          stagger: 0.038,
-          delay: 0.15,
-          onStart: () => heroMark.classList.add('is-loaded'),
+          stagger: 0.05,
+          delay: 0.2,
+          onStart: () => {
+            heroMain.classList.add('is-loaded');
+            heroMark.classList.add('is-loaded');
+            heroSonic.setAttribute('data-loaded', '');
+          },
         });
 
-        // Continuous "breath" — barely-there scale wobble
-        chars.forEach((ch, i) => {
-          gsap.to(ch, {
-            scaleY: 1.02,
-            duration: 2.4 + (i % 4) * 0.3,
-            ease: 'sine.inOut',
-            repeat: -1,
-            yoyo: true,
-            delay: i * 0.08,
-          });
+        // Echo ripple — concentric waves emanate continuously like sonar pings
+        echoes.forEach((echo, i) => {
+          const baseScale = 1 + (i + 1) * 0.08;
+          const targetScale = baseScale + 0.18;
+          gsap.fromTo(
+            echo,
+            { opacity: 0, scale: baseScale },
+            {
+              opacity: 0.35 - i * 0.07,
+              scale: baseScale,
+              duration: 1.2,
+              delay: 1 + i * 0.15,
+              ease: 'power2.out',
+              onComplete: () => {
+                gsap.to(echo, {
+                  scale: targetScale,
+                  opacity: 0,
+                  duration: 4 + i * 0.4,
+                  ease: 'sine.inOut',
+                  repeat: -1,
+                  delay: i * 0.6,
+                  yoyo: false,
+                  onRepeat: () => {
+                    gsap.set(echo, { scale: baseScale, opacity: 0.35 - i * 0.07 });
+                  },
+                });
+              },
+            }
+          );
         });
 
-        // Mouse-follow tilt + gold proximity glow (works for both filled + outlined letters)
+        // Mouse-follow tilt with proximity gold glow
         const goldHex = '#C9A24A';
         const onMove = (e: MouseEvent) => {
           chars.forEach((ch) => {
@@ -312,31 +338,21 @@ const {
             const dx = e.clientX - cx;
             const dy = e.clientY - cy;
             const dist = Math.hypot(dx, dy);
-            const radius = 360;
+            const radius = 380;
             const power = Math.max(0, 1 - dist / radius);
-            const tiltZ = (dx / radius) * 18 * power;
-            const liftY = -power * 22;
-            const liftX = (dx / radius) * 10 * power;
-            const isOutlined = ch.parentElement?.parentElement?.classList.contains('hm-row-italic');
-            const props: gsap.TweenVars = {
-              rotation: tiltZ,
-              y: liftY,
-              x: liftX,
-              skewX: tiltZ * 0.4,
-              duration: 0.6,
+            gsap.to(ch, {
+              rotation: (dx / radius) * 14 * power,
+              y: -power * 18,
+              x: (dx / radius) * 8 * power,
+              skewX: (dx / radius) * 6 * power,
+              color: power > 0.35 ? goldHex : '',
+              duration: 0.55,
               ease: 'power3.out',
               overwrite: 'auto',
-            };
-            if (isOutlined) {
-              ch.style.setProperty('-webkit-text-stroke-color', power > 0.35 ? goldHex : '');
-            } else {
-              props.color = power > 0.35 ? goldHex : '';
-            }
-            gsap.to(ch, props);
+            });
           });
         };
         const onLeave = () => {
-          chars.forEach((ch) => ch.style.removeProperty('-webkit-text-stroke-color'));
           gsap.to(chars, {
             rotation: 0, x: 0, y: 0, skewX: 0, color: '',
             duration: 0.9, ease: 'elastic.out(1, 0.45)',
@@ -346,33 +362,6 @@ const {
         };
         heroMark.addEventListener('mousemove', onMove);
         heroMark.addEventListener('mouseleave', onLeave);
-
-        // Periodic shimmer wave — every ~7s a wave of gold sweeps across letters
-        const shimmer = () => {
-          chars.forEach((ch, i) => {
-            const isOutlined = ch.parentElement?.parentElement?.classList.contains('hm-row-italic');
-            gsap.timeline()
-              .to(ch, {
-                color: isOutlined ? '' : goldHex,
-                onStart: () => {
-                  if (isOutlined) ch.style.setProperty('-webkit-text-stroke-color', goldHex);
-                },
-                duration: 0.4,
-                delay: i * 0.045,
-                ease: 'power2.in',
-              })
-              .to(ch, {
-                color: '',
-                onStart: () => {
-                  if (isOutlined) ch.style.removeProperty('-webkit-text-stroke-color');
-                },
-                duration: 0.6,
-                ease: 'power2.out',
-              });
-          });
-        };
-        setInterval(shimmer, 7500);
-        setTimeout(shimmer, 1800);
       }
 
       // === HUGE TYPE PARALLAX ===

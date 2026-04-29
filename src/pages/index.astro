@@ -66,52 +66,54 @@ const roster = [
     </ul>
   </nav>
 
-  <!-- HERO -->
+  <!-- HERO — sonic-echo composition -->
   <section class="hero" id="top">
-    <div class="hero-grid">
-      <div class="hero-text hero-text-solo">
-        <h1 class="hero-mark display" aria-label="Mattman Music Label" data-hero-mark>
-          <span class="hm-row">
-            <span class="hm-mask"><span class="hm-char">M</span></span>
-            <span class="hm-mask"><span class="hm-char">A</span></span>
-            <span class="hm-mask"><span class="hm-char">T</span></span>
-            <span class="hm-mask"><span class="hm-char">T</span></span>
-            <span class="hm-mask"><span class="hm-char">M</span></span>
-            <span class="hm-mask"><span class="hm-char">A</span></span>
-            <span class="hm-mask"><span class="hm-char">N</span></span>
-          </span>
-          <span class="hm-row hm-row-italic">
-            <span class="hm-mask"><span class="hm-char">M</span></span>
-            <span class="hm-mask"><span class="hm-char">U</span></span>
-            <span class="hm-mask"><span class="hm-char">S</span></span>
-            <span class="hm-mask"><span class="hm-char">I</span></span>
-            <span class="hm-mask"><span class="hm-char">C</span></span>
-          </span>
-          <span class="hm-row hm-row-tag mono">
-            <span class="hm-mask"><span class="hm-char">L</span></span>
-            <span class="hm-mask"><span class="hm-char">A</span></span>
-            <span class="hm-mask"><span class="hm-char">B</span></span>
-            <span class="hm-mask"><span class="hm-char">E</span></span>
-            <span class="hm-mask"><span class="hm-char">L</span></span>
-            <span class="hm-mask"><span class="hm-char">·</span></span>
-            <span class="hm-mask"><span class="hm-char">E</span></span>
-            <span class="hm-mask"><span class="hm-char">S</span></span>
-            <span class="hm-mask"><span class="hm-char">T</span></span>
-            <span class="hm-mask"><span class="hm-char">·</span></span>
-            <span class="hm-mask"><span class="hm-char">2</span></span>
-            <span class="hm-mask"><span class="hm-char">0</span></span>
-            <span class="hm-mask"><span class="hm-char">0</span></span>
-            <span class="hm-mask"><span class="hm-char">6</span></span>
-          </span>
+    <div class="hero-sonic" data-hero-sonic>
+      <span class="hero-corner hero-corner-tl mono">
+        <span class="hero-corner-num">(01)</span>
+        <span>Independent label</span>
+      </span>
+      <span class="hero-corner hero-corner-tr mono">
+        <span>Bucharest</span>
+        <span class="hero-corner-dot">·</span>
+        <span>Worldwide</span>
+      </span>
+
+      <div class="hero-echo-wrap" data-hero-mark>
+        <span class="hero-echo hero-echo-4" aria-hidden="true">MATTMAN</span>
+        <span class="hero-echo hero-echo-3" aria-hidden="true">MATTMAN</span>
+        <span class="hero-echo hero-echo-2" aria-hidden="true">MATTMAN</span>
+        <span class="hero-echo hero-echo-1" aria-hidden="true">MATTMAN</span>
+        <h1 class="hero-main" aria-label="Mattman Music">
+          <span class="hm-mask"><span class="hm-char">M</span></span>
+          <span class="hm-mask"><span class="hm-char">A</span></span>
+          <span class="hm-mask"><span class="hm-char">T</span></span>
+          <span class="hm-mask"><span class="hm-char">T</span></span>
+          <span class="hm-mask"><span class="hm-char">M</span></span>
+          <span class="hm-mask"><span class="hm-char">A</span></span>
+          <span class="hm-mask"><span class="hm-char">N</span></span>
         </h1>
       </div>
 
-    </div>
+      <div class="hero-sub" data-reveal>
+        <span class="hero-sub-rule" aria-hidden="true"></span>
+        <span class="hero-sub-text">
+          <em class="hero-sub-italic">music</em>
+          <span class="hero-sub-mono mono">est. 2006</span>
+        </span>
+        <span class="hero-sub-rule" aria-hidden="true"></span>
+      </div>
 
-    <div class="hero-bottom mono">
-      <span>Scroll</span>
-      <span class="hero-arrow">↓</span>
-      <span>Est. 2006</span>
+      <span class="hero-corner hero-corner-bl mono">
+        <span class="hero-corner-num">(02)</span>
+        <span>Four voices</span>
+        <span class="hero-corner-dot">·</span>
+        <span>One sound</span>
+      </span>
+      <span class="hero-corner hero-corner-br mono">
+        <span>Scroll</span>
+        <span class="hero-corner-arrow">↓</span>
+      </span>
     </div>
   </section>
 
@@ -332,145 +334,173 @@ const roster = [
     .nav { grid-template-columns: auto auto; }
   }
 
-  /* HERO */
+  /* === HERO — sonic-echo editorial composition === */
   .hero {
-    min-height: 100vh;
-    display: grid;
-    grid-template-rows: 1fr auto;
-    padding-block: 6rem 2rem;
     position: relative;
-    gap: 2rem;
+    min-height: 100svh;
+    display: flex;
+    align-items: center;
+    overflow: hidden;
+    padding-block: clamp(5rem, 10vh, 8rem) clamp(2rem, 5vh, 4rem);
   }
-  .hero-grid {
+  .hero-sonic {
+    position: relative;
+    width: 100%;
+    max-width: var(--max-w);
+    margin-inline: auto;
     display: grid;
-    grid-template-columns: 1fr;
-    gap: clamp(1.5rem, 4vw, 4rem);
+    grid-template-areas:
+      "tl tr"
+      "stage stage"
+      "sub sub"
+      "bl br";
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto 1fr auto auto;
+    gap: clamp(1.2rem, 2.5vw, 2.4rem) 1rem;
     align-items: center;
-    min-height: 0;
-  }
-  .hero-text-solo {
-    align-items: center;
-    text-align: center;
-  }
-  .hero-text-solo .hero-mark { display: inline-block; }
-  .hero-text-solo .hm-row { justify-content: center; }
-  .hero-text-solo .hm-row-italic { padding-left: 0; }
-  .hero-text {
-    display: flex; flex-direction: column;
-    justify-content: center;
-    gap: 0.4rem;
-    padding-block: 1rem;
+    min-height: clamp(540px, 78svh, 900px);
   }
 
-  /* === MATTMAN MUSIC LABEL — letter-by-letter premium mark === */
-  .hero-mark {
-    font-family: 'Unbounded', 'Inter', sans-serif !important;
-    margin: 0;
-    line-height: 0.86;
-    letter-spacing: -0.035em;
-    font-weight: 900;
-    color: var(--ink);
-    user-select: none;
-    position: relative;
-  }
-  .hm-row {
-    display: flex;
-    flex-wrap: nowrap;
-    line-height: 0.86;
-    justify-content: center;
-  }
-  .hm-row-italic {
-    /* outlined "MUSIC" — magazine-cover contrast */
-    font-style: normal;
-    color: transparent;
-    -webkit-text-stroke: clamp(1.5px, 0.18vw, 3px) var(--ink);
-    margin-top: -0.05em;
-  }
-  .hm-row-italic .hm-char {
-    color: transparent;
-    -webkit-text-stroke: inherit;
-    transition: -webkit-text-stroke-color 0.4s ease, color 0.4s ease;
-  }
-  .hm-row-tag {
-    font-family: 'JetBrains Mono', ui-monospace, monospace !important;
-    font-weight: 500;
-    margin-top: 2rem;
-    gap: 0.05em;
-    letter-spacing: 0.32em;
-    font-size: clamp(0.6rem, 0.85vw, 0.78rem);
+  /* Corner labels */
+  .hero-corner {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.6em;
+    font-size: clamp(0.62rem, 0.78vw, 0.72rem);
+    letter-spacing: 0.18em;
+    opacity: 0.7;
     line-height: 1;
-    opacity: 0.55;
+    flex-wrap: wrap;
+  }
+  .hero-corner-num { color: var(--gold); }
+  .hero-corner-dot { color: var(--gold); opacity: 0.8; }
+  .hero-corner-tl { grid-area: tl; justify-self: start; }
+  .hero-corner-tr { grid-area: tr; justify-self: end; text-align: right; }
+  .hero-corner-bl { grid-area: bl; justify-self: start; }
+  .hero-corner-br { grid-area: br; justify-self: end; text-align: right; }
+  .hero-corner-arrow { display: inline-block; animation: bob 1.8s ease-in-out infinite; }
+
+  /* Echo stack — main word + 4 fading echoes */
+  .hero-echo-wrap {
+    grid-area: stage;
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    isolation: isolate;
+    padding-block: clamp(1.5rem, 4vw, 4rem);
+  }
+  .hero-main,
+  .hero-echo {
+    font-family: 'Unbounded', 'Inter', sans-serif;
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.04em;
+    text-transform: uppercase;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    font-size: clamp(3.2rem, 16vw, 18rem);
+  }
+  .hero-main {
+    position: relative;
+    z-index: 5;
     color: var(--ink);
+    display: flex;
+    justify-content: center;
+    gap: 0;
   }
   .hm-mask {
     display: inline-block;
     overflow: hidden;
-    line-height: 0.86;
+    line-height: 0.95;
+    padding-bottom: 0.05em;
   }
-  .hm-row-tag .hm-mask { line-height: 1; }
   .hm-char {
     display: inline-block;
     transform: translateY(110%);
-    transform-origin: 50% 100%;
     will-change: transform, color;
-    transition: color 0.35s ease, -webkit-text-stroke-color 0.35s ease;
-    font-size: clamp(3.5rem, 14.5vw, 17rem);
-    padding: 0 0.012em;
-    font-weight: 900;
+    transition: color 0.35s ease;
   }
-  .hm-row-tag .hm-char {
-    font-size: inherit;
-    padding: 0 0.04em;
-    font-weight: 500;
-  }
-  .hero-mark.is-loaded .hm-char { transform: translateY(0); }
+  .hero-main.is-loaded .hm-char,
+  [data-hero-mark].is-loaded .hm-char { transform: translateY(0); }
 
-  /* dark-mode variants */
-  body.dark .hero-mark { color: var(--cream); }
-  body.dark .hm-row-italic { -webkit-text-stroke-color: var(--cream); }
-  .hero-portrait {
-    position: relative;
-    aspect-ratio: 3 / 4;
-    max-height: 78vh;
-    overflow: hidden;
-    background: var(--ink);
-    margin: 0;
-    align-self: stretch;
-  }
-  .hero-portrait img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-    object-position: 50% 25%;
-    transform: scale(1.05);
-    transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .hero-portrait:hover img { transform: scale(1.08); }
-  .hero-portrait figcaption {
+  /* Echoes — concentric ripples behind the main word */
+  .hero-echo {
     position: absolute;
-    left: 1rem; right: 1rem; bottom: 1rem;
-    display: flex; justify-content: space-between;
-    align-items: end;
-    color: var(--cream);
-    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
-    z-index: 2;
-    gap: 0.6rem;
-    flex-wrap: wrap;
-  }
-  .hero-portrait::after {
-    content: '';
-    position: absolute; inset: 0;
-    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%);
+    left: 0; right: 0;
+    color: transparent;
+    -webkit-text-stroke: 1px color-mix(in srgb, var(--fg) 60%, transparent);
     pointer-events: none;
+    will-change: transform, opacity;
   }
-  .hero-bottom {
-    display: flex; justify-content: space-between; align-items: center;
-    opacity: 0.55;
+  .hero-echo-1 { z-index: 4; opacity: 0; transform: scale(1.06); }
+  .hero-echo-2 { z-index: 3; opacity: 0; transform: scale(1.14); }
+  .hero-echo-3 { z-index: 2; opacity: 0; transform: scale(1.24); }
+  .hero-echo-4 { z-index: 1; opacity: 0; transform: scale(1.36); }
+  body.dark .hero-echo {
+    -webkit-text-stroke-color: color-mix(in srgb, var(--cream) 60%, transparent);
   }
-  @media (max-width: 1024px) {
-    .hero-grid { grid-template-columns: 1fr; }
-    .hero-portrait { aspect-ratio: 4/5; max-height: 60vh; order: 0; }
-    .hero-text { order: 1; }
+
+  /* Sub-line: rule — italic music — mono est. 2006 — rule */
+  .hero-sub {
+    grid-area: sub;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: clamp(1rem, 2vw, 2rem);
+    width: 100%;
+  }
+  .hero-sub-rule {
+    height: 1px;
+    background: currentColor;
+    opacity: 0.35;
+    transform: scaleX(0);
+    transform-origin: 50% 50%;
+    transition: transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .hero-sub-rule:first-child { transform-origin: 100% 50%; }
+  .hero-sub-rule:last-child { transform-origin: 0% 50%; }
+  .hero-sonic[data-loaded] .hero-sub-rule { transform: scaleX(1); }
+  .hero-sub-text {
+    display: inline-flex; align-items: baseline; gap: 0.7em;
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1rem, 1.4vw, 1.4rem);
+    line-height: 1;
+  }
+  .hero-sub-italic {
+    font-style: italic;
+    color: var(--burgundy);
+    font-size: 1.1em;
+  }
+  .hero-sub-mono {
+    font-size: 0.55em;
+    letter-spacing: 0.22em;
+    opacity: 0.7;
+  }
+  body.dark .hero-sub-italic { color: var(--gold); }
+
+  /* Mobile: lay out the stage taller, simpler corners */
+  @media (max-width: 720px) {
+    .hero-sonic {
+      grid-template-areas:
+        "tl"
+        "stage"
+        "sub"
+        "bl"
+        "br";
+      grid-template-columns: 1fr;
+      grid-template-rows: auto 1fr auto auto auto;
+      gap: 1.4rem;
+      min-height: 80svh;
+    }
+    .hero-corner-tr,
+    .hero-corner-bl,
+    .hero-corner-br { justify-self: start; text-align: left; }
+    .hero-main, .hero-echo { font-size: clamp(2.6rem, 18vw, 5rem); }
+    .hero-sub-text { font-size: 0.9rem; }
   }
   .hero-arrow {
     display: inline-block;
