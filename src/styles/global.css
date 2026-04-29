@@ -10,28 +10,20 @@ ul, ol { list-style: none; }
 
 /* === TOKENS === */
 :root {
-  --bone: #F0EDE3;
-  --bone-soft: #E5E1D5;
-  --ink: #0B0B0B;
-  --ink-warm: #1A1814;
-  --ink-soft: #1F1B14;
-  --persimmon: #C73D17;
-  --persimmon-soft: #D4501E;
-  --persimmon-deep: #8E2A0F;
-
-  /* legacy aliases — keep old code from crashing during transition */
-  --cream: var(--bone);
-  --cream-dim: var(--bone-soft);
-  --gold: var(--persimmon);
-  --gold-bright: var(--persimmon-soft);
-  --burgundy: var(--persimmon-deep);
+  --cream: #F2EBE0;
+  --cream-dim: #E8DFD0;
+  --ink: #0A0A0A;
+  --ink-soft: #1A1A1A;
+  --gold: #C9A24A;
+  --gold-bright: #E8C16C;
+  --burgundy: #6B1A1A;
   --jade: #2A4A3A;
 
-  --bg: var(--bone);
+  --bg: var(--cream);
   --fg: var(--ink);
-  --accent: var(--persimmon);
+  --accent: var(--gold);
 
-  --font-display: 'Inter Tight', 'Inter', -apple-system, sans-serif;
+  --font-display: 'PP Editorial', 'Times New Roman', Times, serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 
@@ -61,7 +53,7 @@ body {
 
 body.dark {
   --bg: var(--ink);
-  --fg: var(--bone);
+  --fg: var(--cream);
 }
 
 /* Lenis */

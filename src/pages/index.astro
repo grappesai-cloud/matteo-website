@@ -3,779 +3,769 @@ import Layout from '../layouts/Layout.astro';
 
 const tracks = [
   { year: '2006', title: 'Departare', feat: 'feat. Loredana', note: 'Debut' },
-  { year: '2010', title: 'Lovaman', feat: 'EP' },
+  { year: '2010', title: 'Lovaman', feat: 'EP', note: 'First EP' },
   { year: '2012', title: 'Push It', feat: 'feat. Stella' },
   { year: '2013', title: 'Amândoi' },
-  { year: '2013', title: 'Panama', note: '225M+', highlight: true },
+  { year: '2013', title: 'Panama', note: '225M+ views', highlight: true },
   { year: '2014', title: 'Andale' },
   { year: '2015', title: 'Gândesc cu voce tare' },
   { year: '2017', title: 'Bună, Marie!', feat: 'feat. Uddi' },
   { year: '2018', title: 'Allegro Ventigo', feat: 'feat. Dan Bălan', highlight: true },
   { year: '2021', title: 'Copacul', feat: 'feat. Theo Rose' },
-  { year: '2023', title: 'Lato Lato', feat: 'feat. Sean Al' },
-  { year: '2025', title: 'Gypsy Reggae', feat: 'EP', highlight: true },
+  { year: '2023', title: 'Lato Lato Song', feat: 'feat. Sean Al' },
+  { year: '2025', title: 'Gypsy Reggae', feat: 'EP', note: 'New genre. New era.', highlight: true },
 ];
 
 const roster = [
   {
     slug: 'matteo',
     name: 'Matteo',
-    role: 'Founder',
+    tag: 'Founder',
     tagline: 'Two decades. Hit after hit.',
     bio: 'Founder of Mattman Music. Almost two decades of hits — debut "Departare" (2006, with Loredana). Most viral single "Panama" — 225M+ views, going global on TikTok across Asia. Latest venture: a self-coined fusion genre, Gypsy Reggae, with King Kong, Anthony B, Loyal Flames and Johny Romano.',
     photo: '/images/matteo/portrait-md.jpg',
+    photoAlt: '/images/matteo/portrait-md.jpg',
   },
   {
     slug: 'andrei',
     name: 'Andrei Bănuță',
-    role: 'Artist',
     tagline: 'An artist of contrasts.',
     bio: 'One of the most in-demand voices today. Songwriting that alternates between deep, meaningful lyrics and vibrant, playful songs. Best known for "Suflet de Bagabond" (90M+ views) and "Old Friend" with Vescan — over 10 weeks atop the Media Forest Chart.',
     photo: '/images/roster/andrei.jpg',
+    photoAlt: '/images/roster/andrei-2.jpg',
   },
   {
     slug: 'georgiana',
     name: 'Georgiana Neagu',
-    role: 'Artist',
     tagline: 'The new wave of balkan pop.',
     bio: 'A new wave of Romanian balkan pop. Contemporary sound and relatable lyrics that connect with a young audience nationwide. "M-am Îndrăgostit de Tine (Vreau să facem o fetiță)" — viral on TikTok, 2.2M+ views on YouTube.',
     photo: '/images/roster/georgiana.jpg',
+    photoAlt: '/images/roster/georgiana-2.jpg',
   },
   {
     slug: 'emily',
     name: 'Emily Istrate',
-    role: 'Artist',
     tagline: 'Beautiful, talented, charismatic.',
     bio: 'Singer, songwriter, actress from the Republic of Moldova. International recognition with "If You Want To" and "Panic" — UK Pop Club Charts #4 and #5. 2023 saw her climb the top of major Romanian charts with "Bye Bye Boy" and "În Mintea Mea".',
     photo: '/images/roster/emily.jpg',
+    photoAlt: '/images/roster/emily-2.jpg',
   },
 ];
 ---
 <Layout>
   <!-- NAV -->
   <nav class="nav">
-    <a href="#top" class="nav-brand hover-target">
-      <span class="nav-brand-mark">Mattman</span>
-      <span class="nav-brand-tag mono">Music · MMVI</span>
+    <a href="#top" class="nav-logo hover-target" data-magnetic="0.4">
+      <img src="/images/mattman/logo-black.png" alt="Mattman Music" class="nav-logo-img" />
     </a>
     <ul class="nav-links mono">
-      <li><a href="#statement">Statement</a></li>
+      <li><a href="#manifest">Manifest</a></li>
       <li><a href="#roster">Roster</a></li>
       <li><a href="#catalog">Catalog</a></li>
-      <li><a href="#contact">Contact</a></li>
+      <li><a href="#booking">Booking</a></li>
     </ul>
   </nav>
 
-  <!-- ============================== -->
-  <!--  HERO — record-sleeve cover     -->
-  <!-- ============================== -->
+  <!-- HERO — sonic-echo composition -->
   <section class="hero" id="top">
-    <div class="hero-frame">
-      <div class="hero-media" data-cover-media>
-        <img src="/images/matteo/portrait-md.jpg" alt="" data-parallax-img />
+    <div class="hero-sonic" data-hero-sonic>
+      <div class="hero-echo-wrap" data-hero-mark>
+        <span class="hero-echo hero-echo-4" aria-hidden="true">MATTMAN</span>
+        <span class="hero-echo hero-echo-3" aria-hidden="true">MATTMAN</span>
+        <span class="hero-echo hero-echo-2" aria-hidden="true">MATTMAN</span>
+        <span class="hero-echo hero-echo-1" aria-hidden="true">MATTMAN</span>
+        <h1 class="hero-main" aria-label="Mattman Music">
+          <span class="hm-mask"><span class="hm-char">M</span></span>
+          <span class="hm-mask"><span class="hm-char">A</span></span>
+          <span class="hm-mask"><span class="hm-char">T</span></span>
+          <span class="hm-mask"><span class="hm-char">T</span></span>
+          <span class="hm-mask"><span class="hm-char">M</span></span>
+          <span class="hm-mask"><span class="hm-char">A</span></span>
+          <span class="hm-mask"><span class="hm-char">N</span></span>
+        </h1>
       </div>
-      <div class="hero-veil" aria-hidden="true"></div>
-      <div class="hero-grade" aria-hidden="true"></div>
+
+      <div class="hero-sub" data-reveal>
+        <span class="hero-sub-rule" aria-hidden="true"></span>
+        <span class="hero-sub-text">
+          <em class="hero-sub-italic">music</em>
+          <span class="hero-sub-mono mono">est. 2006</span>
+        </span>
+        <span class="hero-sub-rule" aria-hidden="true"></span>
+      </div>
+
+      <span class="hero-corner hero-corner-br mono">
+        <span>Scroll</span>
+        <span class="hero-corner-arrow">↓</span>
+      </span>
     </div>
+  </section>
 
-    <div class="hero-grid">
-      <div class="hero-tl">
-        <span class="mono hero-tl-1">A0:</span>
-        <span class="mono hero-tl-2">Mattman Music</span>
-        <span class="mono hero-tl-3">An independent label · București</span>
+
+  <!-- STATS / NUMBERS -->
+  <section class="stats">
+    <div class="container stats-grid">
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="2" data-suffix="" data-decimals="0">0</span><span class="stat-plus">+</span></div>
+        <div class="stat-label mono">Decades<br>of hits</div>
       </div>
-
-      <div class="hero-tr">
-        <span class="mono">Est. 2006</span>
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="225" data-suffix="M" data-decimals="0">0</span><span class="stat-plus">+</span></div>
+        <div class="stat-label mono">Views on Panama<br>across platforms</div>
       </div>
-
-      <h1 class="hero-headline">
-        <span class="hl-line hl-line-1" data-line>Independent</span>
-        <span class="hl-line hl-line-2" data-line>sound,</span>
-        <span class="hl-line hl-line-3" data-line><em>since</em> 2006.</span>
-      </h1>
-
-      <div class="hero-meta">
-        <span class="mono hero-meta-roster">— Matteo · Andrei Bănuță · Georgiana Neagu · Emily Istrate</span>
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="4" data-suffix="" data-decimals="0">0</span></div>
+        <div class="stat-label mono">Artists<br>on the roster</div>
       </div>
-
-      <div class="hero-bl">
-        <span class="mono">Scroll ↓</span>
-      </div>
-
-      <div class="hero-br">
-        <span class="mono">001 / 005</span>
+      <div class="stat" data-reveal>
+        <div class="stat-num display"><span data-counter="9" data-suffix="" data-decimals="0">0</span><span class="stat-plus">+</span></div>
+        <div class="stat-label mono">Countries fueling<br>the trend abroad</div>
       </div>
     </div>
   </section>
 
-  <!-- ============================== -->
-  <!--  STATEMENT (single block)       -->
-  <!-- ============================== -->
-  <section class="statement" id="statement" data-bg="dark">
-    <div class="statement-rail">
-      <span class="mono">— 002 / Statement</span>
-    </div>
-
-    <div class="statement-body">
-      <h2 class="statement-text" data-blur-text>
-        <span class="bt-word">Mattman</span>
-        <span class="bt-word">Music</span>
-        <span class="bt-word">este</span>
-        <span class="bt-word">un</span>
+  <!-- MANIFEST (Mattman) -->
+  <section class="mattman" id="manifest" data-bg="dark">
+    <div class="container">
+      <h2 class="mattman-statement display" data-blur-text>
+        <span class="bt-word">Un</span>
         <span class="bt-word">label</span>
         <span class="bt-word">independent</span>
-        <span class="bt-word">care</span>
-        <span class="bt-word">a</span>
-        <span class="bt-word">construit,</span>
-        <span class="bt-word">timp</span>
-        <span class="bt-word">de</span>
-        <span class="bt-word">două</span>
-        <span class="bt-word">decenii,</span>
-        <span class="bt-word">un</span>
-        <span class="bt-word">catalog</span>
-        <span class="bt-word">de</span>
-        <span class="bt-word">hituri</span>
-        <span class="bt-word">care</span>
-        <span class="bt-word">au</span>
-        <span class="bt-word">plecat</span>
-        <span class="bt-word">din</span>
-        <span class="bt-word">București</span>
-        <span class="bt-word">spre</span>
-        <span class="bt-word st-em">o</span>
-        <span class="bt-word st-em">audiență</span>
-        <span class="bt-word st-em">globală.</span>
+        <span class="bt-word">dedicat</span>
+        <span class="bt-word">explorării</span>
+        <span class="bt-word"><em>noilor</em></span>
+        <span class="bt-word"><em>frontiere</em></span>
+        <span class="bt-word"><em>sonore.</em></span>
       </h2>
 
-      <div class="statement-figures">
-        <div class="figure-row">
-          <span class="figure-num">225M+</span>
-          <span class="mono figure-label">Vizualizări · Panama (2013)</span>
+      <div class="mattman-grid">
+        <div class="mattman-col" data-reveal>
+          <span class="mono gold">Manifest</span>
+          <p>
+            Combinăm <em>creativitatea brută</em> cu tehnologia de ultimă oră pentru a oferi artiștilor o platformă unde <span class="gold">autenticitatea este singura regulă</span>.
+          </p>
+          <p>
+            De la producție meticuloasă la promovare strategică, transformăm ideile în experiențe audio memorabile.
+          </p>
         </div>
-        <div class="figure-row">
-          <span class="figure-num">12</span>
-          <span class="mono figure-label">Single-uri în catalog</span>
-        </div>
-        <div class="figure-row">
-          <span class="figure-num">9+</span>
-          <span class="mono figure-label">Țări — viral abroad</span>
-        </div>
-        <div class="figure-row">
-          <span class="figure-num">4</span>
-          <span class="mono figure-label">Voci pe roster</span>
+
+        <div class="mattman-col" data-reveal>
+          <span class="mono gold">Crez</span>
+          <ul class="mattman-list">
+            <li><span class="mono">01</span> Authenticity over algorithm.</li>
+            <li><span class="mono">02</span> Sound first, image second.</li>
+            <li><span class="mono">03</span> Independent. Always.</li>
+          </ul>
         </div>
       </div>
     </div>
   </section>
 
-  <!-- ============================== -->
-  <!--  ROSTER — cinematic features    -->
-  <!-- ============================== -->
+  <!-- ROSTER (4 artists, 2x2) -->
   <section class="roster" id="roster">
-    <header class="roster-head">
-      <span class="mono">— 003 / Roster</span>
-      <h2 class="roster-title">
-        Four artists.<br>One catalog.
-      </h2>
-    </header>
-
-    {roster.map((r, i) => (
-      <article class={`feature feature-${r.slug}`} data-feature data-feature-index={i}>
-        <div class="feature-frame">
-          <div class="feature-media" data-cover-media>
-            <img src={r.photo} alt={r.name} loading="lazy" data-parallax-img />
-          </div>
-          <div class="feature-veil" aria-hidden="true"></div>
-          <div class="feature-grade" aria-hidden="true"></div>
-        </div>
-
-        <div class="feature-grid">
-          <div class="feature-num">
-            <span class="mono">№ {String(i + 1).padStart(2, '0')} / 04</span>
-          </div>
-          <div class="feature-role">
-            <span class="mono">{r.role}</span>
-          </div>
-
-          <h3 class="feature-name" data-feature-name>
-            <span>{r.name}</span>
-          </h3>
-
-          <div class="feature-text">
-            <span class="mono feature-tag">{r.tagline}</span>
-            <p class="feature-bio">{r.bio}</p>
-          </div>
-        </div>
-      </article>
-    ))}
-  </section>
-
-  <!-- ============================== -->
-  <!--  CATALOG — chronological ledger -->
-  <!-- ============================== -->
-  <section class="catalog" id="catalog">
-    <header class="catalog-head">
-      <div class="catalog-rail">
-        <span class="mono">— 004 / Catalog</span>
-        <span class="mono">2006 — 2025</span>
+    <div class="container">
+      <div class="section-head">
+        <span class="mono gold">[ 02 / Roster ]</span>
+        <h2 class="section-title display" data-reveal>
+          Four voices.<br><em class="grad-text">One sound.</em>
+        </h2>
       </div>
-      <h2 class="catalog-title">
-        Twelve singles.<br>
-        <span class="catalog-title-2">Two decades on record.</span>
-      </h2>
-    </header>
 
-    <ol class="ledger">
-      {tracks.map((t, i) => (
-        <li class={`ledger-row ${t.highlight ? 'is-key' : ''}`} data-scramble-trigger>
-          <span class="ledger-idx mono">{String(i + 1).padStart(2, '0')}</span>
-          <span class="ledger-year mono">{t.year}</span>
-          <span class="ledger-title">
-            <span data-decrypt>{t.title}</span>
-          </span>
-          <span class="ledger-feat mono">{t.feat || ''}</span>
-          <span class="ledger-note mono">{t.note || ''}</span>
-        </li>
-      ))}
-    </ol>
-  </section>
-
-  <!-- ============================== -->
-  <!--  CONTACT                         -->
-  <!-- ============================== -->
-  <section class="contact" id="contact">
-    <header class="contact-head">
-      <span class="mono">— 005 / Contact</span>
-    </header>
-
-    <h2 class="contact-headline">
-      Work with<br>
-      <em>the label.</em>
-    </h2>
-
-    <div class="contact-block">
-      <a href="mailto:booking@mattmanmusic.com" class="contact-line hover-target">
-        <span class="mono contact-line-tag">Booking · Management</span>
-        <span class="contact-line-mail">booking@mattmanmusic.com</span>
-        <span class="mono contact-line-arrow">↗</span>
-      </a>
-      <a href="mailto:hello@mattmanmusic.com" class="contact-line hover-target">
-        <span class="mono contact-line-tag">Press · Label</span>
-        <span class="contact-line-mail">hello@mattmanmusic.com</span>
-        <span class="mono contact-line-arrow">↗</span>
-      </a>
+      <div class="roster-grid">
+        {roster.map((r, i) => (
+          <article class={`roster-card hover-target r-${r.slug}`}>
+            <header class="roster-card-head">
+              <span class="roster-num mono">{String(i + 1).padStart(2, '0')}</span>
+              {r.tag && <span class="roster-tag mono">{r.tag}</span>}
+            </header>
+            <div class="roster-photo">
+              <img src={r.photo} alt={r.name} loading="lazy" />
+              <img class="roster-photo-alt" src={r.photoAlt} alt="" loading="lazy" />
+            </div>
+            <div class="roster-info">
+              <h3 class="roster-name display">{r.name}</h3>
+              <p class="roster-tagline mono gold">{r.tagline}</p>
+              <p class="roster-bio">{r.bio}</p>
+            </div>
+          </article>
+        ))}
+      </div>
     </div>
   </section>
 
-  <!-- ============================== -->
-  <!--  COLOPHON                       -->
-  <!-- ============================== -->
-  <footer class="colophon">
-    <span class="mono">© Mattman Music · 2006 — {new Date().getFullYear()}</span>
-    <a href="https://youtube.com/@mattmanmusic" target="_blank" rel="noopener" class="mono hover-target">YouTube ↗</a>
-    <span class="mono">Site · <a href="https://grappes.ai" target="_blank" rel="noopener" class="hover-target">Grappes</a></span>
+  <!-- CATALOG (label flagship hits) -->
+  <section class="discography" id="catalog" data-bg="light-end">
+    <div class="container">
+      <div class="section-head">
+        <span class="mono">[ 03 / Catalog ]</span>
+        <h2 class="section-title display" data-reveal>
+          Two decades<br>of <em>noise</em>.
+        </h2>
+        <p class="section-sub mono">Featured releases from the label's catalog.</p>
+      </div>
+
+      <ol class="track-list">
+        {tracks.map((t) => (
+          <li class={`track ${t.highlight ? 'is-highlight' : ''}`} data-scramble-trigger>
+            <span class="track-year mono">{t.year}</span>
+            <span class="track-title display">
+              <span data-decrypt>{t.title}</span>
+              {t.highlight && <span class="track-star">★</span>}
+            </span>
+            <span class="track-feat mono">{t.feat || ''}</span>
+            <span class="track-note mono">{t.note || ''}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- BOOKING -->
+  <section class="booking" id="booking">
+    <div class="container">
+      <span class="mono">[ 04 / Booking ]</span>
+      <h2 class="booking-title display" data-reveal-lines>
+        <span class="reveal-line"><span>Let's make</span></span>
+        <span class="reveal-line"><span>some <em class="grad-text">noise.</em></span></span>
+      </h2>
+
+      <div class="booking-grid">
+        <div class="booking-col">
+          <span class="mono">Booking &amp; Management</span>
+          <a class="booking-mail display hover-target" href="mailto:booking@mattmanmusic.com">
+            booking@mattmanmusic.com
+          </a>
+        </div>
+        <div class="booking-col">
+          <span class="mono">Press &amp; Label</span>
+          <a class="booking-mail display hover-target" href="mailto:hello@mattmanmusic.com">
+            hello@mattmanmusic.com
+          </a>
+        </div>
+      </div>
+
+      <div class="booking-cta">
+        <a class="btn-link hover-target" href="mailto:booking@mattmanmusic.com" data-magnetic="0.5">
+          Send brief <span>→</span>
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="footer-brand">
+        <span class="mono">© {new Date().getFullYear()} Mattman Music · All rights reserved</span>
+      </div>
+      <ul class="footer-social mono">
+        <li><a href="https://youtube.com/@mattmanmusic" target="_blank" rel="noopener" class="hover-target">YouTube ↗</a></li>
+      </ul>
+      <div class="footer-credit mono">
+        <span>Site by <a href="https://grappes.ai" target="_blank" rel="noopener" class="hover-target">Grappes</a></span>
+      </div>
+    </div>
+
   </footer>
 </Layout>
 
 <style>
-  /* ============================== */
-  /*  GLOBAL                         */
-  /* ============================== */
-  body {
-    background: var(--bone);
-    color: var(--ink);
-    font-family: var(--font-body);
-    font-size: 16px;
-    -webkit-font-smoothing: antialiased;
-  }
-  body.dark {
-    background: var(--ink);
-    color: var(--bone);
-  }
-  ::selection { background: var(--persimmon); color: var(--bone); }
-
-  .mono {
-    font-family: var(--font-mono);
-    font-size: 0.66rem;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    line-height: 1.4;
-  }
-
-  /* ============================== */
-  /*  NAV                           */
-  /* ============================== */
+  /* NAV */
   .nav {
     position: fixed; top: 0; left: 0; right: 0; z-index: 100;
-    display: grid; grid-template-columns: 1fr auto 1fr;
+    display: grid; grid-template-columns: 1fr auto;
     align-items: center; gap: 2rem;
-    padding: 1.4rem clamp(1.2rem, 3vw, 3rem);
+    padding: 1.4rem var(--pad-x);
     pointer-events: none;
-    mix-blend-mode: difference;
-    color: var(--bone);
   }
   .nav > * { pointer-events: auto; }
-  .nav-brand { display: inline-flex; flex-direction: column; gap: 0.1rem; line-height: 1; }
-  .nav-brand-mark {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: 1rem;
-    letter-spacing: -0.03em;
-  }
-  .nav-brand-tag { font-size: 0.55rem; opacity: 0.7; letter-spacing: 0.22em; }
+  .nav-logo { order: 2; justify-self: end; }
+  .nav-logo img { height: 32px; width: auto; transition: filter 0.6s ease; }
+  body.dark .nav-logo img { filter: invert(1); }
   .nav-links {
-    justify-self: end;
-    display: flex; gap: 1.4rem;
-    font-size: 0.6rem;
-    letter-spacing: 0.22em;
+    order: 1;
+    display: flex; gap: 1.6rem;
+    justify-self: center;
+    background: color-mix(in srgb, var(--bg) 70%, transparent);
+    backdrop-filter: blur(10px);
+    padding: 0.7rem 1.4rem;
+    border-radius: 999px;
+    border: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
   }
-  .nav-links a { transition: opacity 0.3s; opacity: 0.78; }
-  .nav-links a:hover { opacity: 1; }
+  .nav-links a { transition: opacity 0.3s; }
+  .nav-links a:hover { opacity: 0.5; }
+  .nav-meta { opacity: 0.6; }
 
   @media (max-width: 820px) {
-    .nav { grid-template-columns: 1fr auto; gap: 1rem; }
     .nav-links { display: none; }
+    .nav { grid-template-columns: 1fr; }
+    .nav-logo { justify-self: end; }
   }
 
-  /* ============================== */
-  /*  HERO — record-sleeve cover     */
-  /* ============================== */
+  /* === HERO — sonic-echo editorial composition === */
   .hero {
     position: relative;
-    height: 100svh;
-    min-height: 640px;
-    overflow: hidden;
-    isolation: isolate;
-    background: var(--ink);
-    color: var(--bone);
-  }
-  .hero-frame { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
-  .hero-media {
-    position: absolute;
-    inset: -8% -4%;
-    will-change: transform;
-  }
-  .hero-media img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    object-position: center 28%;
-    filter: contrast(1.08) saturate(0.78) brightness(0.86);
-    animation: kenburns 26s ease-in-out infinite alternate;
-  }
-  @keyframes kenburns {
-    0% { transform: scale(1.04) translate(0, 0); }
-    100% { transform: scale(1.13) translate(-1%, -2%); }
-  }
-  .hero-veil {
-    position: absolute; inset: 0;
-    background:
-      linear-gradient(180deg, rgba(11,11,11,0.42) 0%, rgba(11,11,11,0.05) 30%, rgba(11,11,11,0.55) 78%, rgba(11,11,11,0.95) 100%);
-    z-index: 1;
-  }
-  .hero-grade {
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 70% 30%, rgba(199,61,23,0.15) 0%, rgba(199,61,23,0) 60%);
-    mix-blend-mode: overlay;
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  .hero-grid {
-    position: absolute; inset: 0;
-    z-index: 3;
-    padding: clamp(5.5rem, 10vh, 8rem) clamp(1.4rem, 3vw, 3rem) clamp(2rem, 5vh, 4rem);
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr auto auto;
-    grid-template-areas:
-      "tl tr"
-      "headline headline"
-      "meta meta"
-      "bl br";
-    gap: 1.6rem;
-    color: var(--bone);
-  }
-  .hero-tl { grid-area: tl; display: flex; flex-direction: column; gap: 0.4rem; opacity: 0.86; }
-  .hero-tl-1 { color: var(--persimmon-soft); }
-  .hero-tr { grid-area: tr; justify-self: end; opacity: 0.78; }
-  .hero-bl { grid-area: bl; align-self: end; opacity: 0.78; }
-  .hero-br { grid-area: br; justify-self: end; align-self: end; opacity: 0.78; }
-
-  .hero-headline {
-    grid-area: headline;
-    align-self: end;
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: clamp(3.4rem, 12vw, 13rem);
-    line-height: 0.88;
-    letter-spacing: -0.045em;
-  }
-  .hl-line { display: block; overflow: hidden; line-height: 0.95; padding-bottom: 0.06em; }
-  .hl-line span,
-  .hl-line { will-change: transform; }
-  .hl-line {
-    transform: translateY(110%);
-    transition: transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
-  }
-  .hl-line-2 { transition-delay: 0.12s; }
-  .hl-line-3 { transition-delay: 0.24s; }
-  body[data-loaded] .hl-line { transform: translateY(0); }
-  .hl-line em {
-    font-style: italic;
-    font-weight: 600;
-    color: var(--persimmon-soft);
-  }
-
-  .hero-meta {
-    grid-area: meta;
-    align-self: end;
-    border-top: 1px solid rgba(240,237,227,0.22);
-    padding-top: 1rem;
-    margin-top: 1.2rem;
-  }
-  .hero-meta-roster { letter-spacing: 0.18em; opacity: 0.72; }
-
-  @media (max-width: 720px) {
-    .hero-headline { font-size: clamp(2.8rem, 14vw, 5.4rem); }
-    .hero-tl-3 { display: none; }
-    .hero-meta-roster { font-size: 0.5rem; letter-spacing: 0.14em; }
-  }
-
-  /* ============================== */
-  /*  STATEMENT                      */
-  /* ============================== */
-  .statement {
-    background: var(--ink);
-    color: var(--bone);
-    padding: clamp(6rem, 14vh, 12rem) clamp(1.4rem, 3vw, 3rem);
-    display: grid;
-    grid-template-columns: minmax(0, 12rem) 1fr;
-    gap: clamp(2rem, 5vw, 5rem);
-    border-top: 1px solid rgba(240,237,227,0.12);
-  }
-  .statement-rail { padding-top: 0.5rem; opacity: 0.62; }
-  .statement-body { display: flex; flex-direction: column; gap: clamp(3rem, 6vh, 5rem); max-width: 70rem; }
-  .statement-text {
-    font-family: var(--font-display);
-    font-weight: 500;
-    font-size: clamp(1.7rem, 3.6vw, 3.8rem);
-    line-height: 1.18;
-    letter-spacing: -0.018em;
-    max-width: 32ch;
-  }
-  .statement-text .st-em { color: var(--persimmon-soft); font-weight: 600; }
-  .statement-text .bt-word { margin-right: 0.22em; }
-
-  .statement-figures {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: clamp(1.5rem, 3vw, 2.5rem) clamp(2.5rem, 5vw, 5rem);
-    border-top: 1px solid rgba(240,237,227,0.18);
-    padding-top: clamp(2rem, 4vh, 3rem);
-    max-width: 60rem;
-  }
-  .figure-row {
-    display: flex; align-items: baseline; gap: 1.4rem;
-    border-bottom: 1px solid rgba(240,237,227,0.12);
-    padding-bottom: 1.2rem;
-  }
-  .figure-num {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(2.4rem, 4.5vw, 4.4rem);
-    line-height: 0.9;
-    letter-spacing: -0.025em;
-    color: var(--bone);
-  }
-  .figure-label { opacity: 0.62; max-width: 22ch; line-height: 1.4; }
-
-  @media (max-width: 820px) {
-    .statement { grid-template-columns: 1fr; }
-    .statement-figures { grid-template-columns: 1fr; gap: 1rem; }
-  }
-  @media (max-width: 480px) {
-    .statement-text { font-size: clamp(1.3rem, 6.5vw, 2rem); max-width: none; }
-  }
-
-  /* ============================== */
-  /*  ROSTER FEATURES                */
-  /* ============================== */
-  .roster {
-    background: var(--bone);
-    color: var(--ink);
-    padding-top: clamp(4rem, 8vh, 7rem);
-  }
-  .roster-head {
-    padding: 0 clamp(1.4rem, 3vw, 3rem) clamp(2rem, 5vh, 4rem);
+    min-height: 100svh;
     display: flex;
-    flex-direction: column;
-    gap: clamp(1.2rem, 2.5vh, 2rem);
-    border-bottom: 1px solid rgba(11,11,11,0.16);
+    align-items: center;
+    overflow: hidden;
+    padding-block: clamp(4.5rem, 9vh, 8rem) clamp(1.5rem, 4vh, 3rem);
   }
-  .roster-head .mono { color: var(--persimmon); opacity: 0.85; }
-  .roster-title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(2.6rem, 7.5vw, 7.6rem);
-    line-height: 0.92;
-    letter-spacing: -0.035em;
-  }
-
-  .feature {
+  .hero-sonic {
     position: relative;
-    height: 100svh;
-    min-height: 640px;
-    overflow: hidden;
-    isolation: isolate;
-    background: var(--ink);
-    color: var(--bone);
-    border-top: 1px solid rgba(11,11,11,0.16);
-  }
-  .feature-frame { position: absolute; inset: 0; overflow: hidden; z-index: 0; }
-  .feature-media { position: absolute; inset: -8% -4%; will-change: transform; }
-  .feature-media img {
-    width: 100%; height: 100%;
-    object-fit: cover;
-    object-position: center 22%;
-    filter: contrast(1.08) saturate(0.8) brightness(0.84);
-    animation: kenburns 28s ease-in-out infinite alternate;
-  }
-  .feature-andrei .feature-media img { object-position: center 18%; animation-duration: 26s; }
-  .feature-georgiana .feature-media img { object-position: center 26%; }
-  .feature-emily .feature-media img { object-position: center 30%; animation-duration: 30s; }
-  .feature-veil {
-    position: absolute; inset: 0;
-    background:
-      linear-gradient(180deg, rgba(11,11,11,0.45) 0%, rgba(11,11,11,0.1) 28%, rgba(11,11,11,0.65) 78%, rgba(11,11,11,0.95) 100%);
-    z-index: 1;
-  }
-  .feature-grade {
-    position: absolute; inset: 0;
-    background: radial-gradient(ellipse at 30% 70%, rgba(199,61,23,0.12) 0%, rgba(199,61,23,0) 60%);
-    mix-blend-mode: overlay;
-    z-index: 2;
-    pointer-events: none;
-  }
-
-  .feature-grid {
-    position: absolute; inset: 0;
-    z-index: 3;
-    padding: clamp(4.5rem, 8vh, 7rem) clamp(1.4rem, 3vw, 3rem) clamp(2rem, 5vh, 4rem);
+    width: 100%;
+    max-width: var(--max-w);
+    margin-inline: auto;
     display: grid;
-    grid-template-columns: 1fr 1fr;
-    grid-template-rows: auto 1fr auto;
     grid-template-areas:
-      "num role"
-      "name name"
-      "text text";
-    gap: 1.6rem;
+      "stage"
+      "sub"
+      "br";
+    grid-template-columns: 1fr;
+    grid-template-rows: 1fr auto auto;
+    gap: clamp(0.9rem, 2.2vw, 2.4rem) 1rem;
+    align-items: center;
+    min-height: clamp(420px, 72svh, 900px);
   }
-  .feature-num { grid-area: num; opacity: 0.78; }
-  .feature-role { grid-area: role; justify-self: end; opacity: 0.78; }
-  .feature-role .mono { color: var(--persimmon-soft); }
 
-  .feature-name {
-    grid-area: name;
-    align-self: end;
-    margin: 0;
-    font-family: var(--font-display);
-    font-weight: 800;
-    font-size: clamp(3.4rem, 12vw, 13rem);
-    line-height: 0.86;
-    letter-spacing: -0.045em;
-    overflow: hidden;
-    color: var(--bone);
+  /* Corner labels */
+  .hero-corner {
+    display: inline-flex;
+    align-items: baseline;
+    gap: 0.6em;
+    font-size: clamp(0.62rem, 0.78vw, 0.72rem);
+    letter-spacing: 0.18em;
+    opacity: 0.7;
+    line-height: 1;
+    flex-wrap: wrap;
   }
-  .feature-name span {
-    display: block;
+  .hero-corner-num { color: var(--gold); }
+  .hero-corner-dot { color: var(--gold); opacity: 0.8; }
+  .hero-corner-br { grid-area: br; justify-self: center; text-align: center; }
+  .hero-corner-arrow { display: inline-block; animation: bob 1.8s ease-in-out infinite; }
+
+  /* Echo stack — main word + 4 fading echoes */
+  .hero-echo-wrap {
+    grid-area: stage;
+    position: relative;
+    width: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    isolation: isolate;
+    padding-block: clamp(1.5rem, 4vw, 4rem);
+  }
+  .hero-main,
+  .hero-echo {
+    font-family: 'Unbounded', 'Inter', sans-serif;
+    font-weight: 900;
+    line-height: 0.85;
+    letter-spacing: -0.035em;
+    text-transform: uppercase;
+    margin: 0;
+    width: 100%;
+    text-align: center;
+    white-space: nowrap;
+    font-size: 18rem;
+    font-variation-settings: 'wght' 900;
+  }
+  .hero-echo-wrap {
+    /* enable JS-driven fit-to-width */
+    container-type: inline-size;
+  }
+  .hero-main {
+    position: relative;
+    z-index: 5;
+    color: var(--ink);
+    display: flex;
+    justify-content: center;
+    gap: 0;
+  }
+  .hm-mask {
+    display: inline-block;
+    overflow: hidden;
+    line-height: 0.95;
+    padding-bottom: 0.05em;
+  }
+  .hm-char {
+    display: inline-block;
     transform: translateY(110%);
+    will-change: transform, font-variation-settings;
+    font-variation-settings: 'wght' 250;
+    transition: none;
+  }
+  .hero-main.is-loaded .hm-char,
+  [data-hero-mark].is-loaded .hm-char { transform: translateY(0); }
+
+  /* Echoes — concentric ripples behind the main word */
+  .hero-echo {
+    position: absolute;
+    left: 0; right: 0;
+    color: transparent;
+    -webkit-text-stroke: 1px color-mix(in srgb, var(--fg) 60%, transparent);
+    pointer-events: none;
+    will-change: transform, opacity;
+  }
+  .hero-echo-1 { z-index: 4; opacity: 0; transform: scale(1.05); }
+  .hero-echo-2 { z-index: 3; opacity: 0; transform: scale(1.12); }
+  .hero-echo-3 { z-index: 2; opacity: 0; transform: scale(1.20); }
+  .hero-echo-4 { z-index: 1; opacity: 0; transform: scale(1.30); }
+  body.dark .hero-echo {
+    -webkit-text-stroke-color: color-mix(in srgb, var(--cream) 60%, transparent);
+  }
+
+  /* Sub-line: rule — italic music — mono est. 2006 — rule */
+  .hero-sub {
+    grid-area: sub;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    gap: clamp(1rem, 2vw, 2rem);
+    width: 100%;
+  }
+  .hero-sub-rule {
+    height: 1px;
+    background: currentColor;
+    opacity: 0.35;
+    transform: scaleX(0);
+    transform-origin: 50% 50%;
     transition: transform 1.4s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .feature[data-in] .feature-name span { transform: translateY(0); }
-
-  .feature-text {
-    grid-area: text;
-    border-top: 1px solid rgba(240,237,227,0.22);
-    padding-top: 1rem;
-    margin-top: 1rem;
-    display: grid;
-    grid-template-columns: minmax(0, 22rem) minmax(0, 56ch);
-    gap: clamp(1.5rem, 4vw, 4rem);
+  .hero-sub-rule:first-child { transform-origin: 100% 50%; }
+  .hero-sub-rule:last-child { transform-origin: 0% 50%; }
+  .hero-sonic[data-loaded] .hero-sub-rule { transform: scaleX(1); }
+  .hero-sub-text {
+    display: inline-flex; align-items: baseline; gap: 0.7em;
+    font-family: 'Fraunces', serif;
+    font-size: clamp(1rem, 1.4vw, 1.4rem);
+    line-height: 1;
   }
-  .feature-tag { color: var(--persimmon-soft); opacity: 0.95; align-self: start; }
-  .feature-bio {
-    font-family: var(--font-body);
-    font-size: clamp(0.85rem, 1vw, 1.02rem);
+  .hero-sub-italic {
+    font-style: italic;
+    color: var(--burgundy);
+    font-size: 1.1em;
+  }
+  .hero-sub-mono {
+    font-size: 0.55em;
+    letter-spacing: 0.22em;
+    opacity: 0.7;
+  }
+  body.dark .hero-sub-italic { color: var(--gold); }
+
+  /* Mobile */
+  @media (max-width: 720px) {
+    .hero-sonic { gap: 0.8rem; min-height: 70svh; }
+    .hero-sub { gap: 0.7rem; }
+    .hero-sub-text { font-size: 0.82rem; gap: 0.5em; }
+    .hero-echo-3, .hero-echo-4 { display: none; }
+  }
+  @media (max-width: 380px) {
+    .hero-sub-text { font-size: 0.74rem; }
+    .hero-corner-br { font-size: 0.55rem; }
+  }
+  .hero-arrow {
+    display: inline-block;
+    animation: bob 1.8s ease-in-out infinite;
+  }
+  @keyframes bob {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(8px); }
+  }
+
+  /* SECTION SCAFFOLD */
+  .section-head {
+    display: flex; flex-direction: column; gap: 1rem;
+    margin-bottom: clamp(3rem, 6vw, 6rem);
+  }
+  .section-title {
+    font-size: clamp(2.2rem, 8.5vw, 9rem);
+    line-height: 0.86;
+  }
+  .section-title em { font-style: italic; color: var(--burgundy); }
+  body.dark .section-title em { color: var(--gold); }
+  .section-sub { opacity: 0.6; max-width: 50ch; margin-top: 1rem; }
+  .hero-roster-mini {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    align-items: center; opacity: 0.65;
+    font-size: 0.7rem;
+  }
+  .hero-roster-mini .hero-roster-dot { color: var(--gold); }
+
+  /* ABOUT */
+  .about {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .about-grid {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: clamp(2rem, 6vw, 6rem);
+  }
+  .about-side { position: sticky; top: 6rem; align-self: start; display: flex; flex-direction: column; gap: 1rem; }
+  .about-side-title {
+    font-size: clamp(2.5rem, 6vw, 5.5rem);
+    line-height: 0.86;
+  }
+  .about-body {
+    display: flex; flex-direction: column; gap: 1.6rem;
+    font-size: clamp(1.05rem, 1.2vw, 1.25rem);
     line-height: 1.55;
-    opacity: 0.92;
     max-width: 56ch;
   }
+  .about-body em { font-style: italic; }
+  .about-body strong { font-weight: 500; }
+  .about-lead { font-size: clamp(1.4rem, 2vw, 2rem); line-height: 1.35; font-family: var(--font-display); font-weight: 400; }
+  .about-lead em { font-style: italic; color: var(--burgundy); }
+  .gold { color: var(--gold); }
 
   @media (max-width: 820px) {
-    .feature-text { grid-template-columns: 1fr; gap: 0.8rem; }
-    .feature-name { font-size: clamp(2.4rem, 14vw, 5rem); }
+    .about-grid { grid-template-columns: 1fr; }
+    .about-side { position: static; }
   }
 
-  /* ============================== */
-  /*  CATALOG                        */
-  /* ============================== */
-  .catalog {
-    background: var(--bone);
-    color: var(--ink);
-    padding: clamp(5rem, 10vh, 9rem) clamp(1.4rem, 3vw, 3rem);
-    border-top: 1px solid rgba(11,11,11,0.16);
+  /* DISCOGRAPHY */
+  .discography {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
   }
-  .catalog-head {
+  .track-list { display: flex; flex-direction: column; }
+  .track {
     display: grid;
-    grid-template-columns: minmax(0, 12rem) 1fr;
-    align-items: end;
-    gap: clamp(2rem, 4vw, 4rem);
-    border-bottom: 1px solid rgba(11,11,11,0.18);
-    padding-bottom: clamp(2rem, 4vh, 3rem);
-    margin-bottom: clamp(2rem, 4vh, 3rem);
+    grid-template-columns: 5rem 1fr auto auto;
+    align-items: baseline;
+    gap: 1.2rem;
+    padding-block: 1.4rem;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+    transition: padding 0.4s ease, color 0.4s ease;
   }
-  .catalog-rail { display: flex; flex-direction: column; gap: 0.4rem; opacity: 0.7; }
-  .catalog-rail .mono:first-child { color: var(--persimmon); opacity: 0.95; }
-  .catalog-title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(2.4rem, 6.5vw, 7rem);
-    line-height: 0.92;
-    letter-spacing: -0.035em;
-    margin: 0;
-    text-align: right;
-  }
-  .catalog-title-2 { color: var(--persimmon); }
-
-  .ledger { display: flex; flex-direction: column; }
-  .ledger-row {
-    display: grid;
-    grid-template-columns: 3rem 4rem 1fr auto auto;
-    align-items: center;
-    gap: 1.4rem 1.6rem;
-    padding-block: 1.5rem;
-    border-bottom: 1px solid rgba(11,11,11,0.12);
-    transition: padding 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), background 0.5s ease, color 0.5s ease;
-  }
-  .ledger-row:hover {
-    padding-inline: 1rem;
-    background: rgba(199,61,23,0.06);
-    color: var(--persimmon);
-  }
-  .ledger-idx { color: var(--persimmon); opacity: 0.85; }
-  .ledger-year { opacity: 0.55; }
-  .ledger-title {
-    font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(1.3rem, 3vw, 2.6rem);
+  .track:last-child { border-bottom: 1px solid color-mix(in srgb, var(--fg) 12%, transparent); }
+  .track:hover { padding-inline-start: 1.4rem; color: var(--burgundy); }
+  .track-year { opacity: 0.5; }
+  .track-title {
+    font-size: clamp(1.4rem, 3.2vw, 3rem);
     line-height: 1;
-    letter-spacing: -0.025em;
+    display: inline-flex; align-items: baseline; gap: 0.4em;
+    min-width: 0;
   }
-  .ledger-row.is-key .ledger-title { color: var(--persimmon); }
-  .ledger-row.is-key .ledger-note { color: var(--persimmon); font-weight: 500; }
-  .ledger-feat { opacity: 0.6; white-space: nowrap; }
-  .ledger-note { opacity: 0.6; text-align: right; white-space: nowrap; }
+  .track-star { color: var(--gold); font-size: 0.6em; }
+  .track-feat { opacity: 0.7; white-space: nowrap; }
+  .track-note { opacity: 0.6; text-align: right; white-space: nowrap; }
+  .track.is-highlight .track-title { font-style: italic; }
+  .track.is-highlight .track-note { color: var(--gold); opacity: 1; }
 
   @media (max-width: 820px) {
-    .catalog-head { grid-template-columns: 1fr; align-items: start; }
-    .catalog-title { text-align: left; }
-    .ledger-row { grid-template-columns: 2.4rem 1fr; gap: 0.4rem 0.9rem; padding-block: 1.1rem; }
-    .ledger-year { grid-column: 2; font-size: 0.55rem; }
-    .ledger-feat, .ledger-note { grid-column: 2; text-align: left; white-space: normal; font-size: 0.55rem; }
+    .track { grid-template-columns: auto 1fr; gap: 0.4rem 0.9rem; padding-block: 1rem; }
+    .track-feat, .track-note { grid-column: 2; text-align: left; white-space: normal; font-size: 0.62rem; }
   }
   @media (max-width: 480px) {
-    .ledger-title { font-size: clamp(1rem, 6vw, 1.5rem); }
+    .track-title { font-size: clamp(1.05rem, 6vw, 1.6rem); }
+    .track-year { font-size: 0.62rem; }
   }
 
-  /* ============================== */
-  /*  CONTACT                        */
-  /* ============================== */
-  .contact {
-    background: var(--ink);
-    color: var(--bone);
-    padding: clamp(5rem, 12vh, 11rem) clamp(1.4rem, 3vw, 3rem);
-    border-top: 1px solid rgba(240,237,227,0.14);
+  /* MATTMAN */
+  .mattman {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
   }
-  .contact-head { margin-bottom: clamp(2rem, 4vh, 3rem); opacity: 0.62; }
-  .contact-headline {
+  .mattman-head { margin-bottom: 4rem; }
+  .mattman-stage {
+    display: flex; justify-content: center;
+    padding-block: 3rem;
+  }
+  .mattman-logo {
+    width: clamp(240px, 50vw, 600px);
+    height: auto;
+    will-change: transform;
+  }
+  .mattman-statement {
+    font-size: clamp(1.9rem, 6vw, 7rem);
+    text-align: center;
+    margin-block: clamp(2rem, 6vw, 4rem) clamp(2.5rem, 8vw, 6rem);
+    line-height: 1;
+  }
+  .mattman-statement em { font-style: italic; color: var(--gold); }
+  .mattman-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 6vw, 6rem);
+    max-width: 1200px;
+    margin-inline: auto;
+  }
+  .mattman-col {
+    display: flex; flex-direction: column; gap: 1.4rem;
+    font-size: 1.05rem; line-height: 1.6;
+  }
+  .mattman-col em { font-style: italic; }
+  .mattman-list { display: flex; flex-direction: column; gap: 1rem; }
+  .mattman-list li {
+    display: flex; gap: 1.5rem;
+    padding-block: 1rem;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
     font-family: var(--font-display);
-    font-weight: 700;
-    font-size: clamp(3rem, 9vw, 9.5rem);
-    line-height: 0.92;
-    letter-spacing: -0.04em;
-    margin-bottom: clamp(2.5rem, 6vh, 5rem);
+    font-size: clamp(1.4rem, 2.2vw, 2rem);
   }
-  .contact-headline em {
-    font-style: italic;
-    font-weight: 600;
-    color: var(--persimmon-soft);
+  .mattman-list li .mono { color: var(--gold); align-self: center; min-width: 2.5rem; }
+  @media (max-width: 820px) {
+    .mattman-grid { grid-template-columns: 1fr; }
   }
 
-  .contact-block {
+  /* ROSTER */
+  .roster {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  /* 2x2 always — never stacks regardless of screen */
+  .roster-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 2vw, 2.5rem) clamp(1rem, 2vw, 2.5rem);
+  }
+  .roster-card {
     display: flex;
     flex-direction: column;
-    border-top: 1px solid rgba(240,237,227,0.18);
+    gap: clamp(0.75rem, 1.4vw, 1.4rem);
+    padding: clamp(0.75rem, 1.6vw, 1.6rem);
+    border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+    background: color-mix(in srgb, var(--bg) 96%, var(--fg) 4%);
+    position: relative;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease;
   }
-  .contact-line {
+  .roster-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--fg) 40%, transparent);
+  }
+  .roster-card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.7rem;
+  }
+  .roster-num { color: var(--gold); letter-spacing: 0.18em; }
+  .roster-tag {
+    color: var(--gold);
+    border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+    padding: 0.25em 0.7em;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
+  }
+  .roster-photo {
+    position: relative;
+    aspect-ratio: 4/5;
+    overflow: hidden;
+    background: var(--ink-soft);
+  }
+  .roster-photo img {
+    width: 100%; height: 100%;
+    object-fit: cover;
+    transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.8s ease, opacity 0.6s ease;
+    filter: grayscale(0.4) contrast(1.05);
+  }
+  .roster-photo .roster-photo-alt {
+    position: absolute; inset: 0;
+    opacity: 0;
+  }
+  .roster-card:hover .roster-photo img { transform: scale(1.04); filter: grayscale(0) contrast(1.1); }
+  .roster-card:hover .roster-photo-alt { opacity: 1; }
+  .roster-info {
+    display: flex; flex-direction: column; gap: clamp(0.4rem, 0.8vw, 0.8rem);
+  }
+  .roster-name {
+    font-size: clamp(1.4rem, 3vw, 3rem);
+    line-height: 0.95;
+  }
+  .roster-tagline {
+    font-size: clamp(0.6rem, 0.75vw, 0.78rem);
+    letter-spacing: 0.15em;
+  }
+  .roster-bio {
+    font-size: clamp(0.78rem, 0.95vw, 1rem);
+    line-height: 1.55;
+    opacity: 0.82;
+  }
+  @media (max-width: 720px) {
+    .roster-grid { gap: 0.7rem; }
+    .roster-card { padding: 0.7rem; gap: 0.65rem; }
+  }
+  @media (max-width: 480px) {
+    .roster-grid { gap: 0.5rem; }
+    .roster-card { padding: 0.5rem; gap: 0.45rem; }
+    .roster-name { font-size: clamp(0.95rem, 5vw, 1.4rem); line-height: 1; }
+    .roster-bio { font-size: 0.66rem; line-height: 1.4; }
+    .roster-tagline { font-size: 0.5rem; letter-spacing: 0.1em; }
+    .roster-tag { padding: 0.18em 0.45em; font-size: 0.45rem; letter-spacing: 0.1em; }
+    .roster-num { font-size: 0.5rem; letter-spacing: 0.1em; }
+    .roster-card-head { font-size: 0.55rem; }
+  }
+
+  /* BOOKING */
+  .booking {
+    padding-block: var(--pad-y);
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+  }
+  .booking-title {
+    font-size: clamp(2.6rem, 11vw, 12rem);
+    line-height: 0.85;
+    margin-block: 1.5rem 3rem;
+  }
+  .booking-title em { font-style: italic; color: var(--burgundy); }
+  .booking-grid {
     display: grid;
-    grid-template-columns: 14rem 1fr auto;
-    align-items: baseline;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(2rem, 5vw, 5rem);
+    margin-bottom: 4rem;
+  }
+  .booking-col { display: flex; flex-direction: column; gap: 0.6rem; }
+  .booking-mail {
+    font-size: clamp(0.95rem, 2.5vw, 2.4rem);
+    line-height: 1.15;
+    border-bottom: 1px solid currentColor;
+    padding-bottom: 0.2em;
+    align-self: flex-start;
+    transition: color 0.4s, padding 0.4s;
+    word-break: break-all;
+    max-width: 100%;
+  }
+  .booking-mail:hover { color: var(--burgundy); padding-left: 0.4em; }
+  .booking-cta { margin-top: 2rem; }
+  @media (max-width: 720px) {
+    .booking-grid { grid-template-columns: 1fr; }
+  }
+
+  /* FOOTER */
+  .footer {
+    padding: 3rem var(--pad-x) 0;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
+    overflow: hidden;
+  }
+  .footer-inner {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 2rem;
-    padding-block: clamp(1.4rem, 3vh, 2.4rem);
-    border-bottom: 1px solid rgba(240,237,227,0.18);
-    transition: padding 0.5s cubic-bezier(0.2, 0.8, 0.2, 1), color 0.5s ease;
+    align-items: end;
+    padding-bottom: 3rem;
   }
-  .contact-line:hover { padding-inline: 1rem; color: var(--persimmon-soft); }
-  .contact-line-tag { opacity: 0.62; }
-  .contact-line-mail {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: clamp(1.4rem, 3.5vw, 3.2rem);
-    line-height: 1.05;
-    letter-spacing: -0.02em;
-    transition: color 0.5s ease;
+  .footer-brand { display: flex; flex-direction: column; gap: 1rem; }
+  .footer-brand img { height: 36px; width: auto; }
+  .footer-social { display: flex; gap: 1.4rem; justify-content: center; flex-wrap: wrap; }
+  .footer-social a { transition: opacity 0.3s; }
+  .footer-social a:hover { opacity: 0.5; }
+  .footer-credit { text-align: right; opacity: 0.6; }
+  .footer-credit a { border-bottom: 1px solid currentColor; }
+
+  .footer-mega {
+    font-size: clamp(8rem, 30vw, 28rem);
+    line-height: 0.85;
+    text-align: center;
+    margin-bottom: -0.18em;
+    letter-spacing: -0.06em;
+    opacity: 0.92;
   }
-  .contact-line:hover .contact-line-mail { color: var(--persimmon-soft); }
-  .contact-line-arrow { opacity: 0.62; }
 
   @media (max-width: 820px) {
-    .contact-line { grid-template-columns: 1fr auto; gap: 0.4rem 1rem; }
-    .contact-line-tag { grid-column: 1 / -1; }
-  }
-
-  /* ============================== */
-  /*  COLOPHON                       */
-  /* ============================== */
-  .colophon {
-    background: var(--ink);
-    color: var(--bone);
-    padding: 2rem clamp(1.4rem, 3vw, 3rem);
-    display: flex;
-    flex-wrap: wrap;
-    justify-content: space-between;
-    gap: 1rem 2rem;
-    opacity: 0.62;
-    border-top: 1px solid rgba(240,237,227,0.14);
-  }
-  .colophon a {
-    border-bottom: 1px solid currentColor;
-    transition: opacity 0.3s ease;
-  }
-  .colophon a:hover { opacity: 0.7; }
-
-  @media (max-width: 720px) {
-    .colophon { flex-direction: column; align-items: flex-start; }
+    .footer { padding-inline: clamp(1.4rem, 6vw, 3rem); }
+    .footer-inner { grid-template-columns: 1fr; gap: 2rem; padding-left: 0.6rem; }
+    .footer-brand,
+    .footer-social,
+    .footer-credit { text-align: left; }
+    .footer-social { justify-content: flex-start; }
   }
 </style>
-
-<script>
-  // Hero headline reveal — fire as soon as DOM is ready
-  if (document.readyState !== 'loading') {
-    requestAnimationFrame(() => document.body.setAttribute('data-loaded', ''));
-  } else {
-    document.addEventListener('DOMContentLoaded', () => {
-      requestAnimationFrame(() => document.body.setAttribute('data-loaded', ''));
-    });
-  }
-</script>
