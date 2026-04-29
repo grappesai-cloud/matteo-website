@@ -18,10 +18,19 @@ const tracks = [
 
 const roster = [
   {
+    slug: 'matteo',
+    name: 'Matteo',
+    tag: 'Founder',
+    tagline: 'Two decades. Hit after hit.',
+    bio: 'Founder of Mattman Music. Almost two decades of hits — debut "Departare" (2006, with Loredana). Most viral single "Panama" — 225M+ views, going global on TikTok across Asia. Latest venture: a self-coined fusion genre, Gypsy Reggae, with King Kong, Anthony B, Loyal Flames and Johny Romano.',
+    photo: '/images/matteo/portrait-md.jpg',
+    photoAlt: '/images/matteo/portrait-md.jpg',
+  },
+  {
     slug: 'andrei',
     name: 'Andrei Bănuță',
     tagline: 'An artist of contrasts.',
-    bio: 'Andrei Bănuță has solidified his status as one of the most in-demand artists one song at a time. His songwriting alternates between deep, meaningful lyrics and vibrant, playful songs. Best known for "Suflet de Bagabond" (90M+ views) and "Old Friend" with Vescan — over 10 weeks leading the Media Forest Chart.',
+    bio: 'One of the most in-demand voices today. Songwriting that alternates between deep, meaningful lyrics and vibrant, playful songs. Best known for "Suflet de Bagabond" (90M+ views) and "Old Friend" with Vescan — over 10 weeks atop the Media Forest Chart.',
     photo: '/images/roster/andrei.jpg',
     photoAlt: '/images/roster/andrei-2.jpg',
   },
@@ -29,7 +38,7 @@ const roster = [
     slug: 'georgiana',
     name: 'Georgiana Neagu',
     tagline: 'The new wave of balkan pop.',
-    bio: 'Georgiana Neagu represents the new wave of Romanian balkan pop music. Her contemporary sound and relatable lyrics have quickly connected with a young audience. "M-am Îndrăgostit de Tine (Vreau să facem o fetiță)" — viral on TikTok, over 2.2M views on YouTube.',
+    bio: 'A new wave of Romanian balkan pop. Contemporary sound and relatable lyrics that connect with a young audience nationwide. "M-am Îndrăgostit de Tine (Vreau să facem o fetiță)" — viral on TikTok, 2.2M+ views on YouTube.',
     photo: '/images/roster/georgiana.jpg',
     photoAlt: '/images/roster/georgiana-2.jpg',
   },
@@ -37,7 +46,7 @@ const roster = [
     slug: 'emily',
     name: 'Emily Istrate',
     tagline: 'Beautiful, talented, charismatic.',
-    bio: 'Singer, songwriter, actress from the Republic of Moldova. International recognition with "If You Want To" and "Panic" — UK Pop Club Charts #4 and #5. 2023 saw her climb to the top of all major Romanian music charts with "Bye Bye Boy" and "În Mintea Mea".',
+    bio: 'Singer, songwriter, actress from the Republic of Moldova. International recognition with "If You Want To" and "Panic" — UK Pop Club Charts #4 and #5. 2023 saw her climb the top of major Romanian charts with "Bye Bye Boy" and "În Mintea Mea".',
     photo: '/images/roster/emily.jpg',
     photoAlt: '/images/roster/emily-2.jpg',
   },
@@ -47,13 +56,12 @@ const roster = [
   <!-- NAV -->
   <nav class="nav">
     <a href="#top" class="nav-logo hover-target" data-magnetic="0.4">
-      <img src="/images/matteo/logo-black.png" alt="Matteo" />
+      <img src="/images/mattman/logo-black.png" alt="Mattman Music" class="nav-logo-img" />
     </a>
     <ul class="nav-links mono">
-      <li><a href="#about">About</a></li>
-      <li><a href="#music">Music</a></li>
-      <li><a href="#mattman">Label</a></li>
+      <li><a href="#manifest">Manifest</a></li>
       <li><a href="#roster">Roster</a></li>
+      <li><a href="#catalog">Catalog</a></li>
       <li><a href="#booking">Booking</a></li>
     </ul>
     <div class="nav-meta mono">EST. 2006</div>
@@ -69,32 +77,43 @@ const roster = [
   <!-- HERO -->
   <section class="hero" id="top">
     <div class="hero-meta mono">
-      <span>Romania / Worldwide</span>
-      <span>Two decades. Hit after hit.</span>
+      <span>Independent label · Bucharest / Worldwide</span>
+      <span>Four voices. One sound.</span>
     </div>
 
     <div class="hero-grid">
       <div class="hero-text">
         <div class="hero-stage" data-hero-logo>
-          <img class="hero-logo" src="/images/matteo/logo-black.png" alt="Matteo" />
+          <img class="hero-logo" src="/images/mattman/logo-black.png" alt="Mattman Music" />
         </div>
 
         <h1 class="hero-headline display">
-          <span class="reveal-line"><span>A career of</span></span>
-          <span class="reveal-line"><span><em>almost two</em></span></span>
-          <span class="reveal-line"><span>decades.</span></span>
+          <span class="reveal-line"><span>Where</span></span>
+          <span class="reveal-line"><span><em>authenticity</em></span></span>
+          <span class="reveal-line"><span>is the only rule.</span></span>
         </h1>
+
+        <div class="hero-roster-mini mono">
+          <span>—</span>
+          <span>Matteo</span>
+          <span class="hero-roster-dot">·</span>
+          <span>Andrei Bănuță</span>
+          <span class="hero-roster-dot">·</span>
+          <span>Georgiana Neagu</span>
+          <span class="hero-roster-dot">·</span>
+          <span>Emily Istrate</span>
+        </div>
       </div>
 
       <figure class="hero-portrait">
         <picture>
           <source media="(min-width: 1100px)" srcset="/images/matteo/portrait.jpg" />
-          <img src="/images/matteo/portrait-md.jpg" alt="Matteo" loading="eager" fetchpriority="high" />
+          <img src="/images/matteo/portrait-md.jpg" alt="Matteo — founder of Mattman Music" loading="eager" fetchpriority="high" />
         </picture>
         <figcaption class="mono">
           <span>—</span>
           <span>Matteo</span>
-          <span>Mattman Music · Founder</span>
+          <span>Founder</span>
         </figcaption>
       </figure>
     </div>
@@ -102,7 +121,7 @@ const roster = [
     <div class="hero-bottom mono">
       <span>Scroll</span>
       <span class="hero-arrow">↓</span>
-      <span>Est. 2006 · Bucharest</span>
+      <span>Est. 2006</span>
     </div>
   </section>
 
@@ -140,8 +159,8 @@ const roster = [
         <div class="stat-label mono">Views on Panama<br>across platforms</div>
       </div>
       <div class="stat" data-reveal>
-        <div class="stat-num display"><span data-counter="12" data-suffix="" data-decimals="0">0</span></div>
-        <div class="stat-label mono">Charting<br>singles &amp; EPs</div>
+        <div class="stat-num display"><span data-counter="4" data-suffix="" data-decimals="0">0</span></div>
+        <div class="stat-label mono">Artists<br>on the roster</div>
       </div>
       <div class="stat" data-reveal>
         <div class="stat-num display"><span data-counter="9" data-suffix="" data-decimals="0">0</span><span class="stat-plus">+</span></div>
@@ -150,62 +169,11 @@ const roster = [
     </div>
   </section>
 
-  <!-- ABOUT -->
-  <section class="about" id="about">
-    <div class="container about-grid">
-      <aside class="about-side">
-        <span class="mono">[ 01 / Artist ]</span>
-        <h2 class="about-side-title display" data-reveal>Hit<br>after<br>hit.</h2>
-      </aside>
-
-      <div class="about-body" data-reveal>
-        <p class="about-lead">
-          With a career spanning <em>almost two decades</em>, Matteo has been putting out hit after hit for just as long. <strong>"Departare"</strong>, a highly successful feature with Romania's pop diva Loredana, was his debut back in 2006 — each single since has led national radio charts.
-        </p>
-        <p>
-          His first EP — <em>Lovaman</em> — arrived in 2010, followed by a series of thriving hits: <strong>Push It</strong> (feat. Stella), <strong>Amândoi</strong>, <strong>Panama</strong>, <strong>Andale</strong>, <strong>Gândesc cu voce tare</strong>, <strong>Bună, Marie!</strong> (feat. Uddi), <strong>Allegro Ventigo</strong> (feat. Dan Bălan), <strong>Copacul</strong> (feat. Theo Rose), <strong>Lato Lato Song</strong> (feat. Sean Al). All instantly fan favorites — at home and across continents.
-        </p>
-        <p>
-          His most viral single — <strong>"Panama"</strong> — has been making waves for more than nine years, amassing <em>over 225M views</em> across platforms. Fans in China, Vietnam, India, Cambodia, Indonesia, Thailand, Japan and Laos created TikTok trends, dance routines, flash mobs — the song was even featured on toys.
-        </p>
-        <p>
-          His latest venture introduces a new genre he penned himself: a fusion unlike any other — <span class="gold">Reggae &amp; Dancehall combined with traditional Gypsy music</span>. The EP <em>Gypsy Reggae</em> features King Kong, Anthony B, Loyal Flames and Johny Romano.
-        </p>
-      </div>
-    </div>
-  </section>
-
-  <!-- DISCOGRAPHY -->
-  <section class="discography" id="music">
-    <div class="container">
-      <div class="section-head">
-        <span class="mono">[ 02 / Discography ]</span>
-        <h2 class="section-title display" data-reveal>
-          Two decades<br>of <em>noise</em>.
-        </h2>
-      </div>
-
-      <ol class="track-list">
-        {tracks.map((t) => (
-          <li class={`track ${t.highlight ? 'is-highlight' : ''}`} data-scramble-trigger>
-            <span class="track-year mono">{t.year}</span>
-            <span class="track-title display">
-              <span data-scramble>{t.title}</span>
-              {t.highlight && <span class="track-star">★</span>}
-            </span>
-            <span class="track-feat mono">{t.feat || ''}</span>
-            <span class="track-note mono">{t.note || ''}</span>
-          </li>
-        ))}
-      </ol>
-    </div>
-  </section>
-
-  <!-- MATTMAN -->
-  <section class="mattman" id="mattman" data-bg="dark">
+  <!-- MANIFEST (Mattman) -->
+  <section class="mattman" id="manifest" data-bg="dark">
     <div class="container">
       <div class="mattman-head">
-        <span class="mono">[ 03 / Label ]</span>
+        <span class="mono">[ 01 / Manifest ]</span>
       </div>
 
       <div class="mattman-stage">
@@ -241,20 +209,23 @@ const roster = [
     </div>
   </section>
 
-  <!-- ROSTER -->
+  <!-- ROSTER (4 artists, 2x2) -->
   <section class="roster" id="roster">
     <div class="container">
       <div class="section-head">
-        <span class="mono gold">[ 04 / Roster ]</span>
+        <span class="mono gold">[ 02 / Roster ]</span>
         <h2 class="section-title display" data-reveal>
-          Three voices.<br><em>One label.</em>
+          Four voices.<br><em>One sound.</em>
         </h2>
       </div>
 
       <div class="roster-grid">
         {roster.map((r, i) => (
           <article class={`roster-card hover-target r-${r.slug}`}>
-            <div class="roster-num mono">{String(i + 1).padStart(2, '0')}</div>
+            <header class="roster-card-head">
+              <span class="roster-num mono">{String(i + 1).padStart(2, '0')}</span>
+              {r.tag && <span class="roster-tag mono">{r.tag}</span>}
+            </header>
             <div class="roster-photo">
               <img src={r.photo} alt={r.name} loading="lazy" />
               <img class="roster-photo-alt" src={r.photoAlt} alt="" loading="lazy" />
@@ -270,10 +241,37 @@ const roster = [
     </div>
   </section>
 
-  <!-- BOOKING -->
-  <section class="booking" id="booking" data-bg="light-end">
+  <!-- CATALOG (label flagship hits) -->
+  <section class="discography" id="catalog" data-bg="light-end">
     <div class="container">
-      <span class="mono">[ 05 / Booking ]</span>
+      <div class="section-head">
+        <span class="mono">[ 03 / Catalog ]</span>
+        <h2 class="section-title display" data-reveal>
+          Two decades<br>of <em>noise</em>.
+        </h2>
+        <p class="section-sub mono">Featured releases from the label's catalog.</p>
+      </div>
+
+      <ol class="track-list">
+        {tracks.map((t) => (
+          <li class={`track ${t.highlight ? 'is-highlight' : ''}`} data-scramble-trigger>
+            <span class="track-year mono">{t.year}</span>
+            <span class="track-title display">
+              <span data-scramble>{t.title}</span>
+              {t.highlight && <span class="track-star">★</span>}
+            </span>
+            <span class="track-feat mono">{t.feat || ''}</span>
+            <span class="track-note mono">{t.note || ''}</span>
+          </li>
+        ))}
+      </ol>
+    </div>
+  </section>
+
+  <!-- BOOKING -->
+  <section class="booking" id="booking">
+    <div class="container">
+      <span class="mono">[ 04 / Booking ]</span>
       <h2 class="booking-title display" data-reveal-lines>
         <span class="reveal-line"><span>Let's make</span></span>
         <span class="reveal-line"><span>some <em>noise.</em></span></span>
@@ -320,7 +318,7 @@ const roster = [
       </div>
     </div>
 
-    <div class="footer-mega display" aria-hidden="true">MATTEO</div>
+    <div class="footer-mega display" aria-hidden="true">MATTMAN</div>
   </footer>
 </Layout>
 
@@ -334,7 +332,7 @@ const roster = [
     pointer-events: none;
   }
   .nav > * { pointer-events: auto; }
-  .nav-logo img { height: 26px; width: auto; transition: filter 0.6s ease; }
+  .nav-logo img { height: 32px; width: auto; transition: filter 0.6s ease; }
   body.dark .nav-logo img { filter: invert(1); }
   .nav-links {
     display: flex; gap: 1.6rem;
@@ -461,6 +459,13 @@ const roster = [
   }
   .section-title em { font-style: italic; color: var(--burgundy); }
   body.dark .section-title em { color: var(--gold); }
+  .section-sub { opacity: 0.6; max-width: 50ch; margin-top: 1rem; }
+  .hero-roster-mini {
+    display: flex; gap: 0.5rem; flex-wrap: wrap;
+    align-items: center; opacity: 0.65;
+    font-size: 0.7rem;
+  }
+  .hero-roster-mini .hero-roster-dot { color: var(--gold); }
 
   /* ABOUT */
   .about {
@@ -579,24 +584,38 @@ const roster = [
     padding-block: var(--pad-y);
     border-top: 1px solid color-mix(in srgb, var(--fg) 12%, transparent);
   }
+  /* 2x2 always — never stacks regardless of screen */
   .roster-grid {
     display: grid;
-    grid-template-columns: 1fr;
-    gap: 0;
+    grid-template-columns: 1fr 1fr;
+    gap: clamp(1rem, 2vw, 2.5rem) clamp(1rem, 2vw, 2.5rem);
   }
   .roster-card {
-    display: grid;
-    grid-template-columns: 4rem 1fr 1fr;
-    gap: clamp(1.5rem, 4vw, 4rem);
-    align-items: start;
-    padding-block: 3rem;
-    border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+    display: flex;
+    flex-direction: column;
+    gap: clamp(0.75rem, 1.4vw, 1.4rem);
+    padding: clamp(0.75rem, 1.6vw, 1.6rem);
+    border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
+    background: color-mix(in srgb, var(--bg) 96%, var(--fg) 4%);
     position: relative;
+    transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease;
   }
-  .roster-card:last-child { border-bottom: 1px solid color-mix(in srgb, var(--fg) 18%, transparent); }
-  .roster-num {
+  .roster-card:hover {
+    transform: translateY(-4px);
+    border-color: color-mix(in srgb, var(--fg) 40%, transparent);
+  }
+  .roster-card-head {
+    display: flex; justify-content: space-between; align-items: center;
+    font-size: 0.7rem;
+  }
+  .roster-num { color: var(--gold); letter-spacing: 0.18em; }
+  .roster-tag {
     color: var(--gold);
-    align-self: start;
+    border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+    padding: 0.25em 0.7em;
+    border-radius: 999px;
+    font-size: 0.62rem;
+    letter-spacing: 0.2em;
   }
   .roster-photo {
     position: relative;
@@ -607,8 +626,8 @@ const roster = [
   .roster-photo img {
     width: 100%; height: 100%;
     object-fit: cover;
-    transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.6s ease;
-    filter: grayscale(0.5) contrast(1.05);
+    transition: transform 1.2s cubic-bezier(0.2, 0.8, 0.2, 1), filter 0.8s ease, opacity 0.6s ease;
+    filter: grayscale(0.4) contrast(1.05);
   }
   .roster-photo .roster-photo-alt {
     position: absolute; inset: 0;
@@ -617,18 +636,27 @@ const roster = [
   .roster-card:hover .roster-photo img { transform: scale(1.04); filter: grayscale(0) contrast(1.1); }
   .roster-card:hover .roster-photo-alt { opacity: 1; }
   .roster-info {
-    display: flex; flex-direction: column; gap: 1.2rem;
+    display: flex; flex-direction: column; gap: clamp(0.4rem, 0.8vw, 0.8rem);
   }
   .roster-name {
-    font-size: clamp(2.2rem, 4.5vw, 4.5rem);
-    line-height: 0.92;
+    font-size: clamp(1.4rem, 3vw, 3rem);
+    line-height: 0.95;
   }
-  .roster-tagline { font-size: 0.78rem; }
-  .roster-bio { font-size: 1rem; line-height: 1.6; opacity: 0.85; max-width: 50ch; }
-
-  @media (max-width: 820px) {
-    .roster-card { grid-template-columns: 1fr; gap: 1.5rem; }
-    .roster-num { font-size: 1.2rem; }
+  .roster-tagline {
+    font-size: clamp(0.6rem, 0.75vw, 0.78rem);
+    letter-spacing: 0.15em;
+  }
+  .roster-bio {
+    font-size: clamp(0.78rem, 0.95vw, 1rem);
+    line-height: 1.55;
+    opacity: 0.82;
+  }
+  @media (max-width: 480px) {
+    .roster-card { padding: 0.6rem; gap: 0.55rem; }
+    .roster-name { font-size: clamp(1.05rem, 5vw, 1.6rem); }
+    .roster-bio { font-size: 0.7rem; line-height: 1.45; }
+    .roster-tagline { font-size: 0.55rem; }
+    .roster-tag { padding: 0.2em 0.5em; font-size: 0.5rem; }
   }
 
   /* BOOKING */

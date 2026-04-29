@@ -7,8 +7,8 @@ interface Props {
 }
 
 const {
-  title = 'Matteo — Mattman Music',
-  description = 'Matteo. Aproape două decenii de hituri. Fondatorul Mattman Music — label independent unde autenticitatea este singura regulă.',
+  title = 'Mattman Music — Independent label',
+  description = 'Mattman Music — un label independent dedicat explorării noilor frontiere sonore. Patru artiști. O voce. Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
 } = Astro.props;
 ---
 <!doctype html>
@@ -169,13 +169,13 @@ const {
       });
 
       // === SECTION COUNTER (right-edge indicator) ===
-      const sectionLabels = ['HERO', 'ARTIST', 'MUSIC', 'LABEL', 'ROSTER', 'BOOKING'];
+      const sectionLabels = ['HERO', 'STATS', 'MANIFEST', 'ROSTER', 'CATALOG', 'BOOKING'];
       const sectionEls = [
         document.querySelector('.hero'),
-        document.querySelector('.about'),
-        document.querySelector('.discography'),
+        document.querySelector('.stats'),
         document.querySelector('.mattman'),
         document.querySelector('.roster'),
+        document.querySelector('.discography'),
         document.querySelector('.booking'),
       ].filter(Boolean) as HTMLElement[];
       const sectionCounter = document.getElementById('section-counter');
