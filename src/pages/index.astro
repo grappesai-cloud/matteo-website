@@ -70,26 +70,40 @@ const roster = [
   <section class="hero" id="top">
     <div class="hero-grid">
       <div class="hero-text">
-        <div class="hero-stage" data-hero-logo>
-          <img class="hero-logo" src="/images/mattman/logo-black.png" alt="Mattman Music" />
-        </div>
-
-        <h1 class="hero-headline display">
-          <span class="reveal-line"><span>Where</span></span>
-          <span class="reveal-line"><span><em>authenticity</em></span></span>
-          <span class="reveal-line"><span>is the only rule.</span></span>
+        <h1 class="hero-mark display" aria-label="Mattman Music Label" data-hero-mark>
+          <span class="hm-row">
+            <span class="hm-mask"><span class="hm-char">M</span></span>
+            <span class="hm-mask"><span class="hm-char">A</span></span>
+            <span class="hm-mask"><span class="hm-char">T</span></span>
+            <span class="hm-mask"><span class="hm-char">T</span></span>
+            <span class="hm-mask"><span class="hm-char">M</span></span>
+            <span class="hm-mask"><span class="hm-char">A</span></span>
+            <span class="hm-mask"><span class="hm-char">N</span></span>
+          </span>
+          <span class="hm-row hm-row-italic">
+            <span class="hm-mask"><span class="hm-char">M</span></span>
+            <span class="hm-mask"><span class="hm-char">U</span></span>
+            <span class="hm-mask"><span class="hm-char">S</span></span>
+            <span class="hm-mask"><span class="hm-char">I</span></span>
+            <span class="hm-mask"><span class="hm-char">C</span></span>
+          </span>
+          <span class="hm-row hm-row-tag mono">
+            <span class="hm-mask"><span class="hm-char">L</span></span>
+            <span class="hm-mask"><span class="hm-char">A</span></span>
+            <span class="hm-mask"><span class="hm-char">B</span></span>
+            <span class="hm-mask"><span class="hm-char">E</span></span>
+            <span class="hm-mask"><span class="hm-char">L</span></span>
+            <span class="hm-mask"><span class="hm-char">·</span></span>
+            <span class="hm-mask"><span class="hm-char">E</span></span>
+            <span class="hm-mask"><span class="hm-char">S</span></span>
+            <span class="hm-mask"><span class="hm-char">T</span></span>
+            <span class="hm-mask"><span class="hm-char">·</span></span>
+            <span class="hm-mask"><span class="hm-char">2</span></span>
+            <span class="hm-mask"><span class="hm-char">0</span></span>
+            <span class="hm-mask"><span class="hm-char">0</span></span>
+            <span class="hm-mask"><span class="hm-char">6</span></span>
+          </span>
         </h1>
-
-        <div class="hero-roster-mini mono">
-          <span>—</span>
-          <span>Matteo</span>
-          <span class="hero-roster-dot">·</span>
-          <span>Andrei Bănuță</span>
-          <span class="hero-roster-dot">·</span>
-          <span>Georgiana Neagu</span>
-          <span class="hero-roster-dot">·</span>
-          <span>Emily Istrate</span>
-        </div>
       </div>
 
       <figure class="hero-portrait">
@@ -342,27 +356,63 @@ const roster = [
   }
   .hero-text {
     display: flex; flex-direction: column;
-    justify-content: space-between;
-    gap: 2rem;
+    justify-content: center;
+    gap: 0.4rem;
     padding-block: 1rem;
   }
-  .hero-stage {
-    display: flex; align-items: flex-start; justify-content: flex-start;
-    will-change: transform;
+
+  /* === MATTMAN MUSIC LABEL — letter-by-letter mark === */
+  .hero-mark {
+    margin: 0;
+    line-height: 0.82;
+    letter-spacing: -0.045em;
+    font-weight: 400;
+    color: var(--ink);
+    user-select: none;
   }
-  .hero-logo {
-    width: 100%;
-    max-width: 720px;
-    height: auto;
+  .hm-row {
+    display: flex;
+    flex-wrap: nowrap;
+    line-height: 0.85;
   }
-  .hero-headline {
-    font-size: clamp(2.4rem, 6vw, 6.5rem);
-    margin-block: 0;
-  }
-  .hero-headline em {
+  .hm-row-italic {
     font-style: italic;
     color: var(--burgundy);
+    padding-left: 0.06em;
+    margin-top: -0.04em;
   }
+  .hm-row-tag {
+    margin-top: 1.4rem;
+    gap: 0.16em;
+    letter-spacing: 0.22em;
+    font-size: clamp(0.6rem, 0.85vw, 0.78rem);
+    line-height: 1;
+    opacity: 0.55;
+    color: var(--ink);
+    font-style: normal;
+  }
+  .hm-mask {
+    display: inline-block;
+    overflow: hidden;
+    line-height: 0.85;
+  }
+  .hm-row-tag .hm-mask { line-height: 1; }
+  .hm-char {
+    display: inline-block;
+    transform: translateY(110%);
+    transform-origin: 50% 100%;
+    will-change: transform, color;
+    transition: color 0.35s ease;
+    font-size: clamp(3.5rem, 13.5vw, 16rem);
+    padding: 0 0.005em;
+  }
+  .hm-row-tag .hm-char {
+    font-size: inherit;
+    padding: 0 0.04em;
+  }
+  .hero-mark.is-loaded .hm-char { transform: translateY(0); }
+
+  body.dark .hm-row-italic { color: var(--gold); }
   .hero-portrait {
     position: relative;
     aspect-ratio: 3 / 4;
