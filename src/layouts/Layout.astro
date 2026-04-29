@@ -260,15 +260,14 @@ const {
         });
       }
 
-      // === HERO PARALLAX (logo) ===
-      const heroLogo = document.querySelector<HTMLElement>('[data-hero-logo]');
-      if (heroLogo) {
-        gsap.to(heroLogo, {
-          y: -120,
-          scale: 0.85,
+      // === HERO PORTRAIT PARALLAX ===
+      const heroPortraitImg = document.querySelector<HTMLElement>('.hero-portrait img');
+      if (heroPortraitImg) {
+        gsap.to(heroPortraitImg, {
+          yPercent: -10,
           ease: 'none',
           scrollTrigger: {
-            trigger: heroLogo,
+            trigger: '.hero-portrait',
             start: 'top top',
             end: 'bottom top',
             scrub: 1,

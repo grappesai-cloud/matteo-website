@@ -73,20 +73,36 @@ const roster = [
       <span>Two decades. Hit after hit.</span>
     </div>
 
-    <div class="hero-stage" data-hero-logo>
-      <img class="hero-logo" src="/images/matteo/logo-black.png" alt="Matteo" />
-    </div>
+    <div class="hero-grid">
+      <div class="hero-text">
+        <div class="hero-stage" data-hero-logo>
+          <img class="hero-logo" src="/images/matteo/logo-black.png" alt="Matteo" />
+        </div>
 
-    <h1 class="hero-headline display">
-      <span class="reveal-line"><span>A career of</span></span>
-      <span class="reveal-line"><span><em>almost two</em></span></span>
-      <span class="reveal-line"><span>decades.</span></span>
-    </h1>
+        <h1 class="hero-headline display">
+          <span class="reveal-line"><span>A career of</span></span>
+          <span class="reveal-line"><span><em>almost two</em></span></span>
+          <span class="reveal-line"><span>decades.</span></span>
+        </h1>
+      </div>
+
+      <figure class="hero-portrait">
+        <picture>
+          <source media="(min-width: 1100px)" srcset="/images/matteo/portrait.jpg" />
+          <img src="/images/matteo/portrait-md.jpg" alt="Matteo" loading="eager" fetchpriority="high" />
+        </picture>
+        <figcaption class="mono">
+          <span>—</span>
+          <span>Matteo</span>
+          <span>Mattman Music · Founder</span>
+        </figcaption>
+      </figure>
+    </div>
 
     <div class="hero-bottom mono">
       <span>Scroll</span>
       <span class="hero-arrow">↓</span>
-      <span>Mattman Music · Founder</span>
+      <span>Est. 2006 · Bucharest</span>
     </div>
   </section>
 
@@ -342,35 +358,88 @@ const roster = [
   .hero {
     min-height: 100vh;
     display: grid;
-    grid-template-rows: auto 1fr auto auto;
-    padding-block: 6rem 3rem;
+    grid-template-rows: auto 1fr auto;
+    padding-block: 6rem 2rem;
     position: relative;
+    gap: 2rem;
   }
   .hero-meta {
     display: flex; justify-content: space-between;
     opacity: 0.55;
   }
+  .hero-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: clamp(1.5rem, 4vw, 4rem);
+    align-items: stretch;
+    min-height: 0;
+  }
+  .hero-text {
+    display: flex; flex-direction: column;
+    justify-content: space-between;
+    gap: 2rem;
+    padding-block: 1rem;
+  }
   .hero-stage {
-    display: flex; align-items: center; justify-content: center;
-    padding-block: 2rem;
+    display: flex; align-items: flex-start; justify-content: flex-start;
     will-change: transform;
   }
   .hero-logo {
-    width: clamp(280px, 60vw, 880px);
+    width: 100%;
+    max-width: 720px;
     height: auto;
-    filter: drop-shadow(0 30px 80px rgba(0,0,0,0.15));
   }
   .hero-headline {
-    font-size: clamp(2.2rem, 6.5vw, 6.5rem);
-    margin-block: 1rem;
+    font-size: clamp(2.4rem, 6vw, 6.5rem);
+    margin-block: 0;
   }
   .hero-headline em {
     font-style: italic;
     color: var(--burgundy);
   }
+  .hero-portrait {
+    position: relative;
+    aspect-ratio: 3 / 4;
+    max-height: 78vh;
+    overflow: hidden;
+    background: var(--ink);
+    margin: 0;
+    align-self: stretch;
+  }
+  .hero-portrait img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: 50% 25%;
+    transform: scale(1.05);
+    transition: transform 1.5s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .hero-portrait:hover img { transform: scale(1.08); }
+  .hero-portrait figcaption {
+    position: absolute;
+    left: 1rem; right: 1rem; bottom: 1rem;
+    display: flex; justify-content: space-between;
+    align-items: end;
+    color: var(--cream);
+    text-shadow: 0 2px 12px rgba(0,0,0,0.4);
+    z-index: 2;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+  }
+  .hero-portrait::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: linear-gradient(180deg, transparent 50%, rgba(0,0,0,0.5) 100%);
+    pointer-events: none;
+  }
   .hero-bottom {
     display: flex; justify-content: space-between; align-items: center;
     opacity: 0.55;
+  }
+  @media (max-width: 1024px) {
+    .hero-grid { grid-template-columns: 1fr; }
+    .hero-portrait { aspect-ratio: 4/5; max-height: 60vh; order: 0; }
+    .hero-text { order: 1; }
   }
   .hero-arrow {
     display: inline-block;
