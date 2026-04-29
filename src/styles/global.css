@@ -10,28 +10,20 @@ ul, ol { list-style: none; }
 
 /* === TOKENS === */
 :root {
-  --ink: #0E0D0B;          /* warm near-black, architectural */
-  --ink-deep: #050504;     /* monumental shadow */
-  --bone: #E8E4DA;          /* muted parchment, less yellow than cream */
-  --bone-dim: #D5D0C2;
-  --brass: #B8845E;         /* oxidized brass — Brâncuși bronze patina */
-  --brass-dim: #8C6342;
-  --rust: #6E3320;          /* darker accent for highlights */
-
-  /* legacy aliases kept so existing CSS doesn't crash */
-  --cream: var(--bone);
-  --cream-dim: var(--bone-dim);
-  --ink-soft: #1A1A18;
-  --gold: var(--brass);
-  --gold-bright: #D4A074;
-  --burgundy: var(--rust);
+  --cream: #F2EBE0;
+  --cream-dim: #E8DFD0;
+  --ink: #0A0A0A;
+  --ink-soft: #1A1A1A;
+  --gold: #C9A24A;
+  --gold-bright: #E8C16C;
+  --burgundy: #6B1A1A;
   --jade: #2A4A3A;
 
-  --bg: var(--ink);
-  --fg: var(--bone);
-  --accent: var(--brass);
+  --bg: var(--cream);
+  --fg: var(--ink);
+  --accent: var(--gold);
 
-  --font-display: 'Antonio', 'Inter', -apple-system, sans-serif;
+  --font-display: 'PP Editorial', 'Times New Roman', Times, serif;
   --font-body: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
 
@@ -48,7 +40,7 @@ ul, ol { list-style: none; }
 }
 
 /* === BASE === */
-html { background: var(--ink-deep); scroll-behavior: auto; }
+html { background: var(--ink); scroll-behavior: auto; }
 body {
   background: var(--bg);
   color: var(--fg);
@@ -59,13 +51,10 @@ body {
   transition: background-color 0.6s ease, color 0.6s ease;
 }
 
-/* light section (architectural inversion) */
-body.light {
-  --bg: var(--bone);
-  --fg: var(--ink);
+body.dark {
+  --bg: var(--ink);
+  --fg: var(--cream);
 }
-/* keep .dark class working for any leftover triggers — same as default ink */
-body.dark { --bg: var(--ink); --fg: var(--bone); }
 
 /* Lenis */
 html.lenis, html.lenis body { height: auto; }
