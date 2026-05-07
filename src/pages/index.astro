@@ -16,6 +16,7 @@ const tracks = [
   { year: '2025', title: 'Gypsy Reggae', feat: 'EP', note: 'New genre. New era.', highlight: true },
 ];
 
+// Per artist: socials/media/downloads. Replace # placeholders with real URLs/IDs when delivered.
 const roster = [
   {
     slug: 'matteo',
@@ -25,6 +26,21 @@ const roster = [
     bio: 'Founder of Mattman Music. Almost two decades of hits — debut "Departare" (2006, with Loredana). Most viral single "Panama" — 225M+ views, going global on TikTok across Asia. Latest venture: a self-coined fusion genre, Gypsy Reggae, with King Kong, Anthony B, Loyal Flames and Johny Romano.',
     photo: '/images/matteo/portrait-md.jpg',
     photoAlt: '/images/matteo/portrait-md.jpg',
+    socials: {
+      instagram: '#',
+      youtube: '#',
+      spotify: '#',
+      tiktok: '#',
+    },
+    media: [
+      { type: 'youtube', id: '', title: 'Panama' },
+      { type: 'youtube', id: '', title: 'Allegro Ventigo' },
+    ],
+    downloads: [
+      { label: 'Logo (PNG)', href: '#' },
+      { label: 'Press Photo', href: '#' },
+      { label: 'Bio (PDF)', href: '#' },
+    ],
   },
   {
     slug: 'andrei',
@@ -33,6 +49,21 @@ const roster = [
     bio: 'One of the most in-demand voices today. Songwriting that alternates between deep, meaningful lyrics and vibrant, playful songs. Best known for "Suflet de Bagabond" (90M+ views) and "Old Friend" with Vescan — over 10 weeks atop the Media Forest Chart.',
     photo: '/images/roster/andrei.jpg',
     photoAlt: '/images/roster/andrei-2.jpg',
+    socials: {
+      instagram: '#',
+      youtube: '#',
+      spotify: '#',
+      tiktok: '#',
+    },
+    media: [
+      { type: 'youtube', id: '', title: 'Suflet de Bagabond' },
+      { type: 'youtube', id: '', title: 'Old Friend (w/ Vescan)' },
+    ],
+    downloads: [
+      { label: 'Logo (PNG)', href: '#' },
+      { label: 'Press Photo', href: '#' },
+      { label: 'Bio (PDF)', href: '#' },
+    ],
   },
   {
     slug: 'georgiana',
@@ -41,6 +72,20 @@ const roster = [
     bio: 'A new wave of Romanian balkan pop. Contemporary sound and relatable lyrics that connect with a young audience nationwide. "M-am Îndrăgostit de Tine (Vreau să facem o fetiță)" — viral on TikTok, 2.2M+ views on YouTube.',
     photo: '/images/roster/georgiana.jpg',
     photoAlt: '/images/roster/georgiana-2.jpg',
+    socials: {
+      instagram: '#',
+      youtube: '#',
+      spotify: '#',
+      tiktok: '#',
+    },
+    media: [
+      { type: 'youtube', id: '', title: 'M-am Îndrăgostit de Tine' },
+    ],
+    downloads: [
+      { label: 'Logo (PNG)', href: '#' },
+      { label: 'Press Photo', href: '#' },
+      { label: 'Bio (PDF)', href: '#' },
+    ],
   },
   {
     slug: 'emily',
@@ -49,6 +94,21 @@ const roster = [
     bio: 'Singer, songwriter, actress from the Republic of Moldova. International recognition with "If You Want To" and "Panic" — UK Pop Club Charts #4 and #5. 2023 saw her climb the top of major Romanian charts with "Bye Bye Boy" and "În Mintea Mea".',
     photo: '/images/roster/emily.jpg',
     photoAlt: '/images/roster/emily-2.jpg',
+    socials: {
+      instagram: '#',
+      youtube: '#',
+      spotify: '#',
+      tiktok: '#',
+    },
+    media: [
+      { type: 'youtube', id: '', title: 'If You Want To' },
+      { type: 'youtube', id: '', title: 'În Mintea Mea' },
+    ],
+    downloads: [
+      { label: 'Logo (PNG)', href: '#' },
+      { label: 'Press Photo', href: '#' },
+      { label: 'Bio (PDF)', href: '#' },
+    ],
   },
 ];
 ---
@@ -171,9 +231,10 @@ const roster = [
         </h2>
       </div>
 
-      <div class="roster-grid">
+      <div class="roster-grid" data-roster-grid>
         {roster.map((r, i) => (
-          <article class={`roster-card hover-target r-${r.slug}`}>
+          <article class={`roster-card hover-target r-${r.slug}`} data-slug={r.slug}>
+            <button class="roster-card-trigger" type="button" data-roster-trigger={r.slug} aria-label={`Open ${r.name}`}></button>
             <header class="roster-card-head">
               <span class="roster-num mono">{String(i + 1).padStart(2, '0')}</span>
               {r.tag && <span class="roster-tag mono">{r.tag}</span>}
@@ -187,9 +248,104 @@ const roster = [
               <p class="roster-tagline mono gold">{r.tagline}</p>
               <p class="roster-bio">{r.bio}</p>
             </div>
+
+            <div class="roster-expanded" aria-hidden="true">
+              <button class="roster-close" type="button" data-roster-close aria-label="Close">
+                <span aria-hidden="true">×</span>
+              </button>
+
+              <header class="rx-header">
+                <span class="rx-num mono">{String(i + 1).padStart(2, '0')}</span>
+                <h3 class="rx-name display">{r.name}</h3>
+                <p class="rx-tagline mono gold">{r.tagline}</p>
+              </header>
+
+              <div class="rx-scroll">
+                <div class="rx-block rx-bio">
+                  <span class="mono gold rx-label">Bio</span>
+                  <p>{r.bio}</p>
+                </div>
+
+                {r.media && r.media.length > 0 && (
+                  <div class="rx-block rx-media">
+                    <span class="mono gold rx-label">Media</span>
+                    <div class="rx-media-grid">
+                      {r.media.map((m) => (
+                        <div class={`rx-media-item rx-media-${m.type}`}>
+                          {m.type === 'youtube' && m.id ? (
+                            <iframe
+                              src={`https://www.youtube-nocookie.com/embed/${m.id}`}
+                              title={m.title}
+                              loading="lazy"
+                              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                              allowfullscreen
+                            ></iframe>
+                          ) : m.type === 'spotify' && m.id ? (
+                            <iframe
+                              src={`https://open.spotify.com/embed/${m.kind || 'track'}/${m.id}`}
+                              title={m.title}
+                              loading="lazy"
+                              allow="autoplay; clipboard-write; encrypted-media; fullscreen; picture-in-picture"
+                            ></iframe>
+                          ) : (
+                            <div class="rx-media-empty mono">{m.title} — TBA</div>
+                          )}
+                          <span class="rx-media-title mono">{m.title}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {r.downloads && r.downloads.length > 0 && (
+                  <div class="rx-block rx-downloads">
+                    <span class="mono gold rx-label">Press Kit</span>
+                    <ul class="rx-download-list">
+                      {r.downloads.map((d) => (
+                        <li>
+                          <a class="rx-download mono hover-target" href={d.href} download>
+                            <span>{d.label}</span>
+                            <span class="rx-arrow">↓</span>
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+
+              <ul class="rx-socials mono">
+                {r.socials.instagram && <li><a href={r.socials.instagram} target="_blank" rel="noopener" class="hover-target">Instagram ↗</a></li>}
+                {r.socials.youtube && <li><a href={r.socials.youtube} target="_blank" rel="noopener" class="hover-target">YouTube ↗</a></li>}
+                {r.socials.spotify && <li><a href={r.socials.spotify} target="_blank" rel="noopener" class="hover-target">Spotify ↗</a></li>}
+                {r.socials.tiktok && <li><a href={r.socials.tiktok} target="_blank" rel="noopener" class="hover-target">TikTok ↗</a></li>}
+              </ul>
+            </div>
           </article>
         ))}
+
+        <a class="roster-card roster-card-mini roster-card-shop hover-target" href="#" aria-disabled="true" data-shop>
+          <header class="roster-card-head">
+            <span class="roster-num mono">05</span>
+            <span class="roster-tag mono">Shop</span>
+          </header>
+          <div class="mini-body">
+            <h3 class="mini-title display"><em>Coming<br/>Soon.</em></h3>
+          </div>
+        </a>
+
+        <a class="roster-card roster-card-mini roster-card-demos hover-target" href="mailto:demo@mattmanmusic.com">
+          <header class="roster-card-head">
+            <span class="roster-num mono">06</span>
+            <span class="roster-tag mono">Demos</span>
+          </header>
+          <div class="mini-body">
+            <h3 class="mini-title display">Send<br/><em>Demos.</em></h3>
+          </div>
+        </a>
       </div>
+
+      <div class="roster-backdrop" data-roster-backdrop aria-hidden="true"></div>
     </div>
   </section>
 
@@ -244,11 +400,6 @@ const roster = [
         </div>
       </div>
 
-      <div class="booking-cta">
-        <a class="btn-link hover-target" href="mailto:booking@mattmanmusic.com" data-magnetic="0.5">
-          Send brief <span>→</span>
-        </a>
-      </div>
     </div>
   </section>
 
@@ -623,11 +774,12 @@ const roster = [
   .roster-card {
     display: flex;
     flex-direction: column;
-    gap: clamp(0.75rem, 1.4vw, 1.4rem);
-    padding: clamp(0.75rem, 1.6vw, 1.6rem);
+    padding: 0;
     border: 1px solid color-mix(in srgb, var(--fg) 16%, transparent);
     background: color-mix(in srgb, var(--bg) 96%, var(--fg) 4%);
     position: relative;
+    overflow: hidden;
+    aspect-ratio: 4 / 5;
     transition: transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1), border-color 0.4s ease;
   }
   .roster-card:hover {
@@ -635,21 +787,27 @@ const roster = [
     border-color: color-mix(in srgb, var(--fg) 40%, transparent);
   }
   .roster-card-head {
+    position: absolute; top: clamp(0.7rem, 1.2vw, 1.2rem); left: clamp(0.7rem, 1.2vw, 1.2rem); right: clamp(0.7rem, 1.2vw, 1.2rem);
+    z-index: 3;
     display: flex; justify-content: space-between; align-items: center;
     font-size: 0.7rem;
+    pointer-events: none;
+    mix-blend-mode: difference;
+    color: #fff;
   }
   .roster-num { color: var(--gold); letter-spacing: 0.18em; }
   .roster-tag {
     color: var(--gold);
-    border: 1px solid color-mix(in srgb, var(--gold) 50%, transparent);
+    border: 1px solid color-mix(in srgb, var(--gold) 60%, transparent);
     padding: 0.25em 0.7em;
     border-radius: 999px;
     font-size: 0.62rem;
     letter-spacing: 0.2em;
+    background: color-mix(in srgb, var(--ink) 30%, transparent);
+    backdrop-filter: blur(4px);
   }
   .roster-photo {
-    position: relative;
-    aspect-ratio: 4/5;
+    position: absolute; inset: 0;
     overflow: hidden;
     background: var(--ink-soft);
   }
@@ -665,22 +823,10 @@ const roster = [
   }
   .roster-card:hover .roster-photo img { transform: scale(1.04); filter: grayscale(0) contrast(1.1); }
   .roster-card:hover .roster-photo-alt { opacity: 1; }
-  .roster-info {
-    display: flex; flex-direction: column; gap: clamp(0.4rem, 0.8vw, 0.8rem);
-  }
-  .roster-name {
-    font-size: clamp(1.4rem, 3vw, 3rem);
-    line-height: 0.95;
-  }
-  .roster-tagline {
-    font-size: clamp(0.6rem, 0.75vw, 0.78rem);
-    letter-spacing: 0.15em;
-  }
-  .roster-bio {
-    font-size: clamp(0.78rem, 0.95vw, 1rem);
-    line-height: 1.55;
-    opacity: 0.82;
-  }
+
+  /* Default-state info (name/tagline/bio) hidden — only the photo shows in the card.
+     Info appears in the expanded panel via .rx-header + .rx-bio. */
+  .roster-info { display: none; }
   @media (max-width: 720px) {
     .roster-grid { gap: 0.7rem; }
     .roster-card { padding: 0.7rem; gap: 0.65rem; }
@@ -694,6 +840,296 @@ const roster = [
     .roster-tag { padding: 0.18em 0.45em; font-size: 0.45rem; letter-spacing: 0.1em; }
     .roster-num { font-size: 0.5rem; letter-spacing: 0.1em; }
     .roster-card-head { font-size: 0.55rem; }
+  }
+
+  /* === ROSTER CARD: invisible click trigger === */
+  .roster-card { cursor: pointer; }
+  .roster-card-trigger {
+    position: absolute; inset: 0;
+    background: none; border: 0; padding: 0; margin: 0;
+    cursor: pointer; z-index: 4;
+  }
+  .roster-card-trigger:focus-visible {
+    outline: 2px solid var(--gold);
+    outline-offset: -4px;
+  }
+
+  /* === MINI TILES (Shop / Send Demos) — side by side under the 2x2 roster === */
+  .roster-card-mini {
+    aspect-ratio: auto;
+    flex-direction: column !important;
+    justify-content: center;
+    align-items: stretch;
+    min-height: clamp(140px, 18vw, 220px);
+    padding: clamp(1rem, 2vw, 2rem) !important;
+    text-decoration: none;
+    color: inherit;
+    background: color-mix(in srgb, var(--bg) 96%, var(--fg) 4%);
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.4s ease, transform 0.6s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .roster-card-mini:hover { transform: translateY(-3px); }
+
+  .roster-card-shop {
+    cursor: not-allowed;
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--bg) 96%, var(--fg) 4%) 0%,
+        color-mix(in srgb, var(--bg) 92%, var(--gold) 8%) 100%);
+  }
+  .roster-card-shop::after {
+    content: '';
+    position: absolute; inset: 0;
+    background: repeating-linear-gradient(
+      45deg,
+      transparent 0 18px,
+      color-mix(in srgb, var(--gold) 6%, transparent) 18px 19px
+    );
+    pointer-events: none;
+    opacity: 0.4;
+  }
+
+  .roster-card-demos {
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--bg) 96%, var(--fg) 4%) 0%,
+        color-mix(in srgb, var(--bg) 88%, var(--burgundy) 12%) 100%);
+  }
+  body.dark .roster-card-demos {
+    background:
+      linear-gradient(135deg,
+        color-mix(in srgb, var(--bg) 96%, var(--fg) 4%) 0%,
+        color-mix(in srgb, var(--bg) 88%, var(--gold) 12%) 100%);
+  }
+  .roster-card-demos:hover {
+    border-color: color-mix(in srgb, var(--gold) 60%, transparent);
+  }
+
+  .roster-card-mini .roster-card-head {
+    position: absolute; top: clamp(0.7rem, 1.4vw, 1.4rem); left: clamp(0.7rem, 1.4vw, 1.4rem); right: clamp(0.7rem, 1.4vw, 1.4rem);
+    z-index: 2;
+    mix-blend-mode: normal;
+    color: inherit;
+  }
+  .mini-body {
+    z-index: 2; position: relative;
+    width: 100%;
+    text-align: left;
+    padding: clamp(3rem, 5vw, 4.5rem) 0 clamp(0.6rem, 1vw, 1rem);
+  }
+  .mini-title {
+    font-size: clamp(2.4rem, 6.5vw, 6rem);
+    line-height: 0.92;
+    letter-spacing: -0.02em;
+    margin: 0;
+  }
+  .mini-title em { font-style: italic; color: var(--burgundy); }
+  body.dark .mini-title em { color: var(--gold); }
+  .roster-card-mini { min-height: clamp(220px, 28vw, 360px); }
+
+  /* === INLINE EXPANDED CARD === */
+  .roster-grid { position: relative; }
+  .roster-backdrop { display: none; }
+
+  /* Per-card view-transition-name so the browser morphs each independently */
+  .roster-card.r-matteo { view-transition-name: rc-matteo; }
+  .roster-card.r-andrei { view-transition-name: rc-andrei; }
+  .roster-card.r-georgiana { view-transition-name: rc-georgiana; }
+  .roster-card.r-emily { view-transition-name: rc-emily; }
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation-duration: 0.55s;
+    animation-timing-function: cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+
+  /* Active card grows: spans full grid width, taller, photo to one side and EPK content the other */
+  .roster-grid.is-open .roster-card.is-active {
+    grid-column: 1 / -1;
+    aspect-ratio: auto;
+    min-height: clamp(520px, 78vh, 820px);
+  }
+
+  /* Photo: when active, shrinks to left half of the expanded card */
+  .roster-card.is-active .roster-photo {
+    inset: 0 auto 0 0;
+    width: clamp(38%, 42%, 50%);
+  }
+  .roster-card.is-active .roster-photo img {
+    filter: grayscale(0) contrast(1.05);
+  }
+
+  /* Expanded panel (EPK content) sits inside the card on the right half */
+  .roster-card .roster-expanded {
+    position: absolute;
+    top: 0; bottom: 0; right: 0;
+    left: clamp(38%, 42%, 50%);
+    background: var(--bg);
+    border-left: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+    display: flex;
+    flex-direction: column;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.45s ease 0.05s;
+    padding: clamp(1.2rem, 2.2vw, 2.4rem);
+    overflow: hidden;
+  }
+  body.dark .roster-card .roster-expanded {
+    background: var(--ink);
+    border-left-color: color-mix(in srgb, var(--cream) 14%, transparent);
+  }
+  .roster-card.is-active .roster-expanded {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  .roster-card.is-active .roster-card-trigger { pointer-events: none; }
+  /* Hide the corner num/tag on active card to avoid overlapping the EPK header */
+  .roster-card.is-active .roster-card-head { opacity: 0; }
+
+  /* Other cards stay normal — no dimming when one is open (per inline-expand pattern) */
+
+  .roster-close {
+    position: absolute; top: clamp(0.8rem, 1.5vw, 1.5rem); right: clamp(0.8rem, 1.5vw, 1.5rem);
+    width: clamp(2.4rem, 3vw, 3rem); height: clamp(2.4rem, 3vw, 3rem);
+    border-radius: 50%;
+    border: 1px solid color-mix(in srgb, var(--fg) 30%, transparent);
+    background: transparent;
+    color: inherit;
+    font-size: 1.5rem; line-height: 1;
+    cursor: pointer; z-index: 70;
+    display: grid; place-items: center;
+    transition: background 0.3s, border-color 0.3s, transform 0.3s;
+  }
+  .roster-close:hover {
+    background: color-mix(in srgb, var(--fg) 8%, transparent);
+    transform: rotate(90deg);
+  }
+
+  .rx-header {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    grid-template-rows: auto auto;
+    column-gap: 1.2rem;
+    row-gap: 0.4rem;
+    align-items: baseline;
+    padding-right: clamp(3rem, 5vw, 5rem);
+    margin-bottom: clamp(1.2rem, 2.4vw, 2.4rem);
+    border-bottom: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+    padding-bottom: clamp(1rem, 2vw, 1.6rem);
+  }
+  .rx-num {
+    grid-row: 1 / span 2;
+    color: var(--gold);
+    letter-spacing: 0.2em;
+    font-size: 0.7rem;
+    align-self: start;
+    padding-top: 0.6rem;
+  }
+  .rx-name {
+    font-size: clamp(2rem, 4.5vw, 4.5rem);
+    line-height: 0.95;
+    letter-spacing: -0.01em;
+  }
+  .rx-tagline {
+    font-size: 0.7rem;
+    letter-spacing: 0.18em;
+  }
+
+  .rx-scroll {
+    flex: 1;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    display: flex;
+    flex-direction: column;
+    gap: clamp(1.2rem, 2vw, 1.8rem);
+    padding-right: clamp(0.4rem, 0.8vw, 0.8rem);
+    padding-bottom: clamp(2rem, 4vh, 3rem);
+  }
+  .rx-block { display: flex; flex-direction: column; gap: 0.7rem; }
+  .rx-label {
+    font-size: 0.6rem; letter-spacing: 0.2em;
+  }
+  .rx-bio p {
+    font-family: var(--font-display);
+    font-size: clamp(0.95rem, 1.1vw, 1.15rem);
+    line-height: 1.5;
+  }
+  .rx-bio p em { font-style: italic; }
+  .rx-media-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.7rem;
+  }
+  .rx-media-item {
+    display: flex; flex-direction: column; gap: 0.5rem;
+  }
+  .rx-media-item iframe,
+  .rx-media-empty {
+    width: 100%;
+    aspect-ratio: 16/9;
+    border: 0;
+    background: color-mix(in srgb, var(--fg) 8%, transparent);
+    display: grid; place-items: center;
+    color: inherit; opacity: 0.6;
+    font-size: 0.7rem; letter-spacing: 0.18em;
+  }
+  .rx-media-spotify iframe { aspect-ratio: 16/5; }
+  .rx-media-title {
+    font-size: 0.62rem;
+    letter-spacing: 0.18em;
+    opacity: 0.6;
+  }
+  .rx-download-list {
+    display: flex; flex-direction: column;
+    border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+  }
+  .rx-download {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 1rem 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+    font-size: 0.7rem; letter-spacing: 0.16em;
+    transition: padding 0.4s, color 0.4s;
+  }
+  .rx-download:hover { padding-inline-start: 0.6rem; color: var(--gold); }
+  .rx-arrow { opacity: 0.6; }
+
+  .rx-socials {
+    border-top: 1px solid color-mix(in srgb, var(--fg) 18%, transparent);
+    padding-top: clamp(0.8rem, 1.4vw, 1.2rem);
+    margin-top: auto;
+    display: flex; flex-wrap: wrap;
+    gap: clamp(1rem, 2vw, 2rem);
+    font-size: 0.7rem; letter-spacing: 0.16em;
+    flex-shrink: 0;
+  }
+  .rx-socials a { transition: opacity 0.3s; }
+  .rx-socials a:hover { opacity: 0.55; }
+
+  /* Mobile: active card stacks vertically — photo on top, EPK below */
+  @media (max-width: 820px) {
+    .roster-grid.is-open .roster-card.is-active {
+      min-height: clamp(560px, 92vh, 900px);
+    }
+    .roster-card.is-active .roster-photo {
+      inset: 0 0 auto 0;
+      width: auto;
+      height: 38%;
+    }
+    .roster-card .roster-expanded {
+      top: 38%;
+      left: 0;
+      border-left: 0;
+      border-top: 1px solid color-mix(in srgb, var(--fg) 14%, transparent);
+      padding: 1rem 1rem 1.2rem;
+    }
+    body.dark .roster-card .roster-expanded {
+      border-top-color: color-mix(in srgb, var(--cream) 14%, transparent);
+    }
+    .rx-media-grid { grid-template-columns: 1fr; }
+    .roster-card-shop {
+      flex-direction: column !important;
+      min-height: 110px;
+    }
   }
 
   /* BOOKING */
@@ -769,3 +1205,104 @@ const roster = [
     .footer-social { justify-content: flex-start; }
   }
 </style>
+
+<script>
+  // === ROSTER expand / close ===
+  const grid = document.querySelector('[data-roster-grid]');
+  const cards = document.querySelectorAll<HTMLElement>('.roster-card[data-slug]');
+  const triggers = document.querySelectorAll<HTMLElement>('[data-roster-trigger]');
+  const closeBtns = document.querySelectorAll<HTMLElement>('[data-roster-close]');
+  const backdrop = document.querySelector<HTMLElement>('[data-roster-backdrop]');
+  const shopTile = document.querySelector<HTMLElement>('[data-shop]');
+
+  let activeSlug: string | null = null;
+
+  const applyOpen = (slug: string) => {
+    if (!grid) return;
+    grid.classList.add('is-open');
+    grid.setAttribute('data-active', slug);
+    cards.forEach((c) => {
+      const isMatch = c.getAttribute('data-slug') === slug;
+      c.classList.toggle('is-active', isMatch);
+      const expanded = c.querySelector('.roster-expanded');
+      if (expanded) expanded.setAttribute('aria-hidden', isMatch ? 'false' : 'true');
+    });
+  };
+
+  const applyClose = () => {
+    if (!grid) return;
+    grid.classList.remove('is-open');
+    grid.removeAttribute('data-active');
+    cards.forEach((c) => {
+      c.classList.remove('is-active');
+      const expanded = c.querySelector('.roster-expanded');
+      if (expanded) expanded.setAttribute('aria-hidden', 'true');
+    });
+  };
+
+  const morph = (fn: () => void) => {
+    // @ts-ignore — View Transitions API
+    if (typeof document.startViewTransition === 'function') {
+      // @ts-ignore
+      document.startViewTransition(fn);
+    } else {
+      fn();
+    }
+  };
+
+  const openCard = (slug: string) => {
+    activeSlug = slug;
+    morph(() => applyOpen(slug));
+    // smooth scroll the active card into view a moment after the morph
+    requestAnimationFrame(() => {
+      const card = document.querySelector(`.roster-card[data-slug="${slug}"]`);
+      if (card) {
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    });
+  };
+
+  const closeCard = () => {
+    activeSlug = null;
+    morph(() => applyClose());
+  };
+
+  triggers.forEach((t) => {
+    t.addEventListener('click', (e) => {
+      e.preventDefault();
+      const slug = t.getAttribute('data-roster-trigger');
+      if (slug) openCard(slug);
+    });
+  });
+
+  closeBtns.forEach((b) => {
+    b.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeCard();
+    });
+  });
+
+  if (backdrop) {
+    backdrop.addEventListener('click', closeCard);
+  }
+
+  // Click outside any active panel = close (when click target is one of the dim non-active cards)
+  cards.forEach((c) => {
+    c.addEventListener('click', (e) => {
+      if (!activeSlug) return;
+      if (c.classList.contains('is-active')) return;
+      // dim card click closes
+      const target = e.target as HTMLElement;
+      if (target.closest('[data-roster-trigger]')) return; // let triggers handle
+      closeCard();
+    });
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape' && activeSlug) closeCard();
+  });
+
+  if (shopTile) {
+    shopTile.addEventListener('click', (e) => e.preventDefault());
+  }
+</script>
