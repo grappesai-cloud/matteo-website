@@ -7,9 +7,7 @@ type Download = { label: string; href: string; size?: string; external?: boolean
 
 type Artist = {
   slug: string;
-  num: string;
   name: string;
-  tag?: string;
   tagline: string;
   photo: string;
   bio: string[];
@@ -21,9 +19,7 @@ type Artist = {
 const roster: Artist[] = [
   {
     slug: 'matteo',
-    num: '01',
     name: 'Matteo',
-    tag: 'Founder',
     tagline: 'Two decades. Hit after hit.',
     photo: '/images/matteo/portrait-md.jpg',
     bio: [
@@ -48,7 +44,6 @@ const roster: Artist[] = [
   },
   {
     slug: 'andrei',
-    num: '02',
     name: 'Andrei Bănuță',
     tagline: 'An artist of contrasts.',
     photo: '/images/roster/andrei.jpg',
@@ -76,7 +71,6 @@ const roster: Artist[] = [
   },
   {
     slug: 'georgiana',
-    num: '03',
     name: 'Georgiana Neagu',
     tagline: 'The new wave of balkan pop.',
     photo: '/images/roster/georgiana.jpg',
@@ -103,7 +97,6 @@ const roster: Artist[] = [
   },
   {
     slug: 'emily',
-    num: '04',
     name: 'Emily Istrate',
     tagline: 'Beautiful, talented, charismatic.',
     photo: '/images/roster/emily.jpg',
@@ -142,7 +135,7 @@ const tiles = [
     slug: 'demos',
     label: 'Demos',
     sub: 'Submit your track',
-    href: 'mailto:demos@mattmanmusic.com?subject=Demo%20submission',
+    href: 'mailto:demo@mattman.ro?subject=Demo%20submission',
   },
 ];
 ---
@@ -164,10 +157,6 @@ const tiles = [
               <img src={r.photo} alt={r.name} class="card-photo" loading="lazy" />
               <div class="card-photo-shade" aria-hidden="true"></div>
             </div>
-            <div class="card-meta">
-              <span class="card-num mono">{r.num}</span>
-              {r.tag && <span class="card-tag mono">{r.tag}</span>}
-            </div>
             <div class="card-name-wrap">
               <h2 class="card-name">{r.name}</h2>
               <p class="card-tagline mono">{r.tagline}</p>
@@ -182,7 +171,7 @@ const tiles = [
 
             <div class="expand-scroll" data-lenis-prevent>
               <div class="expand-header">
-                <span class="mono dim">{r.num} · {r.tag || 'Artist'}</span>
+                <span class="mono dim">Artist</span>
                 <h3 class="expand-name">{r.name}</h3>
                 <p class="expand-tagline mono">{r.tagline}</p>
               </div>
