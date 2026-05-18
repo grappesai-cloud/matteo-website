@@ -3,7 +3,7 @@ import Layout from '../layouts/Layout.astro';
 
 type Social = { kind: 'instagram' | 'youtube' | 'spotify' | 'tiktok'; href: string };
 type Track = { id: string; title: string; year?: string };
-type Download = { label: string; href: string; size?: string };
+type Download = { label: string; href: string; size?: string; external?: boolean };
 
 type Artist = {
   slug: string;
@@ -36,6 +36,7 @@ const roster: Artist[] = [
       { id: 'sXu9QLRb_sI', title: 'Allegro Ventigo (w/ Dan Bălan)', year: '2018' },
     ],
     downloads: [
+      { label: 'Full Press Kit (Drive)', href: 'https://drive.google.com/file/d/1wUJ7_hLcPGTITnWJgysT6cwd8fK2lTOv/view?usp=share_link', external: true },
       { label: 'Logo (PNG)', href: '/downloads/matteo/matteo-logo-black.png' },
       { label: 'Press Photo', href: '/downloads/matteo/matteo-press-1.jpg' },
     ],
@@ -61,6 +62,7 @@ const roster: Artist[] = [
       { id: 'Q2D3dcmoTNs', title: 'Old Friend (w/ Vescan)', year: '2024' },
     ],
     downloads: [
+      { label: 'Full Press Kit (Dropbox)', href: 'https://www.dropbox.com/scl/fo/t5d7wvkqlltyy5gpevpkn/AAm6XdxmE0FNweU41RYTteA?rlkey=55r9rs8rjr6yrp3x6txrqgmaq&dl=0', external: true },
       { label: 'Logo Black (EPS)', href: '/downloads/andrei/andrei-banuta-logo-black.eps' },
       { label: 'Logo White (EPS)', href: '/downloads/andrei/andrei-banuta-logo-white.eps' },
       { label: 'Press Photo 1', href: '/downloads/andrei/andrei-banuta-press-1.jpg' },
@@ -87,6 +89,7 @@ const roster: Artist[] = [
       { id: 'kAUB54Pxrpo', title: 'M-am Îndrăgostit de Tine', year: '2024' },
     ],
     downloads: [
+      { label: 'Full Press Kit (Dropbox)', href: 'https://www.dropbox.com/scl/fo/054qowaq9gf39eadmy2wr/AG5NhRAj-jWK1ufGR74aSts?rlkey=hq7i21v2mpm6giyav6auzcntj&dl=0', external: true },
       { label: 'Logo Black (PNG)', href: '/downloads/georgiana/georgiana-neagu-logo-black.png' },
       { label: 'Logo White (PNG)', href: '/downloads/georgiana/georgiana-neagu-logo-white.png' },
       { label: 'Press Photo 1', href: '/downloads/georgiana/georgiana-neagu-press-1.jpg' },
@@ -114,6 +117,7 @@ const roster: Artist[] = [
       { id: 'ev7LLbkKsHA', title: 'Bye Bye Boy', year: '2023' },
     ],
     downloads: [
+      { label: 'Full Press Kit (Dropbox)', href: 'https://www.dropbox.com/scl/fo/3o0bgbudpacnhwkvinogu/AI1kNIk-DV7qiayggh-61m8?rlkey=6n31l37ebr9n42knnuhltnuz8&dl=0', external: true },
       { label: 'Logo (PNG)', href: '/downloads/emily/emily-istrate-logo.png' },
       { label: 'Press Photo 1', href: '/downloads/emily/emily-istrate-press-1.jpg' },
       { label: 'Press Photo 2', href: '/downloads/emily/emily-istrate-press-2.jpg' },
@@ -216,9 +220,15 @@ const tiles = [
                 <ul class="downloads">
                   {r.downloads.map((d) => (
                     <li>
-                      <a href={d.href} download class="dl-link">
+                      <a
+                        href={d.href}
+                        class={`dl-link${d.external ? ' dl-link-ext' : ''}`}
+                        {...(d.external
+                          ? { target: '_blank', rel: 'noopener noreferrer' }
+                          : { download: true })}
+                      >
                         <span class="dl-label">{d.label}</span>
-                        <span class="dl-icon mono">↓</span>
+                        <span class="dl-icon mono">{d.external ? '↗' : '↓'}</span>
                       </a>
                     </li>
                   ))}
@@ -635,6 +645,12 @@ const tiles = [
       transition: background 0.2s, color 0.2s;
     }
     .dl-link:hover { background: var(--gold); color: var(--ink); }
+    .dl-link-ext { background: #111; }
+    .dl-link-ext .dl-label::before {
+      content: '★ ';
+      color: var(--gold);
+    }
+    .dl-link-ext:hover .dl-label::before { color: var(--ink); }
     .dl-icon { font-size: 13px; }
 
     .expand-socials {
