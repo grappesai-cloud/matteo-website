@@ -134,8 +134,9 @@ const tiles = [
   {
     slug: 'shop',
     label: 'Shop',
-    sub: 'Merch & vinyl',
-    href: 'mailto:hello@mattmanmusic.com?subject=Shop%20inquiry',
+    sub: 'Coming soon',
+    href: '#',
+    disabled: true,
   },
   {
     slug: 'demos',
@@ -250,11 +251,19 @@ const tiles = [
 
     <section class="tiles" aria-label="More">
       {tiles.map((t) => (
-        <a href={t.href} class={`tile tile-${t.slug}`}>
-          <span class="tile-label">{t.label}</span>
-          <span class="tile-sub mono">{t.sub}</span>
-          <span class="tile-arrow mono" aria-hidden="true">↗</span>
-        </a>
+        t.disabled ? (
+          <div class={`tile tile-${t.slug} tile-disabled`} aria-disabled="true">
+            <span class="tile-label">{t.label}</span>
+            <span class="tile-sub mono">{t.sub}</span>
+            <span class="tile-arrow mono" aria-hidden="true">·</span>
+          </div>
+        ) : (
+          <a href={t.href} class={`tile tile-${t.slug}`}>
+            <span class="tile-label">{t.label}</span>
+            <span class="tile-sub mono">{t.sub}</span>
+            <span class="tile-arrow mono" aria-hidden="true">↗</span>
+          </a>
+        )
       ))}
     </section>
 
@@ -712,8 +721,18 @@ const tiles = [
     .tile:hover .tile-sub { color: rgba(10,10,10,0.65); }
     .tile-arrow { font-size: 16px; transition: transform 0.25s; }
     .tile:hover .tile-arrow { transform: translate(3px, -3px); }
-    .tile-shop { /* could differ */ }
-    .tile-demos { }
+    .tile-disabled {
+      cursor: default;
+      color: var(--dim);
+    }
+    .tile-disabled:hover {
+      background: #0e0e0e;
+      color: var(--dim);
+      border-color: var(--hair);
+    }
+    .tile-disabled .tile-label { color: var(--dim); }
+    .tile-disabled:hover .tile-sub { color: var(--dim); }
+    .tile-disabled:hover .tile-arrow { transform: none; }
 
     /* FOOTER */
     .foot {
