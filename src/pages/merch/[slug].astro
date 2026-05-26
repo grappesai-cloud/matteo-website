@@ -1,0 +1,408 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import CartDrawer from '../../components/CartDrawer.astro';
+import { formatPrice, ARTISTS, activeProducts, effectivePrice, compareAtPrice } from '../../lib/products';
+import { readCatalog } from '../../lib/catalog-store';
+
+export const prerender = false;
+
+const { slug } = Astro.params;
+const catalog = activeProducts(await readCatalog());
+const product = catalog.find((p) => p.slug === slug);
+if (!product) return Astro.redirect('/merch', 302);
+
+const artistName = ARTISTS.find((a) => a.slug === product.artist)?.name ?? '';
+const first = product.colors[0];
+---
+
+<Layout
+  title={`${product.name} — Mattman Shop`}
+  description={product.description}
+>
+  <div class="pd" data-slug={product.slug} data-track-stock={product.trackStock ? '1' : ''} data-stock={JSON.stringify(first.stock || {})}>
+    <header class="m-header">
+      <a href="/merch" class="m-brand">
+        <img src="/images/mattman/logo-black.png" alt="Mattman Music" class="m-brand-logo" />
+      </a>
+      <nav class="m-nav mono">
+        <a href="/merch" class="m-back">← Shop</a>
+        <button class="m-cart" type="button" data-cart-open aria-label="Deschide coșul">
+          Coș<span class="m-cart-badge" data-cart-count data-empty="1">0</span>
+        </button>
+      </nav>
+    </header>
+
+    <main class="pd-main">
+      <!-- GALLERY -->
+      <section class="pd-gallery" aria-label="Imagini produs">
+        <div class="pd-stage">
+          <img id="pd-main" class="pd-main-img" src={first.front} alt={product.name} width="2400" height="3000" />
+        </div>
+        <div class="pd-thumbs" id="pd-thumbs">
+          <button class="pd-thumb is-active" type="button" data-view="front">
+            <img src={first.front} alt="Față" id="pd-thumb-front" />
+          </button>
+          <button class="pd-thumb" type="button" data-view="back">
+            <img src={first.back} alt="Spate" id="pd-thumb-back" />
+          </button>
+        </div>
+      </section>
+
+      <!-- INFO -->
+      <section class="pd-info">
+        <p class="mono dim pd-eyebrow">{artistName} · Mattman</p>
+        <h1 class="pd-name">{product.name}</h1>
+        <p class="pd-sub mono">{product.subtitle}</p>
+        <p class="pd-price">
+          {compareAtPrice(product) && <s class="pd-was">{formatPrice(compareAtPrice(product)!)}</s>}
+          {formatPrice(effectivePrice(product))}
+          {product.discountPercent ? <span class="pd-saletag mono">−{product.discountPercent}%</span> : null}
+        </p>
+
+        <p class="pd-desc">{product.description}</p>
+
+        {product.colors.length > 1 && (
+          <div class="pd-field">
+            <span class="pd-field-label mono dim">Culoare · <span id="pd-color-label">{first.label}</span></span>
+            <div class="pd-colors" id="pd-colors" role="group">
+              {product.colors.map((c, i) => (
+                <button
+                  class={`pd-color${i === 0 ? ' is-active' : ''}`}
+                  type="button"
+                  data-color={c.key}
+                  data-front={c.front}
+                  data-back={c.back}
+                  data-label={c.label}
+                  data-stock={JSON.stringify(c.stock || {})}
+                  style={`--c:${c.swatch}`}
+                  aria-label={c.label}
+                ></button>
+              ))}
+            </div>
+          </div>
+        )}
+
+        <div class="pd-field">
+          <span class="pd-field-label mono dim">Mărime</span>
+          <div class="pd-sizes" id="pd-sizes" role="group">
+            {product.sizes.map((s) => (
+              <button class="pd-size" type="button" data-size={s}>{s}</button>
+            ))}
+          </div>
+          <a class="pd-sizeguide mono" href="#size-guide">Ghid de mărimi ↓</a>
+        </div>
+
+        <div class="pd-buy">
+          <div class="pd-qty" aria-label="Cantitate">
+            <button type="button" id="pd-dec" aria-label="Scade">−</button>
+            <span id="pd-qty">1</span>
+            <button type="button" id="pd-inc" aria-label="Crește">+</button>
+          </div>
+          <button class="pd-add" id="pd-add" type="button">
+            <span class="pd-add-label">Adaugă în coș</span>
+            <span class="pd-add-arrow" aria-hidden="true">→</span>
+          </button>
+        </div>
+        <p class="pd-hint mono" id="pd-hint" hidden>Alege o mărime mai întâi.</p>
+
+        <ul class="pd-details">
+          {product.details.map((d) => <li><span class="pd-det-dot" aria-hidden="true"></span>{d}</li>)}
+        </ul>
+
+        <div class="pd-meta mono dim">
+          <span>Transport gratuit peste 250 RON</span>
+          <span>Livrare 2–5 zile lucrătoare</span>
+        </div>
+
+        <div class="pd-sizeguide-block" id="size-guide">
+          <span class="pd-field-label mono dim">Ghid de mărimi (oversized, cm)</span>
+          <table class="pd-table mono">
+            <thead><tr><th>Mărime</th><th>Lățime piept</th><th>Lungime</th></tr></thead>
+            <tbody>
+              <tr><td>S</td><td>56</td><td>71</td></tr>
+              <tr><td>M</td><td>58</td><td>73</td></tr>
+              <tr><td>L</td><td>60</td><td>75</td></tr>
+              <tr><td>XL</td><td>62</td><td>77</td></tr>
+              <tr><td>XXL</td><td>64</td><td>79</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </section>
+    </main>
+
+    <footer class="m-foot mono">
+      <span>© {new Date().getFullYear()} Mattman Music</span>
+      <a href="mailto:hello@mattmanmusic.com">hello@mattmanmusic.com</a>
+    </footer>
+  </div>
+
+  <CartDrawer products={catalog} />
+
+  <script>
+    const root = document.querySelector<HTMLElement>('.pd')!;
+    const slug = root.dataset.slug!;
+
+    const mainImg = document.getElementById('pd-main') as HTMLImageElement;
+    const thumbFront = document.getElementById('pd-thumb-front') as HTMLImageElement;
+    const thumbBack = document.getElementById('pd-thumb-back') as HTMLImageElement;
+    const thumbBtns = Array.from(document.querySelectorAll<HTMLElement>('.pd-thumb'));
+
+    let color = (document.querySelector('.pd-color.is-active') as HTMLElement)?.dataset.color
+      || (document.querySelector('.pd-color') as HTMLElement)?.dataset.color
+      || 'black';
+    let view: 'front' | 'back' = 'front';
+    let size = '';
+    let qty = 1;
+
+    let frontSrc = thumbFront.src;
+    let backSrc = thumbBack.src;
+
+    const trackStock = root.dataset.trackStock === '1';
+    const hintEl = document.getElementById('pd-hint')!;
+
+    function currentStockMap(): Record<string, number> {
+      const activeColorBtn = document.querySelector('.pd-color.is-active') as HTMLElement | null;
+      const raw = activeColorBtn?.dataset.stock ?? root.dataset.stock ?? '{}';
+      try { return JSON.parse(raw); } catch { return {}; }
+    }
+    function updateSizes() {
+      if (!trackStock) return;
+      const stock = currentStockMap();
+      document.querySelectorAll<HTMLButtonElement>('.pd-size').forEach((b) => {
+        const sz = b.dataset.size!;
+        const out = (stock[sz] ?? 0) <= 0;
+        b.classList.toggle('is-out', out);
+        b.disabled = out;
+        if (out && size === sz) { size = ''; b.classList.remove('is-active'); }
+      });
+    }
+
+    function setView(v: 'front' | 'back') {
+      view = v;
+      mainImg.src = v === 'front' ? frontSrc : backSrc;
+      thumbBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.view === v));
+    }
+
+    // color switch
+    document.getElementById('pd-colors')?.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLElement>('.pd-color');
+      if (!btn) return;
+      color = btn.dataset.color!;
+      frontSrc = btn.dataset.front!;
+      backSrc = btn.dataset.back!;
+      thumbFront.src = frontSrc;
+      thumbBack.src = backSrc;
+      setView(view);
+      document.querySelectorAll('.pd-color').forEach((c) => c.classList.toggle('is-active', c === btn));
+      const lbl = document.getElementById('pd-color-label');
+      if (lbl) lbl.textContent = btn.dataset.label!;
+      updateSizes();
+    });
+
+    // thumbnail view toggle
+    thumbBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'front' | 'back')));
+
+    // size
+    document.getElementById('pd-sizes')!.addEventListener('click', (e) => {
+      const btn = (e.target as HTMLElement).closest<HTMLButtonElement>('.pd-size');
+      if (!btn || btn.disabled) return;
+      size = btn.dataset.size!;
+      document.querySelectorAll('.pd-size').forEach((s) => s.classList.toggle('is-active', s === btn));
+      hintEl.hidden = true;
+    });
+
+    // qty
+    const qtyEl = document.getElementById('pd-qty')!;
+    document.getElementById('pd-dec')!.addEventListener('click', () => { qty = Math.max(1, qty - 1); qtyEl.textContent = String(qty); });
+    document.getElementById('pd-inc')!.addEventListener('click', () => { qty = Math.min(10, qty + 1); qtyEl.textContent = String(qty); });
+
+    // add to cart
+    document.getElementById('pd-add')!.addEventListener('click', () => {
+      if (!size) {
+        hintEl.textContent = 'Alege o mărime mai întâi.';
+        hintEl.hidden = false;
+        return;
+      }
+      if (trackStock && (currentStockMap()[size] ?? 0) < qty) {
+        hintEl.textContent = 'Stoc insuficient pentru această mărime.';
+        hintEl.hidden = false;
+        return;
+      }
+      (window as any).MattmanCart?.add({ slug, color, size, qty });
+    });
+
+    updateSizes();
+  </script>
+
+  <style>
+    :global(.grain), :global(.cursor) { display: none !important; }
+
+    .pd {
+      min-height: 100vh;
+      padding: clamp(16px, 2.2vw, 32px);
+      display: flex;
+      flex-direction: column;
+      gap: clamp(24px, 3vw, 44px);
+      background: var(--ink, #0a0a0a);
+      color: var(--cream, #f2ebe0);
+    }
+
+    /* shared header (same as shop) */
+    .m-header { display: flex; align-items: center; justify-content: space-between; }
+    .m-brand-logo { height: clamp(26px, 3.4vw, 36px); width: auto; filter: invert(1) brightness(1) sepia(0.1); opacity: 0.95; }
+    .m-nav { display: flex; align-items: center; gap: clamp(16px, 2vw, 28px); }
+    .m-back { color: var(--dim, rgba(242,235,224,0.55)); letter-spacing: 0.1em; transition: color 0.2s; }
+    .m-back:hover { color: var(--gold, #c9a24a); }
+    .m-cart {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 9px 16px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32));
+      border-radius: 999px; color: var(--cream, #f2ebe0);
+      letter-spacing: 0.12em; text-transform: uppercase; transition: background 0.2s, color 0.2s;
+    }
+    .m-cart:hover { background: var(--cream, #f2ebe0); color: var(--ink, #0a0a0a); }
+    .m-cart-badge {
+      min-width: 18px; height: 18px; padding: 0 5px; border-radius: 999px;
+      background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); font-size: 10px;
+      display: inline-grid; place-items: center; transition: opacity 0.2s, transform 0.2s;
+    }
+    .m-cart-badge[data-empty="1"] { opacity: 0; transform: scale(0.6); }
+    .m-cart:hover .m-cart-badge { background: var(--ink, #0a0a0a); color: var(--gold, #c9a24a); }
+
+    /* MAIN LAYOUT */
+    .pd-main {
+      display: grid;
+      grid-template-columns: 1.05fr 0.95fr;
+      gap: clamp(24px, 4vw, 72px);
+      align-items: start;
+    }
+
+    /* GALLERY */
+    .pd-gallery { position: sticky; top: 24px; display: flex; flex-direction: column; gap: 14px; }
+    .pd-stage {
+      aspect-ratio: 4 / 5;
+      border: 1px solid var(--hair, rgba(242,235,224,0.14));
+      border-radius: 6px;
+      overflow: hidden;
+      background: #131313;
+    }
+    .pd-main-img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s ease; }
+    .pd-thumbs { display: flex; gap: 12px; }
+    .pd-thumb {
+      width: 84px; aspect-ratio: 4/5;
+      border: 1px solid var(--hair, rgba(242,235,224,0.14));
+      border-radius: 4px; overflow: hidden; background: #131313; cursor: pointer; padding: 0;
+      transition: border-color 0.2s;
+    }
+    .pd-thumb img { width: 100%; height: 100%; object-fit: cover; }
+    .pd-thumb.is-active { border-color: var(--gold, #c9a24a); }
+
+    /* INFO */
+    .pd-eyebrow { letter-spacing: 0.16em; }
+    .pd-name {
+      font-family: var(--serif, 'Fraunces', serif);
+      font-weight: 400;
+      font-size: clamp(34px, 5vw, 64px);
+      line-height: 0.95; letter-spacing: -0.02em;
+      margin: 10px 0 6px;
+    }
+    .pd-sub { color: var(--gold, #c9a24a); letter-spacing: 0.06em; }
+    .pd-price {
+      font-family: var(--serif, 'Fraunces', serif);
+      font-size: clamp(24px, 2.6vw, 32px);
+      margin: 16px 0 0;
+      display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap;
+    }
+    .pd-was { color: var(--dim, rgba(242,235,224,0.55)); text-decoration: line-through; font-size: 0.7em; }
+    .pd-saletag {
+      font-family: var(--mono, monospace); font-size: 12px;
+      background: #b3261e; color: #fff; padding: 4px 9px; border-radius: 999px;
+    }
+    .pd-desc {
+      font-size: clamp(14px, 1.05vw, 16px);
+      line-height: 1.7;
+      color: rgba(242,235,224,0.8);
+      margin: 22px 0 28px;
+      max-width: 52ch;
+    }
+
+    .pd-field { margin-bottom: 22px; }
+    .pd-field-label { display: block; letter-spacing: 0.14em; margin-bottom: 12px; }
+
+    .pd-colors { display: flex; gap: 12px; }
+    .pd-color {
+      width: 34px; height: 34px; border-radius: 999px;
+      background: var(--c);
+      border: 1px solid rgba(242,235,224,0.4);
+      cursor: pointer; padding: 0;
+      box-shadow: 0 0 0 2px transparent;
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .pd-color:hover { transform: scale(1.08); }
+    .pd-color.is-active { box-shadow: 0 0 0 2px var(--ink, #0a0a0a), 0 0 0 4px var(--gold, #c9a24a); }
+
+    .pd-sizes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .pd-size {
+      min-width: 48px; padding: 12px 14px;
+      border: 1px solid var(--hair-strong, rgba(242,235,224,0.32));
+      border-radius: 6px; background: transparent;
+      color: var(--cream, #f2ebe0); font-family: var(--mono, monospace); font-size: 13px;
+      cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .pd-size:hover { border-color: var(--cream, #f2ebe0); }
+    .pd-size.is-active { background: var(--cream, #f2ebe0); color: var(--ink, #0a0a0a); border-color: var(--cream, #f2ebe0); }
+    .pd-size.is-out { opacity: 0.35; text-decoration: line-through; cursor: not-allowed; }
+    .pd-size.is-out:hover { border-color: var(--hair-strong, rgba(242,235,224,0.32)); }
+    .pd-sizeguide { display: inline-block; margin-top: 12px; color: var(--dim, rgba(242,235,224,0.55)); letter-spacing: 0.1em; transition: color 0.2s; }
+    .pd-sizeguide:hover { color: var(--gold, #c9a24a); }
+
+    .pd-buy { display: flex; gap: 12px; align-items: stretch; margin-top: 6px; }
+    .pd-qty {
+      display: inline-flex; align-items: center;
+      border: 1px solid var(--hair-strong, rgba(242,235,224,0.32));
+      border-radius: 999px;
+    }
+    .pd-qty button {
+      width: 44px; height: 100%; min-height: 52px;
+      background: transparent; border: 0; color: var(--cream, #f2ebe0);
+      font-size: 18px; cursor: pointer;
+    }
+    .pd-qty button:hover { color: var(--gold, #c9a24a); }
+    .pd-qty span { min-width: 28px; text-align: center; font-family: var(--mono, monospace); }
+    .pd-add {
+      flex: 1 1 auto;
+      padding: 16px 24px;
+      background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a);
+      border: 0; border-radius: 999px;
+      font-family: var(--mono, monospace); text-transform: uppercase; letter-spacing: 0.14em; font-size: 12px;
+      cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.25s, gap 0.25s;
+    }
+    .pd-add:hover { background: var(--gold-bright, #e8c16c); gap: 16px; }
+    .pd-hint { color: #d9534f; margin: 12px 0 0; letter-spacing: 0.06em; }
+
+    .pd-details { list-style: none; margin: 30px 0 0; padding: 26px 0 0; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); display: flex; flex-direction: column; gap: 12px; }
+    .pd-details li { display: flex; align-items: center; gap: 12px; font-size: 14px; color: rgba(242,235,224,0.82); }
+    .pd-det-dot { width: 5px; height: 5px; border-radius: 999px; background: var(--gold, #c9a24a); flex: 0 0 auto; }
+
+    .pd-meta { display: flex; flex-wrap: wrap; gap: 8px 24px; margin-top: 22px; letter-spacing: 0.08em; }
+
+    .pd-sizeguide-block { margin-top: 34px; padding-top: 26px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); scroll-margin-top: 24px; }
+    .pd-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
+    .pd-table th, .pd-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--hair, rgba(242,235,224,0.14)); }
+    .pd-table th { color: var(--dim, rgba(242,235,224,0.55)); letter-spacing: 0.1em; font-weight: 400; }
+
+    .m-foot {
+      margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      padding-top: 24px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14));
+      color: var(--dim, rgba(242,235,224,0.55));
+    }
+    .m-foot a { color: inherit; transition: color 0.2s; }
+    .m-foot a:hover { color: var(--gold, #c9a24a); }
+
+    @media (max-width: 860px) {
+      .pd-main { grid-template-columns: 1fr; }
+      .pd-gallery { position: static; }
+      .pd-stage { max-width: 520px; }
+    }
+  </style>
+</Layout>

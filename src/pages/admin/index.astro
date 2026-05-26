@@ -1,0 +1,798 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { ARTISTS, SIZES } from '../../lib/products';
+import { isAuthed, isConfigured } from '../../lib/admin-auth';
+import { canWrite } from '../../lib/catalog-store';
+
+export const prerender = false;
+
+const authed = isAuthed(Astro.cookies);
+const configured = isConfigured();
+const blobReady = canWrite();
+---
+
+<Layout title="Admin — Mattman Music" description="Panou de administrare merch.">
+  <div class="adm">
+    {!authed ? (
+      <!-- LOGIN -->
+      <div class="adm-login">
+        <div class="adm-login-card">
+          <img src="/images/mattman/logo-black.png" alt="Mattman" class="adm-login-logo" />
+          <h1 class="adm-login-title">Panou Admin</h1>
+          {!configured && (
+            <p class="adm-warn mono">⚠ ADMIN_PASSWORD nu e setat în mediu. Adaugă-l în .env / Vercel.</p>
+          )}
+          <form id="login-form" class="adm-login-form">
+            <input
+              type="password"
+              id="login-pass"
+              class="adm-input"
+              placeholder="Parolă"
+              autocomplete="current-password"
+              required
+            />
+            <button type="submit" class="adm-btn adm-btn-gold">Intră</button>
+            <p class="adm-login-err mono" id="login-err" hidden></p>
+          </form>
+        </div>
+      </div>
+    ) : (
+      <!-- DASHBOARD -->
+      <div class="adm-shell" data-blob={blobReady ? '1' : ''}>
+        <header class="adm-head">
+          <div class="adm-head-left">
+            <img src="/images/mattman/logo-black.png" alt="Mattman" class="adm-logo" />
+            <span class="mono dim">Admin · Merch</span>
+          </div>
+          <nav class="adm-head-right mono">
+            <a href="/merch" target="_blank" class="adm-link">Vezi shop ↗</a>
+            <button id="logout-btn" class="adm-link adm-link-btn" type="button">Logout</button>
+          </nav>
+        </header>
+
+        {!blobReady && (
+          <p class="adm-banner mono">
+            ⚠ Stocarea (Vercel Blob) nu e configurată — vezi produsele „seed", dar
+            <strong> modificările nu se salvează</strong>. Adaugă <code>BLOB_READ_WRITE_TOKEN</code>.
+          </p>
+        )}
+
+        <nav class="adm-views" id="view-switch">
+          <button class="adm-view-tab is-active" data-view="products" type="button">Produse</button>
+          <button class="adm-view-tab" data-view="codes" type="button">Coduri reducere</button>
+        </nav>
+
+        <div id="products-view">
+          <section class="adm-toolbar">
+            <div class="adm-tabs" id="artist-tabs">
+              {ARTISTS.map((a, i) => (
+                <button class={`adm-tab${i === 0 ? ' is-active' : ''}`} data-artist={a.slug} type="button">
+                  {a.name} <span class="adm-tab-count mono" data-count={a.slug}>0</span>
+                </button>
+              ))}
+            </div>
+            <button class="adm-btn adm-btn-gold" id="new-btn" type="button">+ Produs nou</button>
+          </section>
+
+          <section class="adm-list" id="product-list" aria-live="polite">
+            <p class="adm-loading mono dim">Se încarcă…</p>
+          </section>
+        </div>
+
+        <div id="codes-view" hidden>
+          <form class="adm-code-form" id="code-form">
+            <div class="adm-code-row">
+              <label class="adm-field">
+                <span class="adm-label mono">Cod</span>
+                <input type="text" id="c-code" class="adm-input" placeholder="VARA10" autocomplete="off" />
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Tip</span>
+                <select id="c-kind" class="adm-input">
+                  <option value="percent">% reducere</option>
+                  <option value="amount">RON reducere</option>
+                </select>
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Valoare</span>
+                <input type="number" id="c-value" class="adm-input" min="1" placeholder="10" />
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Utilizări max</span>
+                <input type="number" id="c-max" class="adm-input" min="1" placeholder="opțional" />
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Expiră</span>
+                <input type="date" id="c-exp" class="adm-input" />
+              </label>
+              <button class="adm-btn adm-btn-gold" id="code-save" type="submit">Creează cod</button>
+            </div>
+            <p class="adm-modal-err mono" id="code-err" hidden></p>
+          </form>
+          <div class="adm-list" id="codes-list" aria-live="polite">
+            <p class="adm-loading mono dim">Se încarcă…</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- EDITOR MODAL -->
+      <div class="adm-modal" id="editor" hidden>
+        <div class="adm-modal-overlay" data-editor-close></div>
+        <form class="adm-modal-card" id="editor-form" data-lenis-prevent>
+          <header class="adm-modal-head">
+            <h2 class="adm-modal-title" id="editor-title">Produs nou</h2>
+            <button type="button" class="adm-modal-x" data-editor-close aria-label="Închide">×</button>
+          </header>
+
+          <div class="adm-modal-body">
+            <input type="hidden" id="f-id" />
+
+            <div class="adm-grid2">
+              <label class="adm-field">
+                <span class="adm-label mono">Artist</span>
+                <select id="f-artist" class="adm-input">
+                  {ARTISTS.map((a) => <option value={a.slug}>{a.name}</option>)}
+                </select>
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Preț (RON)</span>
+                <input type="number" id="f-price" class="adm-input" min="1" step="1" value="169" />
+              </label>
+            </div>
+
+            <label class="adm-field">
+              <span class="adm-label mono">Nume produs</span>
+              <input type="text" id="f-name" class="adm-input" placeholder="ex: Suflet de Bagabont" />
+            </label>
+
+            <div class="adm-grid2">
+              <label class="adm-field">
+                <span class="adm-label mono">Slug (link)</span>
+                <input type="text" id="f-slug" class="adm-input" placeholder="auto din nume" />
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Subtitlu</span>
+                <input type="text" id="f-subtitle" class="adm-input" placeholder="Oversized · ediție limitată" />
+              </label>
+            </div>
+
+            <div class="adm-grid2">
+              <label class="adm-field">
+                <span class="adm-label mono">Etichetă (opțional)</span>
+                <input type="text" id="f-badge" class="adm-input" placeholder="Best seller / Diptic / Nou" />
+              </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Reducere (%)</span>
+                <input type="number" id="f-discount" class="adm-input" min="0" max="90" value="0" />
+              </label>
+            </div>
+
+            <label class="adm-field">
+              <span class="adm-label mono">Descriere</span>
+              <textarea id="f-desc" class="adm-input adm-textarea" rows="4" placeholder="Povestea produsului…"></textarea>
+            </label>
+
+            <label class="adm-field">
+              <span class="adm-label mono">Detalii (câte unul pe linie)</span>
+              <textarea id="f-details" class="adm-input adm-textarea" rows="4" placeholder={"Croială oversized unisex\n100% bumbac premium, 240 g/m²"}></textarea>
+            </label>
+
+            <div class="adm-field">
+              <span class="adm-label mono">Mărimi disponibile</span>
+              <div class="adm-sizes" id="f-sizes">
+                {SIZES.map((s) => (
+                  <label class="adm-size">
+                    <input type="checkbox" value={s} checked />
+                    <span>{s}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
+            <label class="adm-field adm-field-inline">
+              <input type="checkbox" id="f-track" />
+              <span class="adm-label mono" style="margin:0">Urmărește stocul (pe culoare × mărime)</span>
+            </label>
+
+            <div class="adm-field">
+              <div class="adm-colors-head">
+                <span class="adm-label mono">Culori &amp; poze (față + spate)</span>
+                <button type="button" class="adm-btn adm-btn-ghost adm-btn-sm" id="add-color">+ Culoare</button>
+              </div>
+              <div id="f-colors" class="adm-colors"></div>
+            </div>
+
+            <div class="adm-grid2">
+              <label class="adm-field">
+                <span class="adm-label mono">Ordine afișare</span>
+                <input type="number" id="f-sort" class="adm-input" step="1" placeholder="auto" />
+              </label>
+              <label class="adm-field adm-field-inline">
+                <input type="checkbox" id="f-active" checked />
+                <span class="adm-label mono" style="margin:0">Activ (vizibil în shop)</span>
+              </label>
+            </div>
+
+            <p class="adm-modal-err mono" id="editor-err" hidden></p>
+          </div>
+
+          <footer class="adm-modal-foot">
+            <button type="button" class="adm-btn adm-btn-ghost" data-editor-close>Anulează</button>
+            <button type="submit" class="adm-btn adm-btn-gold" id="save-btn">Salvează</button>
+          </footer>
+        </form>
+      </div>
+    )}
+  </div>
+
+  <!-- color row template -->
+  <template id="color-tpl">
+    <div class="adm-color">
+      <div class="adm-color-top">
+        <input type="text" class="adm-input adm-color-label" placeholder="Nume culoare (ex: Negru)" />
+        <input type="color" class="adm-color-swatch" value="#111111" title="Culoare buton" />
+        <button type="button" class="adm-color-del" title="Șterge culoarea">×</button>
+      </div>
+      <div class="adm-color-imgs">
+        <label class="adm-upload" data-side="front">
+          <input type="hidden" class="adm-img-url" />
+          <span class="adm-upload-inner">
+            <img class="adm-upload-preview" hidden />
+            <span class="adm-upload-cta mono">Față ↑</span>
+          </span>
+          <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
+        </label>
+        <label class="adm-upload" data-side="back">
+          <input type="hidden" class="adm-img-url" />
+          <span class="adm-upload-inner">
+            <img class="adm-upload-preview" hidden />
+            <span class="adm-upload-cta mono">Spate ↑</span>
+          </span>
+          <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
+        </label>
+      </div>
+      <div class="adm-color-stock" hidden>
+        <span class="adm-label mono">Stoc pe mărime</span>
+        <div class="adm-stock-grid">
+          {SIZES.map((s) => (
+            <label class="adm-stock-cell">
+              <span class="mono">{s}</span>
+              <input type="number" class="adm-stock-input" data-size={s} min="0" value="0" />
+            </label>
+          ))}
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script>
+    // ===== LOGIN =====
+    const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
+    if (loginForm) {
+      loginForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const pass = (document.getElementById('login-pass') as HTMLInputElement).value;
+        const err = document.getElementById('login-err') as HTMLElement;
+        err.hidden = true;
+        try {
+          const res = await fetch('/api/admin/login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ password: pass }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Eroare la autentificare.');
+          location.reload();
+        } catch (e: any) {
+          err.textContent = e?.message || 'Eroare.';
+          err.hidden = false;
+        }
+      });
+    }
+
+    // ===== DASHBOARD =====
+    const shell = document.querySelector('.adm-shell');
+    if (shell) {
+      const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+      const esc = (s: string) =>
+        String(s ?? '').replace(/[&<>"']/g, (c) => (
+          { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any
+        )[c]);
+
+      let products: any[] = [];
+      let activeArtist = (document.querySelector('.adm-tab') as HTMLElement)?.dataset.artist || 'andrei';
+
+      const listEl = document.getElementById('product-list')!;
+      const tabs = Array.from(document.querySelectorAll<HTMLElement>('.adm-tab'));
+
+      async function load() {
+        listEl.innerHTML = '<p class="adm-loading mono dim">Se încarcă…</p>';
+        const res = await fetch('/api/admin/products');
+        if (res.status === 401) { location.reload(); return; }
+        const data = await res.json();
+        products = data.products || [];
+        updateCounts();
+        renderList();
+      }
+
+      function updateCounts() {
+        document.querySelectorAll<HTMLElement>('[data-count]').forEach((el) => {
+          el.textContent = String(products.filter((p) => p.artist === el.dataset.count).length);
+        });
+      }
+
+      function renderList() {
+        const items = products.filter((p) => p.artist === activeArtist);
+        if (!items.length) {
+          listEl.innerHTML = '<p class="adm-empty mono dim">Niciun produs pentru acest artist încă. Apasă „+ Produs nou".</p>';
+          return;
+        }
+        listEl.innerHTML = items
+          .map((p) => {
+            const img = p.colors?.[0]?.front || '';
+            return `
+            <article class="adm-row${p.active === false ? ' is-off' : ''}">
+              <img class="adm-row-thumb" src="${esc(img)}" alt="" />
+              <div class="adm-row-info">
+                <h3 class="adm-row-name">${esc(p.name)}</h3>
+                <p class="adm-row-meta mono dim">${p.price} RON · ${p.colors?.length || 0} culori · ${(p.sizes || []).join('/')}${p.active === false ? ' · ASCUNS' : ''}</p>
+              </div>
+              <div class="adm-row-actions">
+                <button class="adm-btn adm-btn-ghost adm-btn-sm" data-edit="${esc(p.id)}">Editează</button>
+                <button class="adm-btn adm-btn-danger adm-btn-sm" data-del="${esc(p.id)}">Șterge</button>
+              </div>
+            </article>`;
+          })
+          .join('');
+      }
+
+      tabs.forEach((t) =>
+        t.addEventListener('click', () => {
+          activeArtist = t.dataset.artist!;
+          tabs.forEach((x) => x.classList.toggle('is-active', x === t));
+          renderList();
+        })
+      );
+
+      listEl.addEventListener('click', (e) => {
+        const t = e.target as HTMLElement;
+        if (t.dataset.edit) openEditor(products.find((p) => p.id === t.dataset.edit));
+        if (t.dataset.del) del(t.dataset.del);
+      });
+
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        await fetch('/api/admin/logout', { method: 'POST' });
+        location.reload();
+      });
+
+      async function del(id: string) {
+        const p = products.find((x) => x.id === id);
+        if (!confirm(`Ștergi „${p?.name}"? Acțiunea nu poate fi anulată.`)) return;
+        const res = await fetch('/api/admin/products', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id }),
+        });
+        const data = await res.json();
+        if (!res.ok) { alert(data.error || 'Ștergere eșuată.'); return; }
+        load();
+      }
+
+      // ===== EDITOR =====
+      const editor = document.getElementById('editor')!;
+      const form = document.getElementById('editor-form') as HTMLFormElement;
+      const colorsWrap = document.getElementById('f-colors')!;
+      const tpl = document.getElementById('color-tpl') as HTMLTemplateElement;
+      const errEl = document.getElementById('editor-err') as HTMLElement;
+      const $ = <T extends HTMLElement = HTMLInputElement>(id: string) => document.getElementById(id) as T;
+
+      function openEditor(p?: any) {
+        errEl.hidden = true;
+        (document.getElementById('editor-title') as HTMLElement).textContent = p ? 'Editează produs' : 'Produs nou';
+        ($('f-id') as HTMLInputElement).value = p?.id || '';
+        ($('f-artist') as HTMLSelectElement).value = p?.artist || activeArtist;
+        ($('f-name') as HTMLInputElement).value = p?.name || '';
+        ($('f-slug') as HTMLInputElement).value = p?.slug || '';
+        ($('f-subtitle') as HTMLInputElement).value = p?.subtitle || '';
+        ($('f-price') as HTMLInputElement).value = String(p?.price ?? 169);
+        ($('f-badge') as HTMLInputElement).value = p?.badge || '';
+        ($('f-discount') as HTMLInputElement).value = String(p?.discountPercent ?? 0);
+        ($('f-track') as HTMLInputElement).checked = !!p?.trackStock;
+        ($('f-desc') as HTMLTextAreaElement).value = p?.description || '';
+        ($('f-details') as HTMLTextAreaElement).value = (p?.details || []).join('\n');
+        ($('f-sort') as HTMLInputElement).value = p?.sort != null ? String(p.sort) : '';
+        ($('f-active') as HTMLInputElement).checked = p?.active !== false;
+        document.querySelectorAll<HTMLInputElement>('#f-sizes input').forEach((cb) => {
+          cb.checked = p ? (p.sizes || []).includes(cb.value) : true;
+        });
+        colorsWrap.innerHTML = '';
+        const colors = p?.colors?.length ? p.colors : [{ label: '', swatch: '#111111', front: '', back: '' }];
+        colors.forEach(addColor);
+        applyStockVisibility();
+
+        editor.hidden = false;
+        (window as any).lenis?.stop?.();
+        document.documentElement.style.overflow = 'hidden';
+      }
+      function closeEditor() {
+        editor.hidden = true;
+        (window as any).lenis?.start?.();
+        document.documentElement.style.overflow = '';
+      }
+      document.querySelectorAll('[data-editor-close]').forEach((b) => b.addEventListener('click', closeEditor));
+      document.getElementById('new-btn')?.addEventListener('click', () => openEditor());
+
+      function addColor(c?: any) {
+        const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        (node.querySelector('.adm-color-label') as HTMLInputElement).value = c?.label || '';
+        (node.querySelector('.adm-color-swatch') as HTMLInputElement).value = c?.swatch || '#111111';
+        node.querySelectorAll<HTMLElement>('.adm-upload').forEach((up) => {
+          const side = up.dataset.side as 'front' | 'back';
+          const url = c?.[side] || '';
+          const urlInput = up.querySelector('.adm-img-url') as HTMLInputElement;
+          const preview = up.querySelector('.adm-upload-preview') as HTMLImageElement;
+          const cta = up.querySelector('.adm-upload-cta') as HTMLElement;
+          const file = up.querySelector('.adm-file') as HTMLInputElement;
+          if (url) { urlInput.value = url; preview.src = url; preview.hidden = false; cta.textContent = side === 'front' ? 'Față ✓' : 'Spate ✓'; }
+          file.addEventListener('change', async () => {
+            const f = file.files?.[0];
+            if (!f) return;
+            cta.textContent = '… încarc';
+            const fd = new FormData();
+            fd.append('file', f);
+            try {
+              const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Upload eșuat');
+              urlInput.value = data.url;
+              preview.src = data.url;
+              preview.hidden = false;
+              cta.textContent = side === 'front' ? 'Față ✓' : 'Spate ✓';
+            } catch (e: any) {
+              cta.textContent = side === 'front' ? 'Față ↑' : 'Spate ↑';
+              alert(e?.message || 'Upload eșuat');
+            }
+          });
+        });
+        // per-size stock inputs
+        node.querySelectorAll<HTMLInputElement>('.adm-stock-input').forEach((inp) => {
+          const sz = inp.dataset.size!;
+          inp.value = String((c?.stock && c.stock[sz]) ?? 0);
+        });
+        node.querySelector('.adm-color-del')!.addEventListener('click', () => {
+          if (colorsWrap.children.length > 1) node.remove();
+        });
+        colorsWrap.appendChild(node);
+        applyStockVisibility();
+      }
+      document.getElementById('add-color')?.addEventListener('click', () => addColor());
+
+      function applyStockVisibility() {
+        const on = ($('f-track') as HTMLInputElement).checked;
+        document.querySelectorAll<HTMLElement>('.adm-color-stock').forEach((el) => { el.hidden = !on; });
+      }
+      $('f-track').addEventListener('change', applyStockVisibility);
+
+      // auto-suggest slug from name (only if slug empty)
+      $('f-name').addEventListener('input', () => {
+        const slug = $('f-slug') as HTMLInputElement;
+        if (!slug.dataset.touched) {
+          slug.value = ($('f-name') as HTMLInputElement).value
+            .toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+            .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+        }
+      });
+      $('f-slug').addEventListener('input', () => { ($('f-slug') as HTMLInputElement).dataset.touched = '1'; });
+
+      function collect() {
+        return {
+          id: ($('f-id') as HTMLInputElement).value || undefined,
+          artist: ($('f-artist') as HTMLSelectElement).value,
+          name: ($('f-name') as HTMLInputElement).value.trim(),
+          slug: ($('f-slug') as HTMLInputElement).value.trim(),
+          subtitle: ($('f-subtitle') as HTMLInputElement).value.trim(),
+          price: Number(($('f-price') as HTMLInputElement).value),
+          badge: ($('f-badge') as HTMLInputElement).value.trim(),
+          description: ($('f-desc') as HTMLTextAreaElement).value.trim(),
+          details: ($('f-details') as HTMLTextAreaElement).value.split('\n').map((s) => s.trim()).filter(Boolean),
+          sizes: Array.from(document.querySelectorAll<HTMLInputElement>('#f-sizes input:checked')).map((c) => c.value),
+          active: ($('f-active') as HTMLInputElement).checked,
+          sort: ($('f-sort') as HTMLInputElement).value ? Number(($('f-sort') as HTMLInputElement).value) : undefined,
+          discountPercent: Number(($('f-discount') as HTMLInputElement).value) || 0,
+          trackStock: ($('f-track') as HTMLInputElement).checked,
+        };
+      }
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        errEl.hidden = true;
+        const payload = collect();
+        const colors = gatherColors();
+        if (!payload.name) return showErr('Pune un nume.');
+        if (!payload.sizes.length) return showErr('Bifează cel puțin o mărime.');
+        if (!colors.length || !colors.every((c) => c.front && c.back))
+          return showErr('Fiecare culoare are nevoie de poză față și spate.');
+
+        const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
+        saveBtn.disabled = true; saveBtn.textContent = 'Se salvează…';
+        try {
+          const res = await fetch('/api/admin/products', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ...payload, colors }),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Salvare eșuată.');
+          closeEditor();
+          load();
+        } catch (e: any) {
+          showErr(e?.message || 'Eroare.');
+        } finally {
+          saveBtn.disabled = false; saveBtn.textContent = 'Salvează';
+        }
+      });
+
+      function gatherColors() {
+        return Array.from(colorsWrap.children).map((row) => {
+          const ups = row.querySelectorAll('.adm-upload');
+          const get = (i: number) => (ups[i].querySelector('.adm-img-url') as HTMLInputElement).value;
+          const stock: Record<string, number> = {};
+          row.querySelectorAll<HTMLInputElement>('.adm-stock-input').forEach((inp) => {
+            stock[inp.dataset.size!] = Number(inp.value) || 0;
+          });
+          return {
+            label: (row.querySelector('.adm-color-label') as HTMLInputElement).value.trim() || 'Culoare',
+            swatch: (row.querySelector('.adm-color-swatch') as HTMLInputElement).value,
+            front: get(0),
+            back: get(1),
+            stock,
+          };
+        });
+      }
+      function showErr(m: string) { errEl.textContent = m; errEl.hidden = false; }
+
+      // ===== VIEW SWITCH (Produse / Coduri) =====
+      const productsView = document.getElementById('products-view') as HTMLElement;
+      const codesView = document.getElementById('codes-view') as HTMLElement;
+      let codesLoaded = false;
+      document.getElementById('view-switch')?.addEventListener('click', (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-view]');
+        if (!btn) return;
+        const v = btn.dataset.view;
+        document.querySelectorAll('.adm-view-tab').forEach((t) => t.classList.toggle('is-active', t === btn));
+        productsView.hidden = v !== 'products';
+        codesView.hidden = v !== 'codes';
+        if (v === 'codes' && !codesLoaded) loadCodes();
+      });
+
+      // ===== CODES =====
+      const codesList = document.getElementById('codes-list')!;
+      const codeForm = document.getElementById('code-form') as HTMLFormElement;
+      const codeErr = document.getElementById('code-err') as HTMLElement;
+
+      async function loadCodes() {
+        codesLoaded = true;
+        codesList.innerHTML = '<p class="adm-loading mono dim">Se încarcă…</p>';
+        let data: any;
+        try {
+          const res = await fetch('/api/admin/codes');
+          data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Eroare');
+        } catch (e: any) {
+          codesList.innerHTML = `<p class="adm-empty mono dim">${esc(e.message || 'Eroare')}</p>`;
+          return;
+        }
+        if (!data.codes.length) {
+          codesList.innerHTML = '<p class="adm-empty mono dim">Niciun cod încă. Creează unul mai sus.</p>';
+          return;
+        }
+        codesList.innerHTML = data.codes
+          .map((c: any) => {
+            const val = c.kind === 'percent' ? `−${c.value}%` : `−${c.value} RON`;
+            const exp = c.expiresAt ? new Date(c.expiresAt * 1000).toLocaleDateString('ro-RO') : '—';
+            const uses = c.maxRedemptions ? `${c.timesRedeemed}/${c.maxRedemptions}` : `${c.timesRedeemed}`;
+            return `<article class="adm-row${c.active ? '' : ' is-off'}">
+              <div class="adm-code-badge">${esc(val)}</div>
+              <div class="adm-row-info">
+                <h3 class="adm-row-name">${esc(c.code)}</h3>
+                <p class="adm-row-meta mono dim">${c.active ? 'Activ' : 'Dezactivat'} · folosit ${uses} · expiră ${exp}</p>
+              </div>
+              <div class="adm-row-actions">${c.active ? `<button class="adm-btn adm-btn-danger adm-btn-sm" data-deact="${esc(c.id)}">Dezactivează</button>` : ''}</div>
+            </article>`;
+          })
+          .join('');
+      }
+
+      codesList.addEventListener('click', async (e) => {
+        const id = (e.target as HTMLElement).dataset?.deact;
+        if (!id) return;
+        if (!confirm('Dezactivezi codul? Nu mai poate fi folosit la checkout.')) return;
+        const res = await fetch('/api/admin/codes', {
+          method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+        });
+        if (res.ok) loadCodes();
+        else alert((await res.json()).error || 'Eroare');
+      });
+
+      codeForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        codeErr.hidden = true;
+        const payload = {
+          code: (document.getElementById('c-code') as HTMLInputElement).value,
+          kind: (document.getElementById('c-kind') as HTMLSelectElement).value,
+          value: Number((document.getElementById('c-value') as HTMLInputElement).value),
+          maxRedemptions: (document.getElementById('c-max') as HTMLInputElement).value || undefined,
+          expiresAt: (document.getElementById('c-exp') as HTMLInputElement).value || undefined,
+        };
+        const btn = document.getElementById('code-save') as HTMLButtonElement;
+        btn.disabled = true;
+        try {
+          const res = await fetch('/api/admin/codes', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Eroare');
+          codeForm.reset();
+          loadCodes();
+        } catch (e: any) {
+          codeErr.textContent = e.message;
+          codeErr.hidden = false;
+        } finally {
+          btn.disabled = false;
+        }
+      });
+
+      load();
+    }
+  </script>
+
+  <style is:global>
+    /* global: the product list rows are injected via JS innerHTML, which would
+       not receive Astro's scoped attribute. All selectors are adm-* prefixed
+       and this stylesheet only loads on /admin. */
+    .grain, .cursor { display: none !important; }
+    .adm { min-height: 100vh; background: var(--ink, #0a0a0a); color: var(--cream, #f2ebe0); }
+
+    /* LOGIN */
+    .adm-login { min-height: 100vh; display: grid; place-items: center; padding: 24px; }
+    .adm-login-card {
+      width: min(380px, 92vw); padding: 40px 32px;
+      border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 8px; background: #0e0e0e;
+      display: flex; flex-direction: column; gap: 14px; text-align: center;
+    }
+    .adm-login-logo { height: 34px; width: auto; margin: 0 auto 6px; filter: invert(1); opacity: 0.9; }
+    .adm-login-title { font-family: var(--serif, 'Fraunces', serif); font-weight: 400; font-size: 30px; margin: 0 0 6px; }
+    .adm-login-form { display: flex; flex-direction: column; gap: 12px; }
+    .adm-login-err { color: #d9534f; }
+    .adm-warn { color: var(--gold, #c9a24a); line-height: 1.5; }
+
+    /* INPUTS */
+    .adm-input {
+      width: 100%; padding: 12px 14px; background: #131313;
+      border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px;
+      color: var(--cream, #f2ebe0); font-size: 14px; font-family: var(--sans, 'Inter', sans-serif);
+    }
+    .adm-input:focus { outline: none; border-color: var(--gold, #c9a24a); }
+    .adm-textarea { resize: vertical; line-height: 1.5; }
+
+    /* BUTTONS */
+    .adm-btn {
+      padding: 12px 18px; border-radius: 999px; cursor: pointer; border: 1px solid transparent;
+      font-family: var(--mono, monospace); text-transform: uppercase; letter-spacing: 0.1em; font-size: 12px;
+      transition: background 0.2s, color 0.2s, border-color 0.2s;
+    }
+    .adm-btn-gold { background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); }
+    .adm-btn-gold:hover { background: var(--gold-bright, #e8c16c); }
+    .adm-btn-gold:disabled { opacity: 0.6; cursor: wait; }
+    .adm-btn-ghost { background: transparent; color: var(--cream, #f2ebe0); border-color: var(--hair-strong, rgba(242,235,224,0.32)); }
+    .adm-btn-ghost:hover { border-color: var(--cream, #f2ebe0); }
+    .adm-btn-danger { background: transparent; color: #d9534f; border-color: rgba(217,83,79,0.5); }
+    .adm-btn-danger:hover { background: #d9534f; color: #fff; }
+    .adm-btn-sm { padding: 8px 14px; font-size: 11px; }
+
+    /* SHELL */
+    .adm-shell { max-width: 1100px; margin: 0 auto; padding: clamp(16px, 2.5vw, 32px); display: flex; flex-direction: column; gap: 22px; }
+    .adm-head { display: flex; align-items: center; justify-content: space-between; }
+    .adm-head-left { display: flex; align-items: center; gap: 14px; }
+    .adm-logo { height: 30px; width: auto; filter: invert(1); opacity: 0.9; }
+    .adm-head-right { display: flex; align-items: center; gap: 18px; }
+    .adm-link { color: var(--dim, rgba(242,235,224,0.55)); letter-spacing: 0.1em; transition: color 0.2s; background: none; border: 0; cursor: pointer; }
+    .adm-link:hover { color: var(--gold, #c9a24a); }
+
+    .adm-banner {
+      padding: 14px 16px; border: 1px solid rgba(201,162,74,0.4); border-radius: 6px;
+      background: rgba(201,162,74,0.08); color: var(--gold, #c9a24a); line-height: 1.5;
+    }
+    .adm-banner code { background: rgba(242,235,224,0.1); padding: 1px 6px; border-radius: 4px; }
+
+    .adm-toolbar { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 14px; }
+    .adm-tabs { display: flex; flex-wrap: wrap; gap: 8px; }
+    .adm-tab {
+      display: inline-flex; align-items: center; gap: 8px; padding: 9px 15px;
+      border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 999px;
+      background: transparent; color: var(--cream, #f2ebe0); font-size: 13px; cursor: pointer; transition: 0.2s;
+    }
+    .adm-tab:hover { border-color: var(--cream, #f2ebe0); }
+    .adm-tab.is-active { background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); border-color: var(--gold, #c9a24a); }
+    .adm-tab-count { background: rgba(242,235,224,0.12); border-radius: 999px; padding: 1px 7px; font-size: 10px; }
+    .adm-tab.is-active .adm-tab-count { background: rgba(10,10,10,0.2); }
+
+    /* VIEW SWITCH */
+    .adm-views { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 999px; background: #0e0e0e; width: fit-content; }
+    .adm-view-tab { padding: 8px 18px; border-radius: 999px; background: transparent; border: 0; color: var(--dim, rgba(242,235,224,0.55)); font-family: var(--mono, monospace); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; cursor: pointer; transition: 0.2s; }
+    .adm-view-tab.is-active { background: var(--cream, #f2ebe0); color: var(--ink, #0a0a0a); }
+
+    /* CODES */
+    .adm-code-form { margin-bottom: 18px; padding: 16px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; background: #0e0e0e; }
+    .adm-code-row { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.9fr 1fr auto; gap: 12px; align-items: end; }
+    .adm-code-row .adm-btn { height: 44px; white-space: nowrap; }
+    .adm-code-badge { display: grid; place-items: center; min-width: 64px; padding: 0 12px; height: 44px; border-radius: 8px; background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); font-family: var(--serif, 'Fraunces', serif); font-size: 18px; }
+    @media (max-width: 760px) { .adm-code-row { grid-template-columns: 1fr 1fr; } }
+
+    /* LIST */
+    .adm-list { display: flex; flex-direction: column; gap: 10px; }
+    .adm-loading, .adm-empty { padding: 30px 4px; }
+    .adm-row {
+      display: grid; grid-template-columns: 56px 1fr auto; gap: 16px; align-items: center;
+      padding: 12px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 8px; background: #0e0e0e;
+    }
+    .adm-row.is-off { opacity: 0.55; }
+    .adm-row-thumb { width: 56px; height: 70px; object-fit: cover; border-radius: 4px; background: #161616; }
+    .adm-row-name { font-family: var(--serif, 'Fraunces', serif); font-weight: 400; font-size: 19px; margin: 0 0 3px; }
+    .adm-row-meta { letter-spacing: 0.05em; }
+    .adm-row-actions { display: flex; gap: 8px; }
+
+    /* MODAL */
+    .adm-modal { position: fixed; inset: 0; z-index: 300; display: grid; place-items: center; padding: 20px; }
+    .adm-modal[hidden] { display: none; }
+    .adm-modal-overlay { position: absolute; inset: 0; background: rgba(5,5,5,0.7); backdrop-filter: blur(3px); }
+    .adm-modal-card {
+      position: relative; width: min(680px, 96vw); max-height: 92vh; display: flex; flex-direction: column;
+      background: #0d0d0d; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 10px; overflow: hidden;
+    }
+    .adm-modal-head { display: flex; align-items: center; justify-content: space-between; padding: 18px 22px; border-bottom: 1px solid var(--hair, rgba(242,235,224,0.14)); }
+    .adm-modal-title { font-family: var(--serif, 'Fraunces', serif); font-weight: 400; font-size: 24px; margin: 0; }
+    .adm-modal-x { width: 34px; height: 34px; border-radius: 999px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); background: transparent; color: var(--cream, #f2ebe0); font-size: 20px; cursor: pointer; }
+    .adm-modal-x:hover { background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); }
+    .adm-modal-body { overflow-y: auto; padding: 22px; display: flex; flex-direction: column; gap: 16px; }
+    .adm-modal-foot { display: flex; justify-content: flex-end; gap: 10px; padding: 16px 22px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); background: #0a0a0a; }
+    .adm-modal-err { color: #d9534f; }
+
+    .adm-field { display: flex; flex-direction: column; gap: 7px; }
+    .adm-field-inline { flex-direction: row; align-items: center; gap: 10px; }
+    .adm-label { letter-spacing: 0.1em; color: var(--dim, rgba(242,235,224,0.55)); }
+    .adm-grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+
+    .adm-sizes { display: flex; flex-wrap: wrap; gap: 8px; }
+    .adm-size { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; cursor: pointer; font-family: var(--mono, monospace); font-size: 12px; }
+    .adm-size input { accent-color: var(--gold, #c9a24a); }
+
+    .adm-colors-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
+    .adm-colors { display: flex; flex-direction: column; gap: 12px; }
+    .adm-color { border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 8px; padding: 12px; display: flex; flex-direction: column; gap: 10px; background: #111; }
+    .adm-color-top { display: flex; gap: 10px; align-items: center; }
+    .adm-color-label { flex: 1; }
+    .adm-color-swatch { width: 44px; height: 40px; padding: 2px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; background: #131313; cursor: pointer; }
+    .adm-color-del { width: 40px; height: 40px; border-radius: 6px; border: 1px solid rgba(217,83,79,0.4); background: transparent; color: #d9534f; font-size: 18px; cursor: pointer; }
+    .adm-color-del:hover { background: #d9534f; color: #fff; }
+    .adm-color-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .adm-upload { position: relative; aspect-ratio: 4/5; border: 1px dashed var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; cursor: pointer; overflow: hidden; background: #161616; display: block; }
+    .adm-upload:hover { border-color: var(--gold, #c9a24a); }
+    .adm-upload-inner { position: absolute; inset: 0; display: grid; place-items: center; }
+    .adm-upload-preview { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .adm-upload-cta { position: relative; z-index: 1; color: var(--cream, #f2ebe0); background: rgba(10,10,10,0.6); padding: 5px 10px; border-radius: 999px; letter-spacing: 0.08em; }
+
+    .adm-color-stock { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    .adm-stock-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+    .adm-stock-cell { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+    .adm-stock-cell span { color: var(--dim, rgba(242,235,224,0.55)); font-size: 11px; }
+    .adm-stock-input { width: 100%; text-align: center; padding: 8px 4px; background: #131313; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; color: var(--cream, #f2ebe0); font-family: var(--mono, monospace); font-size: 13px; }
+    .adm-stock-input:focus { outline: none; border-color: var(--gold, #c9a24a); }
+
+    @media (max-width: 560px) {
+      .adm-grid2 { grid-template-columns: 1fr; }
+      .adm-row { grid-template-columns: 48px 1fr; }
+      .adm-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
+    }
+  </style>
+</Layout>

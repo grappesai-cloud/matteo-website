@@ -8,3 +8,6 @@ dist
 _assets-raw
 *.log
 .cache
+.data
+public/images/merch/uploads
+.env*.local
