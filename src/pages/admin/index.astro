@@ -60,6 +60,7 @@ const blobReady = canWrite();
         <nav class="adm-views" id="view-switch">
           <button class="adm-view-tab is-active" data-view="products" type="button">Produse</button>
           <button class="adm-view-tab" data-view="codes" type="button">Coduri reducere</button>
+          <button class="adm-view-tab" data-view="landing" type="button">Landing page</button>
         </nav>
 
         <div id="products-view">
@@ -113,7 +114,82 @@ const blobReady = canWrite();
             <p class="adm-loading mono dim">Se încarcă…</p>
           </div>
         </div>
+
+        <div id="landing-view" hidden>
+          <form id="landing-form" class="adm-landing">
+            <p class="adm-loading mono dim" id="landing-loading">Se încarcă…</p>
+
+            <div id="landing-fields" hidden>
+              <section class="adm-lsection">
+                <span class="adm-label mono">General</span>
+                <div class="adm-grid2">
+                  <label class="adm-field">
+                    <span class="adm-label mono">Subtitlu header</span>
+                    <input type="text" id="l-headersub" class="adm-input" />
+                  </label>
+                  <label class="adm-field">
+                    <span class="adm-label mono">Email footer</span>
+                    <input type="text" id="l-footeremail" class="adm-input" />
+                  </label>
+                </div>
+              </section>
+
+              <section class="adm-lsection">
+                <span class="adm-label mono">Butoane (Shop / Demos)</span>
+                <div id="l-tiles" class="adm-ltiles"></div>
+              </section>
+
+              <section class="adm-lsection">
+                <span class="adm-label mono">Artiști (roster 2×2)</span>
+                <div id="l-artists" class="adm-lartists"></div>
+              </section>
+
+              <p class="adm-modal-err mono" id="landing-err" hidden></p>
+              <div class="adm-lfoot">
+                <button type="submit" class="adm-btn adm-btn-gold" id="landing-save">Salvează landing</button>
+                <span class="mono dim" id="landing-status"></span>
+              </div>
+            </div>
+          </form>
+        </div>
       </div>
+
+      <!-- landing artist template -->
+      <template id="l-artist-tpl">
+        <article class="adm-lartist">
+          <div class="adm-lartist-head">
+            <label class="adm-lupload" data-photo>
+              <input type="hidden" class="l-photo-url" />
+              <img class="adm-lupload-img" hidden />
+              <span class="adm-lupload-cta mono">Foto ↑</span>
+              <input type="file" class="l-photo-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
+            </label>
+            <div class="adm-lartist-head-fields">
+              <input type="text" class="adm-input l-name" placeholder="Nume artist" />
+              <input type="text" class="adm-input l-tagline" placeholder="Tagline" />
+              <span class="mono dim l-slug-tag"></span>
+            </div>
+          </div>
+          <label class="adm-field">
+            <span class="adm-label mono">Bio (un paragraf per bloc, separate cu rând gol)</span>
+            <textarea class="adm-input adm-textarea l-bio" rows="5"></textarea>
+          </label>
+          <div class="adm-grid2">
+            <label class="adm-field">
+              <span class="adm-label mono">Piese — <code>youtube_id | Titlu | An</code> (un rând fiecare)</span>
+              <textarea class="adm-input adm-textarea l-tracks" rows="4"></textarea>
+            </label>
+            <label class="adm-field">
+              <span class="adm-label mono">Social — <code>kind | link</code> (instagram/youtube/spotify/tiktok)</span>
+              <textarea class="adm-input adm-textarea l-socials" rows="4"></textarea>
+            </label>
+          </div>
+          <label class="adm-field">
+            <span class="adm-label mono">Press kit — <code>Etichetă | link | ext</code> (pune <code>ext</code> la final dacă e link extern)</span>
+            <textarea class="adm-input adm-textarea l-downloads" rows="5"></textarea>
+          </label>
+        </article>
+      </template>
 
       <!-- EDITOR MODAL -->
       <div class="adm-modal" id="editor" hidden>
@@ -613,7 +689,9 @@ const blobReady = canWrite();
       // ===== VIEW SWITCH (Produse / Coduri) =====
       const productsView = document.getElementById('products-view') as HTMLElement;
       const codesView = document.getElementById('codes-view') as HTMLElement;
+      const landingView = document.getElementById('landing-view') as HTMLElement;
       let codesLoaded = false;
+      let landingLoaded = false;
       document.getElementById('view-switch')?.addEventListener('click', (e) => {
         const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-view]');
         if (!btn) return;
@@ -621,7 +699,9 @@ const blobReady = canWrite();
         document.querySelectorAll('.adm-view-tab').forEach((t) => t.classList.toggle('is-active', t === btn));
         productsView.hidden = v !== 'products';
         codesView.hidden = v !== 'codes';
+        landingView.hidden = v !== 'landing';
         if (v === 'codes' && !codesLoaded) loadCodes();
+        if (v === 'landing' && !landingLoaded) loadLanding();
       });
 
       // ===== CODES =====
@@ -698,6 +778,130 @@ const blobReady = canWrite();
           codeErr.hidden = false;
         } finally {
           btn.disabled = false;
+        }
+      });
+
+      // ===== LANDING =====
+      const landingForm = document.getElementById('landing-form') as HTMLFormElement;
+      const lArtistsWrap = document.getElementById('l-artists')!;
+      const lTilesWrap = document.getElementById('l-tiles')!;
+      const lArtistTpl = document.getElementById('l-artist-tpl') as HTMLTemplateElement;
+      const lErr = document.getElementById('landing-err') as HTMLElement;
+      const lStatus = document.getElementById('landing-status') as HTMLElement;
+
+      async function loadLanding() {
+        landingLoaded = true;
+        const res = await fetch('/api/admin/landing');
+        if (res.status === 401) { location.reload(); return; }
+        const data = await res.json();
+        renderLanding(data.content);
+        (document.getElementById('landing-loading') as HTMLElement).hidden = true;
+        (document.getElementById('landing-fields') as HTMLElement).hidden = false;
+      }
+
+      function renderLanding(c: any) {
+        ($('l-headersub') as HTMLInputElement).value = c.headerSub || '';
+        ($('l-footeremail') as HTMLInputElement).value = c.footerEmail || '';
+        lTilesWrap.innerHTML = (c.tiles || []).map((t: any) => `
+          <div class="adm-ltile" data-tile="${esc(t.slug)}">
+            <span class="mono dim adm-ltile-slug">${esc(t.slug)}</span>
+            <input class="adm-input l-tile-label" placeholder="Etichetă" value="${esc(t.label)}" />
+            <input class="adm-input l-tile-sub" placeholder="Subtitlu" value="${esc(t.sub)}" />
+            <input class="adm-input l-tile-href" placeholder="Link" value="${esc(t.href)}" />
+          </div>`).join('');
+        lArtistsWrap.innerHTML = '';
+        (c.roster || []).forEach((a: any) => lArtistsWrap.appendChild(buildArtist(a)));
+      }
+
+      function buildArtist(a: any): HTMLElement {
+        const node = lArtistTpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
+        node.dataset.slug = a.slug;
+        (node.querySelector('.l-slug-tag') as HTMLElement).textContent = a.slug;
+        (node.querySelector('.l-name') as HTMLInputElement).value = a.name || '';
+        (node.querySelector('.l-tagline') as HTMLInputElement).value = a.tagline || '';
+        (node.querySelector('.l-bio') as HTMLTextAreaElement).value = (a.bio || []).join('\n\n');
+        (node.querySelector('.l-tracks') as HTMLTextAreaElement).value =
+          (a.tracks || []).map((t: any) => [t.id, t.title, t.year || ''].filter(Boolean).join(' | ')).join('\n');
+        (node.querySelector('.l-socials') as HTMLTextAreaElement).value =
+          (a.socials || []).map((s: any) => `${s.kind} | ${s.href}`).join('\n');
+        (node.querySelector('.l-downloads') as HTMLTextAreaElement).value =
+          (a.downloads || []).map((d: any) => [d.label, d.href, d.external ? 'ext' : ''].filter(Boolean).join(' | ')).join('\n');
+        const up = node.querySelector('[data-photo]') as HTMLElement;
+        const urlInput = up.querySelector('.l-photo-url') as HTMLInputElement;
+        const img = up.querySelector('.adm-lupload-img') as HTMLImageElement;
+        const cta = up.querySelector('.adm-lupload-cta') as HTMLElement;
+        const file = up.querySelector('.l-photo-file') as HTMLInputElement;
+        if (a.photo) { urlInput.value = a.photo; img.src = a.photo; img.hidden = false; cta.textContent = 'Foto ✓'; }
+        file.addEventListener('change', async () => {
+          const f = file.files?.[0];
+          if (!f) return;
+          cta.textContent = '… încarc';
+          const fd = new FormData(); fd.append('file', f);
+          try {
+            const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
+            const d = await res.json();
+            if (!res.ok) throw new Error(d.error || 'Upload eșuat');
+            urlInput.value = d.url; img.src = d.url; img.hidden = false; cta.textContent = 'Foto ✓';
+          } catch (e: any) { cta.textContent = 'Foto ↑'; alert(e?.message || 'Upload eșuat'); }
+        });
+        return node;
+      }
+
+      function collectLanding() {
+        const parseLines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
+        const roster = Array.from(lArtistsWrap.querySelectorAll('.adm-lartist')).map((node) => {
+          const q = (sel: string) => node.querySelector(sel) as HTMLInputElement | HTMLTextAreaElement;
+          const bio = (q('.l-bio').value || '').split(/\n\s*\n/).map((p) => p.trim()).filter(Boolean);
+          const tracks = parseLines(q('.l-tracks').value).map((line) => {
+            const [id, title, year] = line.split('|').map((x) => x.trim());
+            return { id, title, year: year || undefined };
+          }).filter((t) => t.id && t.title);
+          const socials = parseLines(q('.l-socials').value).map((line) => {
+            const [kind, href] = line.split('|').map((x) => x.trim());
+            return { kind: (kind || '').toLowerCase(), href };
+          }).filter((s) => s.kind && s.href);
+          const downloads = parseLines(q('.l-downloads').value).map((line) => {
+            const parts = line.split('|').map((x) => x.trim());
+            return { label: parts[0], href: parts[1], external: (parts[2] || '').toLowerCase() === 'ext' };
+          }).filter((d) => d.label && d.href);
+          return {
+            slug: (node as HTMLElement).dataset.slug,
+            name: q('.l-name').value.trim(),
+            tagline: q('.l-tagline').value.trim(),
+            photo: (node.querySelector('.l-photo-url') as HTMLInputElement).value,
+            bio, tracks, socials, downloads,
+          };
+        });
+        const tiles = Array.from(lTilesWrap.querySelectorAll('.adm-ltile')).map((row) => ({
+          slug: (row as HTMLElement).dataset.tile,
+          label: (row.querySelector('.l-tile-label') as HTMLInputElement).value.trim(),
+          sub: (row.querySelector('.l-tile-sub') as HTMLInputElement).value.trim(),
+          href: (row.querySelector('.l-tile-href') as HTMLInputElement).value.trim(),
+        }));
+        return {
+          headerSub: ($('l-headersub') as HTMLInputElement).value.trim(),
+          footerEmail: ($('l-footeremail') as HTMLInputElement).value.trim(),
+          roster, tiles,
+        };
+      }
+
+      landingForm?.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        lErr.hidden = true; lStatus.textContent = '';
+        const btn = document.getElementById('landing-save') as HTMLButtonElement;
+        btn.disabled = true; btn.textContent = 'Se salvează…';
+        try {
+          const res = await fetch('/api/admin/landing', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(collectLanding()),
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Salvare eșuată.');
+          lStatus.textContent = '✓ Salvat';
+        } catch (e: any) {
+          lErr.textContent = e?.message || 'Eroare.'; lErr.hidden = false;
+        } finally {
+          btn.disabled = false; btn.textContent = 'Salvează landing';
         }
       });
 
@@ -848,10 +1052,31 @@ const blobReady = canWrite();
     .adm-stock-input { width: 100%; text-align: center; padding: 8px 4px; background: #131313; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; color: var(--cream, #f2ebe0); font-family: var(--mono, monospace); font-size: 13px; }
     .adm-stock-input:focus { outline: none; border-color: var(--gold, #c9a24a); }
 
+    /* LANDING EDITOR */
+    .adm-landing { display: flex; flex-direction: column; gap: 22px; }
+    .adm-lsection { display: flex; flex-direction: column; gap: 12px; padding-bottom: 22px; border-bottom: 1px solid var(--hair, rgba(242,235,224,0.14)); }
+    .adm-lsection > .adm-label { font-size: 13px; letter-spacing: 0.14em; }
+    .adm-ltiles { display: flex; flex-direction: column; gap: 10px; }
+    .adm-ltile { display: grid; grid-template-columns: 80px 1fr 1.2fr 1.4fr; gap: 10px; align-items: center; }
+    .adm-ltile-slug { text-transform: uppercase; letter-spacing: 0.1em; }
+    .adm-lartists { display: flex; flex-direction: column; gap: 18px; }
+    .adm-lartist { border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; background: #0e0e0e; }
+    .adm-lartist-head { display: flex; gap: 14px; align-items: stretch; }
+    .adm-lartist-head-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
+    .adm-lartist-head-fields .l-slug-tag { text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px; }
+    .adm-lupload { position: relative; width: 96px; flex: 0 0 96px; aspect-ratio: 4/5; border: 1px dashed var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; overflow: hidden; background: #161616; cursor: pointer; display: grid; place-items: center; }
+    .adm-lupload:hover { border-color: var(--gold, #c9a24a); }
+    .adm-lupload-img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+    .adm-lupload-cta { position: relative; z-index: 1; color: var(--cream, #f2ebe0); background: rgba(10,10,10,0.6); padding: 4px 8px; border-radius: 999px; letter-spacing: 0.06em; font-family: var(--mono, monospace); font-size: 11px; }
+    .adm-label code { background: rgba(242,235,224,0.1); padding: 1px 5px; border-radius: 4px; font-size: 0.92em; }
+    .adm-lfoot { display: flex; align-items: center; gap: 16px; }
+    #landing-status { letter-spacing: 0.08em; }
+
     @media (max-width: 560px) {
       .adm-grid2 { grid-template-columns: 1fr; }
       .adm-row { grid-template-columns: 48px 1fr; }
       .adm-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
+      .adm-ltile { grid-template-columns: 1fr; }
     }
   </style>
 </Layout>
