@@ -132,13 +132,19 @@ const blobReady = canWrite();
                 <span class="adm-label mono">Artist</span>
                 <select id="f-artist" class="adm-input">
                   {ARTISTS.map((a) => <option value={a.slug}>{a.name}</option>)}
+                  <option value="__new__">➕ Artist nou…</option>
                 </select>
               </label>
               <label class="adm-field">
                 <span class="adm-label mono">Preț (RON)</span>
-                <input type="number" id="f-price" class="adm-input" min="1" step="1" value="169" />
+                <input type="number" id="f-price" class="adm-input" min="1" step="1" value="130" />
               </label>
             </div>
+
+            <label class="adm-field" id="f-artist-new-wrap" hidden>
+              <span class="adm-label mono">Nume artist nou</span>
+              <input type="text" id="f-artist-new" class="adm-input" placeholder="ex: Cleopatra Stratan" />
+            </label>
 
             <label class="adm-field">
               <span class="adm-label mono">Nume produs</span>
@@ -299,11 +305,20 @@ const blobReady = canWrite();
           { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any
         )[c]);
 
+      const slugify = (s: string) =>
+        String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
+          .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
+
       let products: any[] = [];
-      let activeArtist = (document.querySelector('.adm-tab') as HTMLElement)?.dataset.artist || 'andrei';
+      const tabsWrap = document.getElementById('artist-tabs')!;
+      // seed known artists from the server-rendered base tabs (slug → display name)
+      const knownArtists = new Map<string, string>();
+      tabsWrap.querySelectorAll<HTMLElement>('.adm-tab').forEach((t) => {
+        knownArtists.set(t.dataset.artist!, (t.childNodes[0]?.textContent || t.dataset.artist!).trim());
+      });
+      let activeArtist = tabsWrap.querySelector<HTMLElement>('.adm-tab')?.dataset.artist || 'andrei';
 
       const listEl = document.getElementById('product-list')!;
-      const tabs = Array.from(document.querySelectorAll<HTMLElement>('.adm-tab'));
 
       async function load() {
         listEl.innerHTML = '<p class="adm-loading mono dim">Se încarcă…</p>';
@@ -311,8 +326,31 @@ const blobReady = canWrite();
         if (res.status === 401) { location.reload(); return; }
         const data = await res.json();
         products = data.products || [];
+        (data.artists || []).forEach((a: any) => { if (a?.slug) knownArtists.set(a.slug, a.name || a.slug); });
+        products.forEach((p) => { if (p.artist && !knownArtists.has(p.artist)) knownArtists.set(p.artist, p.artistName || p.artist); });
+        renderTabs();
+        renderArtistOptions();
         updateCounts();
         renderList();
+      }
+
+      function renderTabs() {
+        if (!knownArtists.has(activeArtist)) activeArtist = knownArtists.keys().next().value || 'andrei';
+        tabsWrap.innerHTML = [...knownArtists.entries()]
+          .map(([slug, name]) => `
+            <button class="adm-tab${slug === activeArtist ? ' is-active' : ''}" data-artist="${esc(slug)}" type="button">
+              ${esc(name)} <span class="adm-tab-count mono" data-count="${esc(slug)}">0</span>
+            </button>`)
+          .join('');
+      }
+
+      function renderArtistOptions() {
+        const sel = document.getElementById('f-artist') as HTMLSelectElement;
+        const current = sel.value;
+        sel.innerHTML = [...knownArtists.entries()]
+          .map(([slug, name]) => `<option value="${esc(slug)}">${esc(name)}</option>`)
+          .join('') + '<option value="__new__">➕ Artist nou…</option>';
+        if (current && [...sel.options].some((o) => o.value === current)) sel.value = current;
       }
 
       function updateCounts() {
@@ -346,13 +384,13 @@ const blobReady = canWrite();
           .join('');
       }
 
-      tabs.forEach((t) =>
-        t.addEventListener('click', () => {
-          activeArtist = t.dataset.artist!;
-          tabs.forEach((x) => x.classList.toggle('is-active', x === t));
-          renderList();
-        })
-      );
+      tabsWrap.addEventListener('click', (e) => {
+        const t = (e.target as HTMLElement).closest<HTMLElement>('.adm-tab');
+        if (!t) return;
+        activeArtist = t.dataset.artist!;
+        tabsWrap.querySelectorAll('.adm-tab').forEach((x) => x.classList.toggle('is-active', x === t));
+        renderList();
+      });
 
       listEl.addEventListener('click', (e) => {
         const t = e.target as HTMLElement;
@@ -390,11 +428,16 @@ const blobReady = canWrite();
         errEl.hidden = true;
         (document.getElementById('editor-title') as HTMLElement).textContent = p ? 'Editează produs' : 'Produs nou';
         ($('f-id') as HTMLInputElement).value = p?.id || '';
-        ($('f-artist') as HTMLSelectElement).value = p?.artist || activeArtist;
+        renderArtistOptions();
+        const artistSel = $('f-artist') as HTMLSelectElement;
+        const wantArtist = p?.artist || activeArtist;
+        artistSel.value = [...artistSel.options].some((o) => o.value === wantArtist) ? wantArtist : '__new__';
+        ($('f-artist-new') as HTMLInputElement).value = '';
+        applyArtistVisibility();
         ($('f-name') as HTMLInputElement).value = p?.name || '';
         ($('f-slug') as HTMLInputElement).value = p?.slug || '';
         ($('f-subtitle') as HTMLInputElement).value = p?.subtitle || '';
-        ($('f-price') as HTMLInputElement).value = String(p?.price ?? 169);
+        ($('f-price') as HTMLInputElement).value = String(p?.price ?? 130);
         ($('f-badge') as HTMLInputElement).value = p?.badge || '';
         ($('f-discount') as HTMLInputElement).value = String(p?.discountPercent ?? 0);
         ($('f-track') as HTMLInputElement).checked = !!p?.trackStock;
@@ -473,6 +516,13 @@ const blobReady = canWrite();
       }
       $('f-track').addEventListener('change', applyStockVisibility);
 
+      // show the "new artist name" field only when "Artist nou…" is picked
+      function applyArtistVisibility() {
+        const isNew = ($('f-artist') as HTMLSelectElement).value === '__new__';
+        (document.getElementById('f-artist-new-wrap') as HTMLElement).hidden = !isNew;
+      }
+      $('f-artist').addEventListener('change', applyArtistVisibility);
+
       // auto-suggest slug from name (only if slug empty)
       $('f-name').addEventListener('input', () => {
         const slug = $('f-slug') as HTMLInputElement;
@@ -485,9 +535,17 @@ const blobReady = canWrite();
       $('f-slug').addEventListener('input', () => { ($('f-slug') as HTMLInputElement).dataset.touched = '1'; });
 
       function collect() {
+        const sel = $('f-artist') as HTMLSelectElement;
+        let artist = sel.value;
+        let artistName = sel.options[sel.selectedIndex]?.text || '';
+        if (artist === '__new__') {
+          artistName = ($('f-artist-new') as HTMLInputElement).value.trim();
+          artist = slugify(artistName);
+        }
         return {
           id: ($('f-id') as HTMLInputElement).value || undefined,
-          artist: ($('f-artist') as HTMLSelectElement).value,
+          artist,
+          artistName,
           name: ($('f-name') as HTMLInputElement).value.trim(),
           slug: ($('f-slug') as HTMLInputElement).value.trim(),
           subtitle: ($('f-subtitle') as HTMLInputElement).value.trim(),
@@ -509,6 +567,7 @@ const blobReady = canWrite();
         const payload = collect();
         const colors = gatherColors();
         if (!payload.name) return showErr('Pune un nume.');
+        if (!payload.artist) return showErr('Alege un artist sau scrie numele unuia nou.');
         if (!payload.sizes.length) return showErr('Bifează cel puțin o mărime.');
         if (!colors.length || !colors.every((c) => c.front && c.back))
           return showErr('Fiecare culoare are nevoie de poză față și spate.');

@@ -1,13 +1,13 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { ARTISTS, SIZES, formatPrice, activeProducts, effectivePrice, compareAtPrice, isSoldOut } from '../../lib/products';
+import { catalogArtists, SIZES, formatPrice, activeProducts, effectivePrice, compareAtPrice, isSoldOut } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
 
 export const prerender = false;
 
 const products = activeProducts(await readCatalog());
-const artistsWithCounts = ARTISTS.map((a) => ({
+const artistsWithCounts = catalogArtists(products).map((a) => ({
   ...a,
   count: products.filter((p) => p.artist === a.slug).length,
 }));
@@ -34,8 +34,8 @@ const artistsWithCounts = ARTISTS.map((a) => ({
       <p class="mono dim m-eyebrow">Mattman Shop · ediție limitată</p>
       <h1 class="m-title">Merch</h1>
       <p class="m-lede">
-        Capsula <strong>Andrei Bănuță</strong> — tricouri oversized cu print pe față și pe spate.
-        Tipărite în ediție limitată. Transport gratuit peste 250 RON.
+        <strong>Andrei Bănuță</strong> — tricouri oversized cu print pe față și pe spate.
+        Ediție limitată.
       </p>
     </section>
 
@@ -292,12 +292,16 @@ const artistsWithCounts = ARTISTS.map((a) => ({
       backdrop-filter: grayscale(1);
     }
     .pc-was { color: var(--dim, rgba(242,235,224,0.55)); text-decoration: line-through; margin-right: 8px; }
-    .pc-colors { position: absolute; bottom: 12px; left: 12px; display: flex; gap: 6px; }
+    .pc-colors {
+      position: absolute; left: 50%; top: 50%;
+      transform: translate(-50%, -50%);
+      display: flex; gap: 12px;
+    }
     .pc-dot {
-      width: 14px; height: 14px; border-radius: 999px;
+      width: 30px; height: 30px; border-radius: 999px;
       background: var(--c);
-      border: 1px solid rgba(242,235,224,0.5);
-      box-shadow: 0 0 0 2px rgba(10,10,10,0.4);
+      border: 1.5px solid rgba(242,235,224,0.7);
+      box-shadow: 0 0 0 3px rgba(10,10,10,0.45);
     }
     .pc-info { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .pc-name {

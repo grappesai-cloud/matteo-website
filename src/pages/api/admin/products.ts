@@ -2,7 +2,7 @@ import type { APIRoute } from 'astro';
 import { isAuthed } from '../../../lib/admin-auth';
 import { readCatalog, writeCatalog } from '../../../lib/catalog-store';
 import {
-  ARTISTS, SIZES, slugify, sortProducts, clampPct,
+  ARTISTS, SIZES, slugify, sortProducts, clampPct, catalogArtists,
   type Product, type ProductColor, type SizeKey,
 } from '../../../lib/products';
 
@@ -50,8 +50,12 @@ function sanitize(input: any, existing?: Product): Product | { error: string } {
   const name = str(input?.name, 80);
   if (!name) return { error: 'Numele produsului e obligatoriu.' };
 
-  const artist = str(input?.artist, 40);
-  if (!ARTISTS.some((a) => a.slug === artist)) return { error: 'Artist invalid.' };
+  const artistName = str(input?.artistName, 40);
+  const rawArtist = str(input?.artist, 40);
+  let artist = rawArtist === '__new__' ? '' : slugify(rawArtist);
+  if (!artist && artistName) artist = slugify(artistName);
+  if (!artist) return { error: 'Alege un artist sau scrie numele unuia nou.' };
+  const isBaseArtist = ARTISTS.some((a) => a.slug === artist);
 
   const price = Math.round(Number(input?.price));
   if (!Number.isFinite(price) || price <= 0) return { error: 'Preț invalid.' };
@@ -73,6 +77,8 @@ function sanitize(input: any, existing?: Product): Product | { error: string } {
     id: existing?.id || `p_${Date.now().toString(36)}${Math.random().toString(36).slice(2, 7)}`,
     slug: '', // assigned by caller (uniqueness check)
     artist,
+    // base artists resolve their display name from ARTISTS; only persist it for custom artists
+    artistName: isBaseArtist ? undefined : (artistName || existing?.artistName || artist),
     name,
     subtitle: str(input?.subtitle, 80),
     price,
@@ -101,7 +107,7 @@ export const GET: APIRoute = async ({ cookies }) => {
   const blocked = guard(cookies);
   if (blocked) return blocked;
   const all = await readCatalog();
-  return json({ products: sortProducts(all), artists: ARTISTS });
+  return json({ products: sortProducts(all), artists: catalogArtists(all) });
 };
 
 // UPSERT

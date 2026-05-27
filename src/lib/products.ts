@@ -28,7 +28,8 @@ export interface ProductColor {
 export interface Product {
   id: string;            // stable id (used for admin edit)
   slug: string;          // url slug, unique
-  artist: string;        // artist slug (matches ARTISTS)
+  artist: string;        // artist slug (base ARTISTS or admin-created)
+  artistName?: string;   // display name for admin-created artists (base ones resolve via ARTISTS)
   name: string;
   subtitle: string;      // short line under the name
   price: number;         // RON, whole units
@@ -48,13 +49,31 @@ export interface ArtistTab {
   name: string;
 }
 
-/** Artists available as filter tabs / admin sections. */
+/** Base artists, always shown as filter tabs / admin sections. */
 export const ARTISTS: ArtistTab[] = [
   { slug: 'andrei', name: 'Andrei Bănuță' },
   { slug: 'matteo', name: 'Matteo' },
   { slug: 'georgiana', name: 'Georgiana Neagu' },
   { slug: 'emily', name: 'Emily Istrate' },
 ];
+
+/** Base artists merged with any admin-created artists found in the catalog. */
+export function catalogArtists(products: Product[]): ArtistTab[] {
+  const map = new Map<string, string>();
+  for (const a of ARTISTS) map.set(a.slug, a.name);
+  for (const p of products) {
+    if (p.artist && !map.has(p.artist)) map.set(p.artist, p.artistName || p.artist);
+  }
+  return [...map.entries()].map(([slug, name]) => ({ slug, name }));
+}
+
+/** Display name for an artist slug (base list first, then catalog-derived). */
+export function artistLabel(slug: string, products: Product[]): string {
+  const base = ARTISTS.find((a) => a.slug === slug);
+  if (base) return base.name;
+  const p = products.find((x) => x.artist === slug && x.artistName);
+  return p?.artistName || slug;
+}
 
 const IMG = '/images/merch/andrei';
 
@@ -73,7 +92,7 @@ export const seedProducts: Product[] = [
     artist: 'andrei',
     name: 'Suflet de Bagabont',
     subtitle: 'Oversized · ediție de autor',
-    price: 169,
+    price: 130,
     badge: 'Best seller',
     description:
       'Tricoul inspirat din „Suflet de Bagabont” — piesa care a trecut de 90 de milioane de vizualizări. În față stă manifestul: „Am sufletul de bagabont, da’ inima mea e locu’ tău”. Pe spate, inima din fire roșii — semnătura vizuală a colecției.',
@@ -91,7 +110,7 @@ export const seedProducts: Product[] = [
     artist: 'andrei',
     name: 'Mama Copiilor Mei',
     subtitle: 'Oversized · diptic',
-    price: 169,
+    price: 130,
     badge: 'Diptic',
     description:
       'Pentru ea. „Mama copiilor mei” scris apăsat în față, legat de firul roșu al destinului, iar pe spate inima care bate pentru familie. Jumătatea feminină a dipticului Mama & Tata — gândit să fie purtat în doi.',
@@ -109,7 +128,7 @@ export const seedProducts: Product[] = [
     artist: 'andrei',
     name: 'Tatăl Copiilor Mei',
     subtitle: 'Oversized · diptic',
-    price: 169,
+    price: 130,
     badge: 'Diptic',
     description:
       'Pentru el. Perechea lui „Mama copiilor mei” — același fir roșu în față, aceeași inimă pe spate. A doua jumătate a dipticului, croită ca să se asorteze pe doi umeri diferiți.',
@@ -127,7 +146,7 @@ export const seedProducts: Product[] = [
     artist: 'andrei',
     name: 'Asta e o Păpușă',
     subtitle: 'Oversized · 2 culori',
-    price: 169,
+    price: 130,
     description:
       'Statement piece. „Asta este o Păpușă” în literaj de jucărie — disponibil în negru cu inimă roz neon sau în Pink Joy cu inimă alb-negru. Alege-ți culoarea și partea din tine pe care o scoți în față.',
     details: SHARED_DETAILS,
