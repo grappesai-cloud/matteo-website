@@ -288,9 +288,14 @@ const { roster, tiles, headerSub, footerEmail } = await readLanding();
       width: 100%;
       height: 100%;
       object-fit: cover;
-      object-position: center 30%;
+      object-position: center 28%;
       transition: transform 0.8s cubic-bezier(0.2, 0.7, 0.2, 1);
     }
+    /* per-artist framing so no one's head gets cropped */
+    .card-andrei    .card-photo { object-position: center 12%; }
+    .card-emily     .card-photo { object-position: center 14%; }
+    .card-georgiana .card-photo { object-position: center 22%; }
+    .card-matteo    .card-photo { object-position: center 30%; }
     .card-trigger:hover .card-photo { transform: scale(1.04); }
     .card-photo-shade {
       position: absolute;
