@@ -15,7 +15,7 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
 
 <Layout
   title="Shop — Mattman Music"
-  description="Merch oficial Mattman Music. Ediție limitată Andrei Bănuță — tricouri oversized, print față & spate."
+  description="Merch oficial Mattman Music — tricouri oversized cu print pe față și pe spate, ediție limitată."
 >
   <div class="merch">
     <header class="m-header">
@@ -33,9 +33,8 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
     <section class="m-hero">
       <p class="mono dim m-eyebrow">Mattman Shop · ediție limitată</p>
       <h1 class="m-title">Merch</h1>
-      <p class="m-lede">
-        <strong>Andrei Bănuță</strong> — tricouri oversized cu print pe față și pe spate.
-        Ediție limitată.
+      <p class="m-lede" id="m-lede" data-default="Tricouri oversized cu print pe față și pe spate, în ediție limitată.">
+        Tricouri oversized cu print pe față și pe spate, în ediție limitată.
       </p>
     </section>
 
@@ -45,7 +44,7 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
         <div class="m-chips" id="artist-chips" role="group">
           <button class="m-chip is-active" data-artist="all" type="button">Toți</button>
           {artistsWithCounts.map((a) => (
-            <button class="m-chip" data-artist={a.slug} type="button">
+            <button class="m-chip" data-artist={a.slug} data-name={a.name} data-soon={a.count === 0 ? '1' : ''} type="button">
               {a.name}
               {a.count === 0 && <span class="m-chip-soon mono">în curând</span>}
             </button>
@@ -134,11 +133,23 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
       grid.style.display = shown > 0 ? '' : 'none';
     }
 
+    const ledeEl = document.getElementById('m-lede') as HTMLElement;
+    const defaultLede = ledeEl?.dataset.default || '';
+    function updateLede(btn: HTMLElement) {
+      if (!ledeEl) return;
+      if (btn.dataset.artist === 'all') { ledeEl.textContent = defaultLede; return; }
+      const name = btn.dataset.name || '';
+      ledeEl.textContent = btn.dataset.soon
+        ? `${name} — merch în curând.`
+        : `${name} — tricouri oversized cu print pe față și pe spate, în ediție limitată.`;
+    }
+
     document.getElementById('artist-chips')!.addEventListener('click', (e) => {
       const btn = (e.target as HTMLElement).closest<HTMLElement>('[data-artist]');
       if (!btn) return;
       activeArtist = btn.dataset.artist!;
       document.querySelectorAll('#artist-chips .m-chip').forEach((c) => c.classList.toggle('is-active', c === btn));
+      updateLede(btn);
       apply();
     });
     document.getElementById('size-chips')!.addEventListener('click', (e) => {

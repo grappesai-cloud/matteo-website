@@ -147,7 +147,7 @@ export const seedLanding: LandingContent = {
     },
   ],
   tiles: [
-    { slug: 'shop', label: 'Shop', sub: 'Merch · Andrei Bănuță', href: '/merch' },
+    { slug: 'shop', label: 'Shop', sub: 'Merch', href: '/merch' },
     { slug: 'demos', label: 'Demos', sub: 'Submit your track', href: 'mailto:demo@mattman.ro?subject=Demo%20submission' },
   ],
 };
