@@ -613,6 +613,14 @@ const { roster, tiles, headerSub, footerEmail } = await readLanding();
        grows with its content (no cramped inner scroll) so the page extends down to
        the Shop/Demos tiles. */
     @media (min-width: 761px) {
+      /* taller closed-state cards so the portraits read better */
+      .grid[data-active=""] {
+        flex: 0 0 auto;
+        min-height: 0;
+        grid-template-rows: auto auto;
+      }
+      .grid[data-active=""] .card { aspect-ratio: 16 / 10; }
+
       .grid[data-active]:not([data-active=""]) {
         grid-template-columns: 2.3fr 1fr;
         grid-template-rows: repeat(3, auto);
