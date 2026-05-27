@@ -603,6 +603,52 @@ const { roster, tiles, headerSub, footerEmail } = await readLanding();
     .foot a { color: inherit; text-decoration: none; transition: color 0.2s; }
     .foot a:hover { color: var(--gold); }
 
+    /* DESKTOP open state: active artist = big, tall, content-driven panel on the
+       left; the other 3 become small cards stacked in the right column. The panel
+       grows with its content (no cramped inner scroll) so the page extends down to
+       the Shop/Demos tiles. */
+    @media (min-width: 761px) {
+      .grid[data-active]:not([data-active=""]) {
+        grid-template-columns: 2.3fr 1fr;
+        grid-template-rows: repeat(3, auto);
+        align-items: start;
+        flex: 0 0 auto;   /* size to content instead of filling the viewport */
+        min-height: 0;
+      }
+      /* active card spans the full-height left column */
+      .grid[data-active="matteo"]    .card-matteo,
+      .grid[data-active="andrei"]    .card-andrei,
+      .grid[data-active="georgiana"] .card-georgiana,
+      .grid[data-active="emily"]     .card-emily {
+        grid-column: 1;
+        grid-row: 1 / -1;
+        align-self: stretch;
+      }
+      /* the other three shrink to small cards in the right column */
+      .grid[data-active="matteo"]    .card:not(.card-matteo),
+      .grid[data-active="andrei"]    .card:not(.card-andrei),
+      .grid[data-active="georgiana"] .card:not(.card-georgiana),
+      .grid[data-active="emily"]     .card:not(.card-emily) {
+        grid-column: 2;
+        align-self: start;
+        height: clamp(120px, 16vh, 190px);
+      }
+      /* active panel flows in the document instead of being a capped overlay */
+      .grid[data-active="matteo"]    .card-matteo    .expand,
+      .grid[data-active="andrei"]    .card-andrei    .expand,
+      .grid[data-active="georgiana"] .card-georgiana .expand,
+      .grid[data-active="emily"]     .card-emily     .expand {
+        position: relative;
+      }
+      .grid[data-active="matteo"]    .card-matteo    .expand-scroll,
+      .grid[data-active="andrei"]    .card-andrei    .expand-scroll,
+      .grid[data-active="georgiana"] .card-georgiana .expand-scroll,
+      .grid[data-active="emily"]     .card-emily     .expand-scroll {
+        overflow: visible;
+        flex: 0 0 auto;
+      }
+    }
+
     /* MOBILE — keep 2x2 always (per client direction), but show expand as full-screen overlay */
     @media (max-width: 760px) {
       .stage { padding: 12px; gap: 12px; }
