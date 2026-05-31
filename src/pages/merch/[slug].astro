@@ -40,7 +40,7 @@ const productJsonLd = {
 ---
 
 <Layout
-  title={`${product.name} — Mattman Shop`}
+  title={`${product.name} · Mattman Shop`}
   description={product.description}
   type="product"
   image={absImg(first?.front)}
@@ -49,7 +49,7 @@ const productJsonLd = {
   <div class="pd" data-slug={product.slug} data-track-stock={product.trackStock ? '1' : ''} data-stock={JSON.stringify(first.stock || {})}>
     <header class="m-header">
       <a href="/merch" class="m-brand">
-        <img src="/images/mattman/logo-black.png" alt="Mattman Music" class="m-brand-logo" />
+        <img src="/images/mattman/logo-head.webp" alt="Mattman Music" class="m-brand-logo" width="320" height="291" decoding="async" />
       </a>
       <nav class="m-nav mono">
         <a href="/merch" class="m-back">← Shop</a>
@@ -63,14 +63,14 @@ const productJsonLd = {
       <!-- GALLERY -->
       <section class="pd-gallery" aria-label="Imagini produs">
         <div class="pd-stage">
-          <img id="pd-main" class="pd-main-img" src={first.front} alt={product.name} width="2400" height="3000" />
+          <img id="pd-main" class="pd-main-img" src={first.front} alt={product.name} width="2400" height="3000" decoding="async" fetchpriority="high" />
         </div>
         <div class="pd-thumbs" id="pd-thumbs">
           <button class="pd-thumb is-active" type="button" data-view="front">
-            <img src={first.front} alt="Față" id="pd-thumb-front" />
+            <img src={first.front} alt="Față" id="pd-thumb-front" loading="lazy" decoding="async" />
           </button>
           <button class="pd-thumb" type="button" data-view="back">
-            <img src={first.back} alt="Spate" id="pd-thumb-back" />
+            <img src={first.back} alt="Spate" id="pd-thumb-back" loading="lazy" decoding="async" />
           </button>
         </div>
       </section>

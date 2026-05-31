@@ -14,13 +14,13 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
 ---
 
 <Layout
-  title="Shop — Mattman Music"
-  description="Merch oficial Mattman Music — tricouri oversized cu print pe față și pe spate, ediție limitată."
+  title="Shop · Mattman Music"
+  description="Merch oficial Mattman Music: tricouri oversized cu print pe față și pe spate, ediție limitată."
 >
   <div class="merch">
     <header class="m-header">
       <a href="/" class="m-brand">
-        <img src="/images/mattman/logo-black.png" alt="Mattman Music" class="m-brand-logo" />
+        <img src="/images/mattman/logo-head.webp" alt="Mattman Music" class="m-brand-logo" width="320" height="291" decoding="async" />
       </a>
       <nav class="m-nav mono">
         <a href="/" class="m-back">← Site</a>
@@ -74,8 +74,8 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
             data-sizes={p.sizes.join(',')}
           >
             <div class="pc-media">
-              <img class="pc-img pc-front" src={c.front} alt={p.name} loading="lazy" width="2400" height="3000" />
-              <img class="pc-img pc-back" src={c.back} alt={`${p.name} — spate`} loading="lazy" width="2400" height="3000" aria-hidden="true" />
+              <img class="pc-img pc-front" src={c.front} alt={p.name} loading="lazy" decoding="async" width="2400" height="3000" />
+              <img class="pc-img pc-back" src={c.back} alt={`${p.name}, spate`} loading="lazy" decoding="async" width="2400" height="3000" aria-hidden="true" />
               {p.badge && <span class="pc-badge mono">{p.badge}</span>}
               {p.discountPercent ? <span class="pc-sale mono">−{p.discountPercent}%</span> : null}
               {isSoldOut(p) && <span class="pc-soldout mono">Stoc epuizat</span>}
@@ -140,8 +140,8 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
       if (btn.dataset.artist === 'all') { ledeEl.textContent = defaultLede; return; }
       const name = btn.dataset.name || '';
       ledeEl.textContent = btn.dataset.soon
-        ? `${name} — merch în curând.`
-        : `${name} — tricouri oversized cu print pe față și pe spate, în ediție limitată.`;
+        ? `${name}: merch în curând.`
+        : `${name}: tricouri oversized cu print pe față și pe spate, în ediție limitată.`;
     }
 
     document.getElementById('artist-chips')!.addEventListener('click', (e) => {

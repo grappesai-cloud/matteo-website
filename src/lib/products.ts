@@ -95,7 +95,7 @@ export const seedProducts: Product[] = [
     price: 130,
     badge: 'Best seller',
     description:
-      'Tricoul inspirat din „Suflet de Bagabont” — piesa care a trecut de 90 de milioane de vizualizări. În față stă manifestul: „Am sufletul de bagabont, da’ inima mea e locu’ tău”. Pe spate, inima din fire roșii — semnătura vizuală a colecției.',
+      'Tricoul inspirat din „Suflet de Bagabont”, piesa care a trecut de 90 de milioane de vizualizări. În față stă manifestul: „Am sufletul de bagabont, da’ inima mea e locu’ tău”. Pe spate, inima din fire roșii, semnătura vizuală a colecției.',
     details: SHARED_DETAILS,
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/bagabont-front.webp`, back: `${IMG}/bagabont-back.webp` },
@@ -113,7 +113,7 @@ export const seedProducts: Product[] = [
     price: 130,
     badge: 'Diptic',
     description:
-      'Pentru ea. „Mama copiilor mei” scris apăsat în față, legat de firul roșu al destinului, iar pe spate inima care bate pentru familie. Jumătatea feminină a dipticului Mama & Tata — gândit să fie purtat în doi.',
+      'Pentru ea. „Mama copiilor mei” scris apăsat în față, legat de firul roșu al destinului, iar pe spate inima care bate pentru familie. Jumătatea feminină a dipticului Mama & Tata, gândit să fie purtat în doi.',
     details: SHARED_DETAILS,
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/mama-front.webp`, back: `${IMG}/mama-back.webp` },
@@ -131,7 +131,7 @@ export const seedProducts: Product[] = [
     price: 130,
     badge: 'Diptic',
     description:
-      'Pentru el. Perechea lui „Mama copiilor mei” — același fir roșu în față, aceeași inimă pe spate. A doua jumătate a dipticului, croită ca să se asorteze pe doi umeri diferiți.',
+      'Pentru el. Perechea lui „Mama copiilor mei”, cu același fir roșu în față și aceeași inimă pe spate. A doua jumătate a dipticului, croită ca să se asorteze pe doi umeri diferiți.',
     details: SHARED_DETAILS,
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/tatal-front.webp`, back: `${IMG}/tatal-back.webp` },
@@ -148,7 +148,7 @@ export const seedProducts: Product[] = [
     subtitle: 'Oversized · 2 culori',
     price: 130,
     description:
-      'Statement piece. „Asta este o Păpușă” în literaj de jucărie — disponibil în negru cu inimă roz neon sau în Pink Joy cu inimă alb-negru. Alege-ți culoarea și partea din tine pe care o scoți în față.',
+      'Statement piece. „Asta este o Păpușă” în literaj de jucărie, disponibil în negru cu inimă roz neon sau în Pink Joy cu inimă alb-negru. Alege-ți culoarea și partea din tine pe care o scoți în față.',
     details: SHARED_DETAILS,
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/papusa-black-front.webp`, back: `${IMG}/papusa-black-back.webp` },

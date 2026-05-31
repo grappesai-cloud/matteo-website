@@ -45,11 +45,11 @@ export const seedLanding: LandingContent = {
       slug: 'matteo',
       name: 'Matteo',
       tagline: 'Two decades. Hit after hit.',
-      photo: '/images/matteo/portrait-md.jpg',
+      photo: '/images/matteo/portrait-md.webp',
       bio: [
-        'With a career spanning almost two decades, Matteo has been putting out hit after hit — debut single "Departare" (2006) with Romania\'s pop diva Loredana set the tone for an ascending path, each new release leading national radio charts.',
-        'His most viral single — "Panama" — has been making waves for over nine years, amassing 225M+ views across platforms, with fans in China, Vietnam, India, Cambodia, Indonesia, Thailand, Japan and Laos picking it up for TikTok trends, dance routines and flash mobs.',
-        'His latest venture is a self-coined fusion — Gypsy Reggae — an EP boasting collaborations with King Kong, Anthony B, Loyal Flames and Johny Romano.',
+        'With a career spanning almost two decades, Matteo has been putting out hit after hit. His debut single "Departare" (2006) with Romania\'s pop diva Loredana set the tone for an ascending path, each new release leading national radio charts.',
+        'His most viral single, "Panama", has been making waves for over nine years, amassing 225M+ views across platforms, with fans in China, Vietnam, India, Cambodia, Indonesia, Thailand, Japan and Laos picking it up for TikTok trends, dance routines and flash mobs.',
+        'His latest venture is a self-coined fusion, Gypsy Reggae, an EP boasting collaborations with King Kong, Anthony B, Loyal Flames and Johny Romano.',
       ],
       tracks: [
         { id: 'brHe7-uPTd0', title: 'Panama', year: '2013' },
@@ -70,11 +70,11 @@ export const seedLanding: LandingContent = {
       slug: 'andrei',
       name: 'Andrei Bănuță',
       tagline: 'An artist of contrasts.',
-      photo: '/images/roster/andrei.jpg',
+      photo: '/images/roster/andrei.webp',
       bio: [
-        'Andrei Bănuță has solidified his status as one of the most in-demand artists one song at a time. His voice conveys emotion that instantly impacts his listeners — he doesn\'t shy away from alternating between deep, meaningful lyrics and vibrant, playful songs.',
-        'His best-known song "Suflet de Bagabont" feat. Nelu Vlad & Azur was incredibly well-received — over 90M views and a popular phenomenon. More recently his collaboration with Vescan "Old Friend" spent over 10 weeks atop the Media Forest Chart.',
-        'He has also become the most sought-after singer for weddings — "Jur, te voi iubi", "De la Cer la Pământ" and "Inima mea e locul tău" chosen by countless couples as the soundtrack of their first married moments.',
+        'Andrei Bănuță has solidified his status as one of the most in-demand artists one song at a time. His voice conveys emotion that instantly impacts his listeners, and he doesn\'t shy away from alternating between deep, meaningful lyrics and vibrant, playful songs.',
+        'His best-known song "Suflet de Bagabont" feat. Nelu Vlad & Azur was incredibly well-received, with over 90M views and a popular phenomenon. More recently his collaboration with Vescan "Old Friend" spent over 10 weeks atop the Media Forest Chart.',
+        'He has also become the most sought-after singer for weddings, with "Jur, te voi iubi", "De la Cer la Pământ" and "Inima mea e locul tău" chosen by countless couples as the soundtrack of their first married moments.',
       ],
       tracks: [
         { id: '3MSR0pMoJdY', title: 'Suflet de Bagabont (w/ Nelu Vlad & Azur)', year: '2024' },
@@ -97,10 +97,10 @@ export const seedLanding: LandingContent = {
       slug: 'georgiana',
       name: 'Georgiana Neagu',
       tagline: 'The new wave of balkan pop.',
-      photo: '/images/roster/georgiana.jpg',
+      photo: '/images/roster/georgiana.webp',
       bio: [
         'Georgiana Neagu represents the new wave of Romanian balkan pop. With her contemporary sound and relatable lyrics, she has quickly connected with a young audience across the country.',
-        'Her distinctive voice and stage presence have already garnered attention from music industry professionals — she\'s poised to make a significant impact on the Romanian music scene in the coming years.',
+        'Her distinctive voice and stage presence have already garnered attention from music industry professionals, and she\'s poised to make a significant impact on the Romanian music scene in the coming years.',
         'Her second single "M-am Îndrăgostit de Tine (Vreau să facem o fetiță)" went viral on TikTok, gathering 2.2M+ views on YouTube and earning her a significant audience.',
       ],
       tracks: [
@@ -123,11 +123,11 @@ export const seedLanding: LandingContent = {
       slug: 'emily',
       name: 'Emily Istrate',
       tagline: 'Beautiful, talented, charismatic.',
-      photo: '/images/roster/emily.jpg',
+      photo: '/images/roster/emily.webp',
       bio: [
         'Not only beautiful but also talented and charismatic, Emily Istrate represents a fresh presence in the music industry. The singer, songwriter and actress from the Republic of Moldova promises to conquer the world with her powerful talent.',
         'Emily made remarkable appearances on TV shows like The Voice Kids Ukraine (2016) and Next Star (2017), proving her talent from a very young age. Her first international releases "If You Want To" and "Panic" reached #4 and #5 in the UK Pop Club Charts.',
-        '2023 saw her climb to the top of all major Romanian music charts with "Bye Bye Boy" and "În Mintea Mea" — the latter an absolute summer jam.',
+        '2023 saw her climb to the top of all major Romanian music charts with "Bye Bye Boy" and "În Mintea Mea", the latter an absolute summer jam.',
       ],
       tracks: [
         { id: 'anukrx6oDvg', title: 'În Mintea Mea', year: '2023' },

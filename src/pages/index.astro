@@ -11,12 +11,12 @@ const orgJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'MusicGroup',
   name: 'Mattman Music',
-  alternateName: 'Mattman Music — Independent label',
+  alternateName: 'Mattman Music · Independent label',
   url: 'https://mattman.ro',
   logo: 'https://mattman.ro/android-chrome-512x512.png',
   image: 'https://mattman.ro/images/mattman/og-image.png',
   description:
-    'Label muzical independent din România — Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
+    'Label muzical independent din România: Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
   address: { '@type': 'PostalAddress', addressCountry: 'RO' },
   member: (roster || []).map((r: { name: string }) => ({
     '@type': 'MusicGroup',
@@ -25,11 +25,11 @@ const orgJsonLd = {
 };
 ---
 
-<Layout title="Mattman Music — Independent label" jsonLd={orgJsonLd}>
+<Layout title="Mattman Music · Independent label" jsonLd={orgJsonLd}>
   <div class="stage" id="stage">
     <header class="header">
       <a href="/" class="brand">
-        <img src="/images/mattman/logo-black.png" alt="Mattman Music" class="brand-logo" />
+        <img src="/images/mattman/logo-head.webp" alt="Mattman Music" class="brand-logo" width="320" height="291" decoding="async" />
       </a>
       <p class="header-sub mono">{headerSub}</p>
     </header>
@@ -39,7 +39,7 @@ const orgJsonLd = {
         <article class={`card card-${r.slug}`} data-slug={r.slug} id={`card-${r.slug}`}>
           <button class="card-trigger" type="button" data-trigger={r.slug} aria-expanded="false" aria-controls={`expand-${r.slug}`}>
             <div class="card-photo-wrap">
-              <img src={r.photo} alt={r.name} class="card-photo" loading="lazy" />
+              <img src={r.photo} alt={r.name} class="card-photo" decoding="async" fetchpriority="high" />
               <div class="card-photo-shade" aria-hidden="true"></div>
             </div>
             <div class="card-name-wrap">
@@ -49,7 +49,7 @@ const orgJsonLd = {
             <span class="card-cue mono" aria-hidden="true">Tap to open <span class="card-cue-arrow">↗</span></span>
           </button>
 
-          <div class="expand" id={`expand-${r.slug}`} role="region" aria-label={`${r.name} — press kit`}>
+          <div class="expand" id={`expand-${r.slug}`} role="region" aria-label={`${r.name}, press kit`}>
             <button class="expand-close" type="button" data-close aria-label="Close">
               <span aria-hidden="true">×</span>
             </button>
@@ -67,7 +67,7 @@ const orgJsonLd = {
 
               {r.tracks.length > 0 && (
                 <div class="expand-media">
-                  <span class="mono dim section-label">— Music</span>
+                  <span class="mono dim section-label">Music</span>
                   <div class="media-grid">
                     {r.tracks.map((t) => (
                       <figure class="media-item">
@@ -91,7 +91,7 @@ const orgJsonLd = {
               )}
 
               <div class="expand-downloads">
-                <span class="mono dim section-label">— Press kit</span>
+                <span class="mono dim section-label">Press kit</span>
                 <ul class="downloads">
                   {r.downloads.map((d) => (
                     <li>
