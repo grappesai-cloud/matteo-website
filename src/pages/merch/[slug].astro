@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice } from '../../lib/products';
+import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
 
 export const prerender = false;
@@ -13,11 +13,38 @@ if (!product) return Astro.redirect('/merch', 302);
 
 const artistName = artistLabel(product.artist, catalog);
 const first = product.colors[0];
+
+const SITE = 'https://mattman.ro';
+const absImg = (u: string | undefined) =>
+  !u ? `${SITE}/images/mattman/og-image.png` : u.startsWith('http') ? u : `${SITE}${u}`;
+const productJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'Product',
+  name: product.name,
+  description: product.description,
+  image: product.colors.map((c) => absImg(c.front)),
+  brand: { '@type': 'Brand', name: 'Mattman Music' },
+  category: 'Merch / Îmbrăcăminte',
+  url: `${SITE}/merch/${product.slug}`,
+  offers: {
+    '@type': 'Offer',
+    priceCurrency: 'RON',
+    price: effectivePrice(product),
+    availability: isSoldOut(product)
+      ? 'https://schema.org/OutOfStock'
+      : 'https://schema.org/InStock',
+    url: `${SITE}/merch/${product.slug}`,
+    seller: { '@type': 'Organization', name: 'Mattman Music' },
+  },
+};
 ---
 
 <Layout
   title={`${product.name} — Mattman Shop`}
   description={product.description}
+  type="product"
+  image={absImg(first?.front)}
+  jsonLd={productJsonLd}
 >
   <div class="pd" data-slug={product.slug} data-track-stock={product.trackStock ? '1' : ''} data-stock={JSON.stringify(first.stock || {})}>
     <header class="m-header">

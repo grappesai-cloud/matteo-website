@@ -6,9 +6,27 @@ import { readLanding } from '../lib/landing-store';
 export const prerender = false;
 
 const { roster, tiles, headerSub, footerEmail } = await readLanding();
+
+const orgJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MusicGroup',
+  name: 'Mattman Music',
+  alternateName: 'Mattman Music — Independent label',
+  url: 'https://mattman.ro',
+  logo: 'https://mattman.ro/android-chrome-512x512.png',
+  image: 'https://mattman.ro/images/mattman/og-image.png',
+  description:
+    'Label muzical independent din România — Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
+  email: footerEmail || 'hello@mattmanmusic.com',
+  address: { '@type': 'PostalAddress', addressCountry: 'RO' },
+  member: (roster || []).map((r: { name: string }) => ({
+    '@type': 'MusicGroup',
+    name: r.name,
+  })),
+};
 ---
 
-<Layout title="Mattman Music — Independent label">
+<Layout title="Mattman Music — Independent label" jsonLd={orgJsonLd}>
   <div class="stage" id="stage">
     <header class="header">
       <a href="/" class="brand">

@@ -4,12 +4,26 @@ import '../styles/global.css';
 interface Props {
   title?: string;
   description?: string;
+  image?: string;          // absolute or root-relative OG image
+  type?: 'website' | 'article' | 'product';
+  noindex?: boolean;
+  jsonLd?: Record<string, unknown> | Record<string, unknown>[];
 }
+
+const SITE = 'https://mattman.ro';
 
 const {
   title = 'Mattman Music — Independent label',
   description = 'Mattman Music — un label independent dedicat explorării noilor frontiere sonore. Patru artiști. O voce. Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
+  image = '/images/mattman/og-image.png',
+  type = 'website',
+  noindex = false,
+  jsonLd,
 } = Astro.props;
+
+const canonical = new URL(Astro.url.pathname, SITE).href.replace(/\/$/, '') || SITE;
+const ogImage = image.startsWith('http') ? image : new URL(image, SITE).href;
+const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
 ---
 <!doctype html>
 <html lang="ro">
@@ -19,8 +33,17 @@ const {
     <meta name="generator" content={Astro.generator} />
     <meta name="description" content={description} />
     <meta name="theme-color" content="#F2EBE0" />
+    {noindex
+      ? <meta name="robots" content="noindex, nofollow" />
+      : <meta name="robots" content="index, follow, max-image-preview:large" />}
+    <link rel="canonical" href={canonical} />
 
-    <link rel="icon" type="image/png" href="/images/matteo/logo-black.png" />
+    <!-- Favicons -->
+    <link rel="icon" type="image/x-icon" href="/favicon.ico" />
+    <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png" />
+    <link rel="manifest" href="/site.webmanifest" />
 
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -29,12 +52,28 @@ const {
       href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Fraunces:opsz,wght@9..144,300;9..144,400;9..144,500&family=Unbounded:wght@200..900&display=swap"
     />
 
+    <!-- Open Graph -->
+    <meta property="og:site_name" content="Mattman Music" />
+    <meta property="og:locale" content="ro_RO" />
     <meta property="og:title" content={title} />
     <meta property="og:description" content={description} />
-    <meta property="og:type" content="website" />
-    <meta property="og:image" content="/images/mattman/logo-black.png" />
+    <meta property="og:type" content={type} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={ogImage} />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+
+    <!-- Twitter -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={ogImage} />
 
     <title>{title}</title>
+
+    {jsonLdList.map((obj) => (
+      <script type="application/ld+json" set:html={JSON.stringify(obj)} />
+    ))}
 
     <style is:inline>
       :root { --font-display: 'Fraunces', 'Times New Roman', serif; }
