@@ -568,6 +568,7 @@ const orgJsonLd = {
     }
     .tile {
       position: relative;
+      min-width: 0;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -684,7 +685,7 @@ const orgJsonLd = {
     /* MOBILE — keep 2x2 always (per client direction), but show expand as full-screen overlay */
     @media (max-width: 760px) {
       .stage { padding: 12px; gap: 12px; }
-      .header { flex-direction: column; align-items: flex-start; gap: 4px; }
+      .header { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 0 14px; }
       .grid {
         grid-template-columns: 1fr 1fr !important;
         grid-template-rows: 1fr 1fr !important;
