@@ -38,8 +38,8 @@ export interface LandingContent {
 export const SOCIAL_KINDS: SocialKind[] = ['instagram', 'youtube', 'spotify', 'tiktok'];
 
 export const seedLanding: LandingContent = {
-  headerSub: 'Independent label · Bucharest',
-  footerEmail: 'hello@mattmanmusic.com',
+  headerSub: 'Independent label',
+  footerEmail: '',
   roster: [
     {
       slug: 'matteo',

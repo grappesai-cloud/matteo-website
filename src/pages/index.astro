@@ -5,7 +5,7 @@ import { readLanding } from '../lib/landing-store';
 
 export const prerender = false;
 
-const { roster, tiles, headerSub, footerEmail } = await readLanding();
+const { roster, tiles, headerSub } = await readLanding();
 
 const orgJsonLd = {
   '@context': 'https://schema.org',
@@ -17,7 +17,6 @@ const orgJsonLd = {
   image: 'https://mattman.ro/images/mattman/og-image.png',
   description:
     'Label muzical independent din România — Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
-  email: footerEmail || 'hello@mattmanmusic.com',
   address: { '@type': 'PostalAddress', addressCountry: 'RO' },
   member: (roster || []).map((r: { name: string }) => ({
     '@type': 'MusicGroup',
@@ -144,7 +143,7 @@ const orgJsonLd = {
 
     <footer class="foot mono">
       <span>© {new Date().getFullYear()} Mattman Music</span>
-      <a href={`mailto:${footerEmail}`}>{footerEmail}</a>
+      <a href="https://grappes.dev" target="_blank" rel="noopener" class="madeby">made by grappes</a>
     </footer>
   </div>
 
@@ -573,14 +572,14 @@ const orgJsonLd = {
       align-items: center;
       justify-content: space-between;
       gap: 16px;
-      padding: clamp(18px, 2vw, 28px) clamp(20px, 2.5vw, 34px);
+      padding: clamp(12px, 1.4vw, 18px) clamp(18px, 2.2vw, 30px);
       border: 1px solid var(--hair);
       border-radius: 4px;
       background: #0e0e0e;
       color: var(--cream);
       text-decoration: none;
       transition: background 0.25s, border-color 0.25s, color 0.25s;
-      min-height: clamp(70px, 8vw, 100px);
+      min-height: clamp(48px, 5vw, 64px);
     }
     .tile:hover {
       background: var(--cream);
@@ -590,7 +589,7 @@ const orgJsonLd = {
     .tile-label {
       font-family: var(--serif);
       font-weight: 400;
-      font-size: clamp(20px, 2.4vw, 32px);
+      font-size: clamp(18px, 2vw, 26px);
       letter-spacing: -0.01em;
       line-height: 1;
     }
@@ -625,6 +624,8 @@ const orgJsonLd = {
     }
     .foot a { color: inherit; text-decoration: none; transition: color 0.2s; }
     .foot a:hover { color: var(--gold); }
+    .madeby { font-size: 11px; letter-spacing: 0.04em; opacity: 0.6; }
+    .madeby:hover { opacity: 1; }
 
     /* DESKTOP open state: active artist = big, tall, content-driven panel on the
        left; the other 3 become small cards stacked in the right column. The panel
