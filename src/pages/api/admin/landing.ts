@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { isAuthed } from '../../../lib/admin-auth';
+import { isAdmin } from '../../../lib/admin-auth';
 import { readLanding, writeLanding } from '../../../lib/landing-store';
 import { seedLanding, SOCIAL_KINDS, type Artist, type LandingContent } from '../../../lib/landing';
 
@@ -8,7 +8,7 @@ export const prerender = false;
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json' } });
 
-const guard = (cookies: any) => (isAuthed(cookies) ? null : json({ error: 'Neautorizat.' }, 401));
+const guard = (cookies: any) => (isAdmin(cookies) ? null : json({ error: 'Neautorizat.' }, 401));
 
 const str = (v: unknown, max = 600) => String(v ?? '').trim().slice(0, max);
 const strs = (v: unknown, max: number, cap: number) =>

@@ -1,13 +1,15 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { ARTISTS, SIZES } from '../../lib/products';
-import { isAuthed, isConfigured } from '../../lib/admin-auth';
+import { isConfigured, sessionRole } from '../../lib/admin-auth';
 import { canWrite } from '../../lib/catalog-store';
 
 export const prerender = false;
 
-const authed = isAuthed(Astro.cookies);
-const configured = isConfigured();
+const role = sessionRole(Astro.cookies);
+const authed = role !== null;
+const isRuvix = role === 'ruvix';
+const configured = isConfigured('admin') || isConfigured('ruvix');
 const blobReady = canWrite();
 ---
 
@@ -38,14 +40,14 @@ const blobReady = canWrite();
       </div>
     ) : (
       <!-- DASHBOARD -->
-      <div class="adm-shell" data-blob={blobReady ? '1' : ''}>
+      <div class="adm-shell" data-blob={blobReady ? '1' : ''} data-role={role}>
         <header class="adm-head">
           <div class="adm-head-left">
             <img src="/images/mattman/logo-black.png" alt="Mattman" class="adm-logo" />
-            <span class="mono dim">Admin · Merch</span>
+            <span class="mono dim">{isRuvix ? 'Ruvix · Producție' : 'Admin · Merch'}</span>
           </div>
           <nav class="adm-head-right mono">
-            <a href="/merch" target="_blank" class="adm-link">Vezi shop ↗</a>
+            {!isRuvix && <a href="/merch" target="_blank" class="adm-link">Vezi shop ↗</a>}
             <button id="logout-btn" class="adm-link adm-link-btn" type="button">Logout</button>
           </nav>
         </header>
@@ -58,11 +60,14 @@ const blobReady = canWrite();
         )}
 
         <nav class="adm-views" id="view-switch">
-          <button class="adm-view-tab is-active" data-view="products" type="button">Produse</button>
-          <button class="adm-view-tab" data-view="codes" type="button">Coduri reducere</button>
-          <button class="adm-view-tab" data-view="landing" type="button">Landing page</button>
+          {!isRuvix && <button class="adm-view-tab is-active" data-view="products" type="button">Produse</button>}
+          {!isRuvix && <button class="adm-view-tab" data-view="codes" type="button">Coduri reducere</button>}
+          {!isRuvix && <button class="adm-view-tab" data-view="landing" type="button">Landing page</button>}
+          <button class={isRuvix ? 'adm-view-tab is-active' : 'adm-view-tab'} data-view="orders" type="button">Comenzi</button>
         </nav>
 
+        {!isRuvix && (
+        <div class="adm-grp" style="display:contents">
         <div id="products-view">
           <section class="adm-toolbar">
             <div class="adm-tabs" id="artist-tabs">
@@ -152,9 +157,26 @@ const blobReady = canWrite();
             </div>
           </form>
         </div>
-      </div>
+        </div>
+        )}
 
-      <!-- landing artist template -->
+        <div id="orders-view" hidden={!isRuvix}>
+          {!isRuvix && <section class="adm-orep" id="orders-report" aria-live="polite"></section>}
+          <div class="adm-ofilters" id="orders-filters">
+            <button class="adm-ofilter is-active" data-filter="todo" type="button">De procesat</button>
+            <button class="adm-ofilter" data-filter="new" type="button">Noi</button>
+            <button class="adm-ofilter" data-filter="printing" type="button">În producție</button>
+            <button class="adm-ofilter" data-filter="shipped" type="button">Trimise</button>
+            <button class="adm-ofilter" data-filter="delivered" type="button">Livrate</button>
+            <button class="adm-ofilter" data-filter="all" type="button">Toate</button>
+          </div>
+          <div class="adm-list adm-olist" id="orders-list" aria-live="polite">
+            <p class="adm-loading mono dim">Se încarcă…</p>
+          </div>
+        </div>
+
+      {!isRuvix && (
+      <div class="adm-grp" style="display:contents">
       <template id="l-artist-tpl">
         <article class="adm-lartist">
           <div class="adm-lartist-head">
@@ -191,7 +213,6 @@ const blobReady = canWrite();
         </article>
       </template>
 
-      <!-- EDITOR MODAL -->
       <div class="adm-modal" id="editor" hidden>
         <div class="adm-modal-overlay" data-editor-close></div>
         <form class="adm-modal-card" id="editor-form" data-lenis-prevent>
@@ -304,6 +325,9 @@ const blobReady = canWrite();
           </footer>
         </form>
       </div>
+      </div>
+      )}
+      </div>
     )}
   </div>
 
@@ -375,12 +399,187 @@ const blobReady = canWrite();
     // ===== DASHBOARD =====
     const shell = document.querySelector('.adm-shell');
     if (shell) {
-      const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+      const isRuvix = (shell as HTMLElement).dataset.role === 'ruvix';
       const esc = (s: string) =>
         String(s ?? '').replace(/[&<>"']/g, (c) => (
           { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any
         )[c]);
 
+      // ===== LOGOUT (shared) =====
+      document.getElementById('logout-btn')?.addEventListener('click', async () => {
+        await fetch('/api/admin/logout', { method: 'POST' });
+        location.reload();
+      });
+
+      // ===== ORDERS (shared: admin report + Ruvix fulfillment) =====
+      const ORDER_STATUS: Record<string, string> = {
+        new: 'Nouă', printing: 'În producție', shipped: 'Trimisă', delivered: 'Livrată', cancelled: 'Anulată',
+      };
+      const STATUS_FLOW = ['new', 'printing', 'shipped', 'delivered', 'cancelled'];
+      let orders: any[] = [];
+      let ordersLoaded = false;
+      let orderFilter = isRuvix ? 'todo' : 'all';
+      const ordersListEl = document.getElementById('orders-list');
+      const ordersReportEl = document.getElementById('orders-report');
+      const ordersFiltersEl = document.getElementById('orders-filters');
+
+      const fmtDate = (ms: number) => {
+        try {
+          return new Date(ms).toLocaleString('ro-RO', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+        } catch { return ''; }
+      };
+      const oneLine = (parts: any[]) => parts.map((x) => String(x ?? '').trim()).filter(Boolean).join(', ');
+      const fanTrack = (awb: string) => `https://www.fancourier.ro/awb-tracking/?awb=${encodeURIComponent(awb)}`;
+
+      async function loadOrders() {
+        ordersLoaded = true;
+        if (ordersListEl) ordersListEl.innerHTML = '<p class="adm-loading mono dim">Se încarcă…</p>';
+        let data: any;
+        try {
+          const res = await fetch('/api/admin/orders');
+          if (res.status === 401) { location.reload(); return; }
+          data = await res.json();
+          if (!res.ok) throw new Error(data.error || 'Eroare');
+        } catch (e: any) {
+          if (ordersListEl) ordersListEl.innerHTML = `<p class="adm-empty mono dim">${esc(e?.message || 'Eroare')}</p>`;
+          return;
+        }
+        orders = data.orders || [];
+        renderReport();
+        renderOrders();
+      }
+
+      function renderReport() {
+        if (!ordersReportEl) return;
+        const active = orders.filter((o) => o.status !== 'cancelled');
+        const sum = active.reduce((n, o) => n + (Number(o.amountTotal) || 0), 0);
+        const by = (s: string) => orders.filter((o) => o.status === s).length;
+        const cards: [string, string | number][] = [
+          ['Comenzi', active.length],
+          ['Încasat', `${sum} RON`],
+          ['Noi', by('new')],
+          ['În producție', by('printing')],
+          ['Trimise', by('shipped')],
+          ['Livrate', by('delivered')],
+        ];
+        ordersReportEl.innerHTML = cards
+          .map(([l, v]) => `<div class="adm-ocard"><span class="adm-ocard-v">${esc(String(v))}</span><span class="adm-ocard-l mono dim">${esc(l)}</span></div>`)
+          .join('');
+      }
+
+      const matchFilter = (o: any) => {
+        if (orderFilter === 'all') return true;
+        if (orderFilter === 'todo') return o.status === 'new' || o.status === 'printing';
+        return o.status === orderFilter;
+      };
+
+      function renderOrders() {
+        if (!ordersListEl) return;
+        const items = orders.filter(matchFilter);
+        if (!items.length) { ordersListEl.innerHTML = '<p class="adm-empty mono dim">Nicio comandă aici.</p>'; return; }
+        ordersListEl.innerHTML = items.map(orderCard).join('');
+      }
+
+      function orderCard(o: any): string {
+        const addr = oneLine([o.shipping?.line1, o.shipping?.line2, o.shipping?.city, o.shipping?.postalCode, o.shipping?.state, o.shipping?.country]);
+        const items = (o.items || [])
+          .map((i: any) => `<li>${i.qty}× ${esc(i.name)} — <span class="mono">${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</span></li>`)
+          .join('');
+        const opts = STATUS_FLOW.map((s) => `<option value="${s}"${s === o.status ? ' selected' : ''}>${esc(ORDER_STATUS[s])}</option>`).join('');
+        const contact = oneLine([o.customer?.name, o.customer?.phone, o.customer?.email]).split(', ').join(' · ');
+        return `<article class="adm-orow" data-order="${esc(o.id)}">
+          <div class="adm-orow-head">
+            <div class="adm-orow-id"><span class="adm-orow-num">#${o.number}</span> <span class="adm-ostatus adm-ostatus-${esc(o.status)}">${esc(ORDER_STATUS[o.status] || o.status)}</span></div>
+            <div class="adm-orow-total mono">${o.amountTotal} RON <span class="dim">· ${esc(fmtDate(o.createdAt))}</span></div>
+          </div>
+          <p class="adm-orow-cust mono">${esc(contact || '—')}</p>
+          <p class="adm-orow-addr mono dim">📦 ${esc(addr || 'fără adresă')}</p>
+          <ul class="adm-orow-items">${items}</ul>
+          <div class="adm-orow-fulfil">
+            <select class="adm-input adm-o-status" data-f="status">${opts}</select>
+            <input class="adm-input adm-o-awb" data-f="awb" placeholder="AWB / nr. tracking" value="${esc(o.awb || '')}" />
+            <input class="adm-input adm-o-courier" data-f="courier" placeholder="Curier" value="${esc(o.courier || 'FAN Courier')}" />
+            <button class="adm-btn adm-btn-gold adm-btn-sm adm-o-save" type="button">Salvează</button>
+            ${o.awb
+              ? `<a class="adm-o-track mono" href="${fanTrack(o.awb)}" target="_blank" rel="noopener">🔗 urmărește ${esc(o.awb)}</a>`
+              : `<button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-fan" type="button">Generează AWB FAN ⚡</button>`}
+            <span class="mono dim adm-o-msg"></span>
+          </div>
+        </article>`;
+      }
+
+      ordersFiltersEl?.addEventListener('click', (e) => {
+        const b = (e.target as HTMLElement).closest<HTMLElement>('.adm-ofilter');
+        if (!b) return;
+        orderFilter = b.dataset.filter!;
+        ordersFiltersEl.querySelectorAll('.adm-ofilter').forEach((x) => x.classList.toggle('is-active', x === b));
+        renderOrders();
+      });
+
+      ordersListEl?.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.adm-o-save');
+        if (!btn) return;
+        const row = btn.closest<HTMLElement>('[data-order]')!;
+        const id = row.dataset.order!;
+        const val = (sel: string) => (row.querySelector(sel) as HTMLInputElement | HTMLSelectElement).value;
+        const payload = { id, status: val('.adm-o-status'), awb: val('.adm-o-awb').trim(), courier: val('.adm-o-courier').trim() };
+        const msg = row.querySelector('.adm-o-msg') as HTMLElement;
+        (btn as HTMLButtonElement).disabled = true; msg.textContent = '…';
+        try {
+          const res = await fetch('/api/admin/orders', {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || 'Eroare');
+          const idx = orders.findIndex((o) => o.id === id);
+          if (idx >= 0) orders[idx] = d.order;
+          renderReport();
+          msg.textContent = '✓ Salvat';
+          if (!matchFilter(d.order)) {
+            renderOrders();
+          } else {
+            const badge = row.querySelector('.adm-ostatus') as HTMLElement;
+            badge.className = 'adm-ostatus adm-ostatus-' + d.order.status;
+            badge.textContent = ORDER_STATUS[d.order.status] || d.order.status;
+          }
+        } catch (err: any) {
+          msg.textContent = err?.message || 'Eroare';
+        } finally {
+          (btn as HTMLButtonElement).disabled = false;
+          setTimeout(() => { if (msg.textContent === '✓ Salvat') msg.textContent = ''; }, 2500);
+        }
+      });
+
+      // Generate FAN Courier AWB for an order
+      ordersListEl?.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.adm-o-fan');
+        if (!btn) return;
+        const row = btn.closest<HTMLElement>('[data-order]')!;
+        const id = row.dataset.order!;
+        const msg = row.querySelector('.adm-o-msg') as HTMLElement;
+        if (!confirm('Generez AWB FAN Courier pentru această comandă? Statusul devine „Trimisă".')) return;
+        (btn as HTMLButtonElement).disabled = true; msg.textContent = '… generez AWB';
+        try {
+          const res = await fetch('/api/admin/fan-awb', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || 'Eroare la generarea AWB.');
+          const idx = orders.findIndex((o) => o.id === id);
+          if (idx >= 0 && d.order) orders[idx] = d.order;
+          renderReport();
+          msg.textContent = `✓ AWB ${d.awb}`;
+          renderOrders(); // re-render so the AWB + tracking link replace the button
+        } catch (err: any) {
+          msg.textContent = err?.message || 'Eroare.';
+          (btn as HTMLButtonElement).disabled = false;
+        }
+      });
+
+      if (isRuvix) loadOrders();
+
+      if (!isRuvix) {
+      const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
       const slugify = (s: string) =>
         String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
@@ -472,11 +671,6 @@ const blobReady = canWrite();
         const t = e.target as HTMLElement;
         if (t.dataset.edit) openEditor(products.find((p) => p.id === t.dataset.edit));
         if (t.dataset.del) del(t.dataset.del);
-      });
-
-      document.getElementById('logout-btn')?.addEventListener('click', async () => {
-        await fetch('/api/admin/logout', { method: 'POST' });
-        location.reload();
       });
 
       async function del(id: string) {
@@ -686,10 +880,11 @@ const blobReady = canWrite();
       }
       function showErr(m: string) { errEl.textContent = m; errEl.hidden = false; }
 
-      // ===== VIEW SWITCH (Produse / Coduri) =====
+      // ===== VIEW SWITCH (Produse / Coduri / Landing / Comenzi) =====
       const productsView = document.getElementById('products-view') as HTMLElement;
       const codesView = document.getElementById('codes-view') as HTMLElement;
       const landingView = document.getElementById('landing-view') as HTMLElement;
+      const ordersView = document.getElementById('orders-view') as HTMLElement;
       let codesLoaded = false;
       let landingLoaded = false;
       document.getElementById('view-switch')?.addEventListener('click', (e) => {
@@ -700,8 +895,10 @@ const blobReady = canWrite();
         productsView.hidden = v !== 'products';
         codesView.hidden = v !== 'codes';
         landingView.hidden = v !== 'landing';
+        if (ordersView) ordersView.hidden = v !== 'orders';
         if (v === 'codes' && !codesLoaded) loadCodes();
         if (v === 'landing' && !landingLoaded) loadLanding();
+        if (v === 'orders' && !ordersLoaded) loadOrders();
       });
 
       // ===== CODES =====
@@ -906,6 +1103,7 @@ const blobReady = canWrite();
       });
 
       load();
+      } // end if (!isRuvix)
     }
   </script>
 
@@ -1072,11 +1270,48 @@ const blobReady = canWrite();
     .adm-lfoot { display: flex; align-items: center; gap: 16px; }
     #landing-status { letter-spacing: 0.08em; }
 
+    /* ORDERS — report + fulfillment */
+    .adm-orep { display: grid; grid-template-columns: repeat(6, 1fr); gap: 10px; margin-bottom: 20px; }
+    .adm-ocard { display: flex; flex-direction: column; gap: 4px; padding: 14px 16px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; background: #0e0e0e; }
+    .adm-ocard-v { font-family: var(--serif, 'Fraunces', serif); font-size: 26px; line-height: 1; }
+    .adm-ocard-l { font-size: 11px; letter-spacing: 0.1em; }
+
+    .adm-ofilters { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+    .adm-ofilter { padding: 8px 14px; border-radius: 999px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); background: transparent; color: var(--cream, #f2ebe0); font-family: var(--mono, monospace); font-size: 12px; letter-spacing: 0.06em; cursor: pointer; transition: 0.2s; }
+    .adm-ofilter:hover { border-color: var(--cream, #f2ebe0); }
+    .adm-ofilter.is-active { background: var(--cream, #f2ebe0); color: var(--ink, #0a0a0a); border-color: var(--cream, #f2ebe0); }
+
+    .adm-olist { gap: 14px; }
+    .adm-orow { display: flex; flex-direction: column; gap: 10px; padding: 16px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; background: #0e0e0e; }
+    .adm-orow-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; }
+    .adm-orow-num { font-family: var(--serif, 'Fraunces', serif); font-size: 22px; }
+    .adm-orow-total { font-size: 14px; }
+    .adm-ostatus { display: inline-block; margin-left: 8px; padding: 3px 10px; border-radius: 999px; font-family: var(--mono, monospace); font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; border: 1px solid currentColor; }
+    .adm-ostatus-new { color: var(--gold, #c9a24a); }
+    .adm-ostatus-printing { color: #6fb1d6; }
+    .adm-ostatus-shipped { color: #b58be0; }
+    .adm-ostatus-delivered { color: #6fcf8e; }
+    .adm-ostatus-cancelled { color: #d9534f; }
+    .adm-orow-cust { font-size: 13px; letter-spacing: 0.03em; }
+    .adm-orow-addr { font-size: 12px; line-height: 1.5; }
+    .adm-orow-items { list-style: none; margin: 0; padding: 8px 0; display: flex; flex-direction: column; gap: 4px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); border-bottom: 1px solid var(--hair, rgba(242,235,224,0.14)); font-size: 14px; }
+    .adm-orow-items .mono { color: var(--dim, rgba(242,235,224,0.7)); }
+    .adm-orow-fulfil { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+    .adm-orow-fulfil .adm-input { width: auto; flex: 1 1 130px; padding: 9px 12px; }
+    .adm-orow-fulfil .adm-o-status { flex: 0 0 auto; }
+    .adm-orow-fulfil .adm-o-save { flex: 0 0 auto; }
+    .adm-o-msg { flex: 0 0 auto; letter-spacing: 0.06em; }
+    .adm-o-track { flex: 0 0 auto; color: var(--gold, #c9a24a); letter-spacing: 0.04em; font-size: 12px; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
+    .adm-o-track:hover { color: var(--gold-bright, #e8c16c); }
+
+    @media (max-width: 860px) { .adm-orep { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 560px) {
       .adm-grid2 { grid-template-columns: 1fr; }
       .adm-row { grid-template-columns: 48px 1fr; }
       .adm-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
       .adm-ltile { grid-template-columns: 1fr; }
+      .adm-orep { grid-template-columns: repeat(2, 1fr); }
+      .adm-orow-fulfil .adm-input { flex-basis: 100%; }
     }
   </style>
 </Layout>

@@ -1,6 +1,9 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { readCatalog, writeCatalog } from '../../lib/catalog-store';
+import { addOrder } from '../../lib/orders-store';
+import { orderFromStripeSession } from '../../lib/orders';
+import { notifyRuvixNewOrder } from '../../lib/notify';
 import type { SizeKey } from '../../lib/products';
 
 export const prerender = false;
@@ -28,11 +31,22 @@ export const POST: APIRoute = async ({ request }) => {
 
   if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
+    const catalog = await readCatalog();
+
+    // 1) Record the order (idempotent by session id) so admin & Ruvix can see it,
+    //    and email Ruvix once on first insert.
+    try {
+      const { order, created } = await addOrder(orderFromStripeSession(session, catalog));
+      if (created) await notifyRuvixNewOrder(order, new URL(request.url).origin);
+    } catch (err: any) {
+      console.error('[webhook] order record failed:', err?.message);
+    }
+
+    // 2) Decrement tracked stock.
     try {
       const cart: { s: string; c: string; z: SizeKey; q: number }[] = JSON.parse(
         session.metadata?.cart || '[]'
       );
-      const catalog = await readCatalog();
       let changed = false;
       for (const item of cart) {
         const p = catalog.find((x) => x.slug === item.s);

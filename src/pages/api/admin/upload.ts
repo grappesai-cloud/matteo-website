@@ -1,5 +1,5 @@
 import type { APIRoute } from 'astro';
-import { isAuthed } from '../../../lib/admin-auth';
+import { isAdmin } from '../../../lib/admin-auth';
 import { uploadImage } from '../../../lib/catalog-store';
 
 export const prerender = false;
@@ -11,7 +11,7 @@ const MAX_BYTES = 12 * 1024 * 1024; // 12 MB
 const OK_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/avif'];
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  if (!isAuthed(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
 
   let form: FormData;
   try {

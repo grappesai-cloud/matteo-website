@@ -7,8 +7,8 @@ const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json' } });
 
 export const POST: APIRoute = async ({ request, cookies }) => {
-  if (!isConfigured()) {
-    return json({ error: 'ADMIN_PASSWORD nu este setat în mediu.' }, 503);
+  if (!isConfigured('admin') && !isConfigured('ruvix')) {
+    return json({ error: 'Nicio parolă nu este setată în mediu (ADMIN_PASSWORD / RUVIX_PASSWORD).' }, 503);
   }
   let body: { password?: string };
   try {
@@ -16,9 +16,10 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   } catch {
     return json({ error: 'Cerere invalidă.' }, 400);
   }
-  if (!checkPassword(body?.password ?? '')) {
+  const role = checkPassword(body?.password ?? '');
+  if (!role) {
     return json({ error: 'Parolă greșită.' }, 401);
   }
-  setSession(cookies);
-  return json({ ok: true });
+  setSession(cookies, role);
+  return json({ ok: true, role });
 };

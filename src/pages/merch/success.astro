@@ -40,6 +40,12 @@ import Layout from '../../layouts/Layout.astro';
       const el = document.getElementById('ok-ref')!;
       el.textContent = `Referință comandă: ${sid.slice(-12)}`;
       el.hidden = false;
+      // Best-effort: make sure the order is recorded (idempotent) even if the
+      // Stripe webhook is delayed. Shows the friendly order number when ready.
+      fetch(`/api/order-from-session?session_id=${encodeURIComponent(sid)}`)
+        .then((r) => r.json())
+        .then((d) => { if (d?.ok && d.number) el.textContent = `Comanda #${d.number}`; })
+        .catch(() => {});
     }
   </script>
 

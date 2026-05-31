@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
-import { isAuthed } from '../../../lib/admin-auth';
+import { isAdmin } from '../../../lib/admin-auth';
 import { CURRENCY } from '../../../lib/products';
 
 export const prerender = false;
@@ -21,7 +21,7 @@ const str = (v: unknown, max = 80) => String(v ?? '').trim().slice(0, max);
 
 // LIST promotion codes
 export const GET: APIRoute = async ({ cookies }) => {
-  if (!isAuthed(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const stripe = stripeOrError();
   if (stripe instanceof Response) return stripe;
 
@@ -44,7 +44,7 @@ export const GET: APIRoute = async ({ cookies }) => {
 
 // CREATE coupon + promotion code
 export const POST: APIRoute = async ({ request, cookies }) => {
-  if (!isAuthed(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const stripe = stripeOrError();
   if (stripe instanceof Response) return stripe;
 
@@ -86,7 +86,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
 // DEACTIVATE a promotion code
 export const DELETE: APIRoute = async ({ request, cookies }) => {
-  if (!isAuthed(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const stripe = stripeOrError();
   if (stripe instanceof Response) return stripe;
 
