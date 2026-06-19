@@ -5,6 +5,16 @@ import { readLanding } from '../lib/landing-store';
 
 export const prerender = false;
 
+// shop.mattman.ro serves the shop directly. Behind Traefik the original host
+// arrives in x-forwarded-host (host is the internal one), so check both.
+const reqHost =
+  Astro.request.headers.get('x-forwarded-host') ||
+  Astro.request.headers.get('host') ||
+  '';
+if (reqHost.toLowerCase().startsWith('shop.')) {
+  return Astro.rewrite('/merch');
+}
+
 const { roster, tiles, headerSub } = await readLanding();
 
 const orgJsonLd = {
