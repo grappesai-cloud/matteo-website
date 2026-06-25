@@ -1,9 +1,10 @@
 import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { readCatalog, writeCatalog } from '../../lib/catalog-store';
-import { addOrder } from '../../lib/orders-store';
+import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
 import { notifyRuvixNewOrder } from '../../lib/notify';
+import { createAwb, fanConfigured } from '../../lib/fancourier';
 import type { SizeKey } from '../../lib/products';
 
 export const prerender = false;
@@ -35,11 +36,25 @@ export const POST: APIRoute = async ({ request }) => {
 
     // 1) Record the order (idempotent by session id) so admin & Ruvix can see it,
     //    and email Ruvix once on first insert.
+    let recorded: Awaited<ReturnType<typeof addOrder>> | null = null;
     try {
-      const { order, created } = await addOrder(orderFromStripeSession(session, catalog));
-      if (created) await notifyRuvixNewOrder(order, new URL(request.url).origin);
+      recorded = await addOrder(orderFromStripeSession(session, catalog));
+      if (recorded.created) await notifyRuvixNewOrder(recorded.order, new URL(request.url).origin);
     } catch (err: any) {
       console.error('[webhook] order record failed:', err?.message);
+    }
+
+    // 1b) Auto-generate the FAN Courier AWB on first insert (best-effort).
+    //     Guarded on `created` so duplicate webhook deliveries don't double-create
+    //     a label, and on missing awb. On failure the order stays AWB-less and the
+    //     admin "Generează AWB FAN" button is the fallback. Never blocks the 200.
+    if (recorded?.created && fanConfigured() && !recorded.order.awb) {
+      try {
+        const { awb } = await createAwb(recorded.order);
+        await updateOrder(recorded.order.id, { awb, courier: 'FAN Courier', status: 'shipped' });
+      } catch (err: any) {
+        console.error('[webhook] FAN AWB auto-generate failed:', err?.message);
+      }
     }
 
     // 2) Decrement tracked stock.
