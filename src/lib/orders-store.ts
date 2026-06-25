@@ -91,7 +91,14 @@ export async function addOrder(order: Order): Promise<{ order: Order; created: b
 /** Patch fulfillment fields on an order. Returns the updated order or null. */
 export async function updateOrder(
   id: string,
-  patch: { status?: OrderStatus; awb?: string; courier?: string; note?: string }
+  patch: {
+    status?: OrderStatus;
+    awb?: string;
+    courier?: string;
+    note?: string;
+    invoiceSeries?: string;
+    invoiceNumber?: string;
+  }
 ): Promise<Order | null> {
   const all = await readOrders();
   let updated: Order | null = null;
@@ -103,6 +110,8 @@ export async function updateOrder(
       ...(patch.awb !== undefined ? { awb: patch.awb } : {}),
       ...(patch.courier !== undefined ? { courier: patch.courier } : {}),
       ...(patch.note !== undefined ? { note: patch.note } : {}),
+      ...(patch.invoiceSeries !== undefined ? { invoiceSeries: patch.invoiceSeries } : {}),
+      ...(patch.invoiceNumber !== undefined ? { invoiceNumber: patch.invoiceNumber } : {}),
       updatedAt: Date.now(),
     };
     return updated;

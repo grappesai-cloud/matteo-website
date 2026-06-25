@@ -5,6 +5,7 @@ import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
 import { notifyRuvixNewOrder } from '../../lib/notify';
 import { createAwb, fanConfigured } from '../../lib/fancourier';
+import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
 import type { SizeKey } from '../../lib/products';
 
 export const prerender = false;
@@ -54,6 +55,19 @@ export const POST: APIRoute = async ({ request }) => {
         await updateOrder(recorded.order.id, { awb, courier: 'FAN Courier', status: 'shipped' });
       } catch (err: any) {
         console.error('[webhook] FAN AWB auto-generate failed:', err?.message);
+      }
+    }
+
+    // 1c) Auto-issue the SmartBill fiscal invoice on first insert (best-effort).
+    //     Guarded on `created` + missing invoice so duplicate deliveries don't
+    //     double-bill. On failure the order stays invoice-less (re-issue manually
+    //     in SmartBill). Never blocks the 200.
+    if (recorded?.created && smartbillConfigured() && !recorded.order.invoiceNumber) {
+      try {
+        const { series, number } = await issueInvoice(recorded.order);
+        await updateOrder(recorded.order.id, { invoiceSeries: series, invoiceNumber: number });
+      } catch (err: any) {
+        console.error('[webhook] SmartBill invoice failed:', err?.message);
       }
     }
 

@@ -52,6 +52,8 @@ export interface Order {
   shipping: OrderAddress;
   awb?: string;          // tracking number — set by Ruvix
   courier?: string;      // courier name — set by Ruvix
+  invoiceSeries?: string;// SmartBill series (e.g. SHOP) — set when invoice issued
+  invoiceNumber?: string;// SmartBill invoice number
   note?: string;         // internal note
   updatedAt?: number;
 }
