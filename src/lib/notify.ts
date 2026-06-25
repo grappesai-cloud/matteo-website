@@ -1,9 +1,10 @@
-// === ORDER NOTIFICATIONS — email to Ruvix (Resend, env-gated) ===
-// When RESEND_API_KEY + RUVIX_EMAIL are set, a new paid order triggers an email
-// to the Ruvix fulfillment team (in addition to the dashboard). Without them,
-// notifyRuvixNewOrder() is a safe no-op. NOTIFY_FROM sets the sender (must be a
-// Resend-verified domain); defaults to Resend's test sender.
+// === ORDER NOTIFICATIONS — email „comandă nouă" prin SMTP (env-gated) ===
+// Când SMTP_HOST + SMTP_USER + SMTP_PASS sunt setate, o comandă nouă plătită
+// trimite un email (de la căsuța shop@mattman.ro de pe cyberfolks) către
+// ORDER_NOTIFY_EMAIL (default = SMTP_USER). Fără ele, notifyRuvixNewOrder() e un
+// no-op sigur. Trimitere best-effort: nu aruncă niciodată.
 
+import nodemailer from 'nodemailer';
 import { formatAddress, orderUnits, type Order } from './orders';
 
 function env(k: string): string {
@@ -11,7 +12,7 @@ function env(k: string): string {
 }
 
 export function notifyConfigured(): boolean {
-  return !!(env('RESEND_API_KEY') && env('RUVIX_EMAIL'));
+  return !!(env('SMTP_HOST') && env('SMTP_USER') && env('SMTP_PASS'));
 }
 
 function esc(s: unknown): string {
@@ -38,27 +39,35 @@ function buildHtml(order: Order, adminUrl: string): string {
   </div>`;
 }
 
-/** Best-effort: email Ruvix about a new order. Never throws. */
+let transporter: nodemailer.Transporter | null = null;
+function getTransport(): nodemailer.Transporter {
+  if (transporter) return transporter;
+  const port = Number(env('SMTP_PORT')) || 465;
+  transporter = nodemailer.createTransport({
+    host: env('SMTP_HOST'),
+    port,
+    secure: port === 465, // 465 = SSL, 587 = STARTTLS
+    auth: { user: env('SMTP_USER'), pass: env('SMTP_PASS') },
+  });
+  return transporter;
+}
+
+/** Best-effort: email owner about a new order via SMTP. Never throws. */
 export async function notifyRuvixNewOrder(order: Order, origin: string): Promise<void> {
   if (!notifyConfigured()) return;
-  const from = env('NOTIFY_FROM') || 'Mattman Music <onboarding@resend.dev>';
-  const to = env('RUVIX_EMAIL').split(',').map((s) => s.trim()).filter(Boolean);
+  const fromName = env('NOTIFY_FROM_NAME') || 'Mattman Music';
+  const from = `${fromName} <${env('SMTP_USER')}>`;
+  const to = (env('ORDER_NOTIFY_EMAIL') || env('SMTP_USER'))
+    .split(',').map((s) => s.trim()).filter(Boolean);
   const adminUrl = `${origin.replace(/\/$/, '')}/admin`;
   try {
-    const res = await fetch('https://api.resend.com/emails', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${env('RESEND_API_KEY')}` },
-      body: JSON.stringify({
-        from,
-        to,
-        subject: `Comandă nouă #${order.number} — ${order.amountTotal} ${order.currency}`,
-        html: buildHtml(order, adminUrl),
-      }),
+    await getTransport().sendMail({
+      from,
+      to,
+      subject: `Comandă nouă #${order.number} — ${order.amountTotal} ${order.currency}`,
+      html: buildHtml(order, adminUrl),
     });
-    if (!res.ok) {
-      console.error('[notify] Resend error:', res.status, await res.text().catch(() => ''));
-    }
   } catch (err: any) {
-    console.error('[notify] email failed:', err?.message);
+    console.error('[notify] SMTP email failed:', err?.message);
   }
 }
