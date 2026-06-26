@@ -90,6 +90,93 @@ export interface FanAwbResult {
   cost?: number;
 }
 
+// === COURIER PICKUP ORDER (POST /order) ===
+// Schedules a courier to come collect the parcel(s). FAN rule: one courier order
+// per sender branch per day covers ALL ready AWBs, so callers must debounce to a
+// single pickup per day (see pickup-store + the webhook hook).
+
+/** Romania-local parts (handles UTC server + Europe/Bucharest DST correctly). */
+function roNow(): { y: number; m: number; d: number; hour: number; dow: number } {
+  const now = new Date();
+  const fmt = new Intl.DateTimeFormat('en-GB', {
+    timeZone: 'Europe/Bucharest',
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', hour12: false, weekday: 'short',
+  });
+  const p: Record<string, string> = {};
+  for (const part of fmt.formatToParts(now)) p[part.type] = part.value;
+  const dows: Record<string, number> = { Sun: 0, Mon: 1, Tue: 2, Wed: 3, Thu: 4, Fri: 5, Sat: 6 };
+  return {
+    y: Number(p.year), m: Number(p.month), d: Number(p.day),
+    hour: Number(p.hour), dow: dows[p.weekday] ?? 1,
+  };
+}
+
+/**
+ * Decide pickup date + a valid >=2h window based on the Romania-local clock.
+ * Weekday before 15:00 → same day; otherwise the next working day (Sat/Sun roll
+ * to Monday). Window stays inside the conservative 10:00–18:00 band.
+ */
+export function computePickupSlot(): { date: string; first: string; second: string } {
+  const t = roNow();
+  const pad = (n: number) => String(n).padStart(2, '0');
+  let { y, m, d, dow } = t;
+  const sameDay = dow >= 1 && dow <= 5 && t.hour < 15;
+
+  if (!sameDay) {
+    // advance to next working day
+    const base = new Date(Date.UTC(y, m - 1, d));
+    do { base.setUTCDate(base.getUTCDate() + 1); } while (base.getUTCDay() === 0 || base.getUTCDay() === 6);
+    y = base.getUTCFullYear(); m = base.getUTCMonth() + 1; d = base.getUTCDate();
+    return { date: `${y}-${pad(m)}-${pad(d)}`, first: '10:00', second: '16:00' };
+  }
+  // same-day window: start ~2h from now, clamp into 11:00–16:00, end +3h capped 18:00
+  const first = Math.min(Math.max(t.hour + 2, 11), 16);
+  const second = Math.min(first + 3, 18);
+  return { date: `${y}-${pad(m)}-${pad(d)}`, first: `${pad(first)}:00`, second: `${pad(second)}:00` };
+}
+
+export interface FanPickupResult {
+  orderId: string;
+  pickupDate: string;
+}
+
+/** Place a courier pickup order for an AWB. Throws with a clear RO message on failure. */
+export async function placeCourierOrder(order: Order): Promise<FanPickupResult> {
+  if (!fanConfigured()) {
+    throw new Error('FAN Courier nu e configurat.');
+  }
+  const slot = computePickupSlot();
+  const token = await getToken();
+  const body = {
+    clientId: Number(env('FAN_CLIENT_ID')),
+    info: {
+      awbNumber: order.awb || null,
+      packages: { parcel: 1, envelope: 0 },
+      weight: estimateWeight(order),
+      dimensions: { width: 30, length: 25, height: 8 },
+      orderType: 'Standard',
+      pickupDate: slot.date,
+      pickupHours: { first: slot.first, second: slot.second },
+      observations: `Comanda #${order.number}`,
+    },
+  };
+  const res = await fetch(`${BASE}/order`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+    body: JSON.stringify(body),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data?.status === 'error') {
+    const msg = data?.message
+      || (Array.isArray(data?.errors) ? data.errors.join('; ') : '')
+      || 'Programarea ridicării FAN a eșuat.';
+    throw new Error(String(msg));
+  }
+  const orderId = String(data?.data?.id ?? data?.id ?? '').trim();
+  return { orderId, pickupDate: slot.date };
+}
+
 /**
  * Generate an internal AWB for an order. Throws with a clear RO message on failure.
  * FAN returns HTTP 200 with a per-shipment result array under `response` (older

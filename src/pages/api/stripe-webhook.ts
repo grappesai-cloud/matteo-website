@@ -4,7 +4,8 @@ import { readCatalog, writeCatalog } from '../../lib/catalog-store';
 import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
 import { notifyRuvixNewOrder } from '../../lib/notify';
-import { createAwb, fanConfigured } from '../../lib/fancourier';
+import { createAwb, fanConfigured, placeCourierOrder, computePickupSlot } from '../../lib/fancourier';
+import { readPickup, writePickup } from '../../lib/pickup-store';
 import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
 import type { SizeKey } from '../../lib/products';
 
@@ -53,6 +54,24 @@ export const POST: APIRoute = async ({ request }) => {
       try {
         const { awb } = await createAwb(recorded.order);
         await updateOrder(recorded.order.id, { awb, courier: 'FAN Courier', status: 'shipped' });
+
+        // 1b-2) Auto-schedule the courier pickup (POST /order), debounced to ONE
+        //       per day (FAN: a single courier order per branch covers all ready
+        //       AWBs). Best-effort; failure leaves the AWB ready for a portal
+        //       pickup and never blocks the 200.
+        try {
+          const slot = computePickupSlot();
+          const last = await readPickup();
+          if (last?.date !== slot.date) {
+            const { orderId } = await placeCourierOrder({ ...recorded.order, awb });
+            await writePickup({ date: slot.date, fanOrderId: orderId, orderNumber: recorded.order.number, at: Date.now() });
+            console.log('[webhook] FAN pickup scheduled for', slot.date, 'order', orderId);
+          } else {
+            console.log('[webhook] FAN pickup already scheduled for', slot.date, '— skipping');
+          }
+        } catch (err: any) {
+          console.error('[webhook] FAN pickup schedule failed:', err?.message);
+        }
       } catch (err: any) {
         console.error('[webhook] FAN AWB auto-generate failed:', err?.message);
       }
