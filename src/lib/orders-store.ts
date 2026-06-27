@@ -1,26 +1,20 @@
-// === ORDERS STORE — Vercel Blob (JSON) ===
-// All orders live in a single JSON blob (newest concerns are low-volume merch).
+// === ORDERS STORE — Cloudflare R2 (JSON) ===
+// All orders live in a single JSON object (low-volume merch).
 // Mirrors catalog-store / landing-store. Fallbacks:
-//   • local dev without Blob → a gitignored .data/orders.json
-//   • production without Blob → empty list (writes throw a clear error)
+//   • local dev without R2 → a gitignored .data/orders.json
+//   • production without R2 → empty list (writes throw a clear error)
 
-import { list, put } from '@vercel/blob';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Order, OrderStatus } from './orders';
+import { r2Configured, r2GetJson, r2PutJson } from './r2';
 
-const ORDERS_PATH = 'orders/orders.json';
+const ORDERS_KEY = 'orders/orders.json';
 const DEV = import.meta.env.DEV;
 const LOCAL_FILE = path.join(process.cwd(), '.data', 'orders.json');
 
-function token(): string | undefined {
-  return process.env.BLOB_READ_WRITE_TOKEN || import.meta.env.BLOB_READ_WRITE_TOKEN;
-}
-export function hasBlob(): boolean {
-  return !!token();
-}
 export function canWrite(): boolean {
-  return hasBlob() || DEV;
+  return r2Configured() || DEV;
 }
 
 async function readLocal(): Promise<Order[] | null> {
@@ -39,16 +33,12 @@ async function writeLocal(orders: Order[]): Promise<void> {
 
 /** Read all orders (unsorted on disk). */
 export async function readOrders(): Promise<Order[]> {
-  if (hasBlob()) {
+  if (r2Configured()) {
     try {
-      const { blobs } = await list({ prefix: ORDERS_PATH, limit: 1, token: token() });
-      if (!blobs.length) return [];
-      const res = await fetch(blobs[0].url, { cache: 'no-store' });
-      if (!res.ok) return [];
-      const data = await res.json();
-      return Array.isArray(data) ? (data as Order[]) : [];
+      const data = await r2GetJson<Order[]>(ORDERS_KEY);
+      return Array.isArray(data) ? data : [];
     } catch (err) {
-      console.error('[orders] blob read failed:', (err as Error)?.message);
+      console.error('[orders] R2 read failed:', (err as Error)?.message);
       return [];
     }
   }
@@ -57,19 +47,9 @@ export async function readOrders(): Promise<Order[]> {
 }
 
 export async function writeOrders(orders: Order[]): Promise<void> {
-  if (hasBlob()) {
-    await put(ORDERS_PATH, JSON.stringify(orders, null, 2), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 0,
-      token: token(),
-    });
-    return;
-  }
+  if (r2Configured()) { await r2PutJson(ORDERS_KEY, orders); return; }
   if (DEV) { await writeLocal(orders); return; }
-  throw new Error('BLOB_READ_WRITE_TOKEN lipsește — stocarea comenzilor nu e configurată.');
+  throw new Error('R2 nu e configurat — stocarea comenzilor nu e disponibilă.');
 }
 
 /**

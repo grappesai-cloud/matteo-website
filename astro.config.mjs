@@ -1,12 +1,9 @@
 // @ts-check
 import { defineConfig } from 'astro/config';
-import vercel from '@astrojs/vercel';
 import node from '@astrojs/node';
 
-// DEPLOY_TARGET=node → self-hosted (Coolify/Hetzner) via @astrojs/node standalone.
-// Otherwise the Vercel adapter (kept as a fallback target).
-const adapter =
-  process.env.DEPLOY_TARGET === 'node' ? node({ mode: 'standalone' }) : vercel();
+// Self-hosted on Coolify/Hetzner via @astrojs/node standalone. No Vercel.
+const adapter = node({ mode: 'standalone' });
 
 export default defineConfig({
   site: 'https://mattman.ro',

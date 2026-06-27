@@ -1,27 +1,20 @@
-// === LANDING STORE — Vercel Blob (JSON) ===
-// Mirrors catalog-store: landing content lives as a single JSON blob. Fallbacks:
-//   • local dev without Blob → a gitignored .data/landing.json (full edit works)
-//   • production without Blob → read-only seed (writes throw a clear error)
+// === LANDING STORE — Cloudflare R2 (JSON) ===
+// Mirrors catalog-store: landing content lives as a single JSON object. Fallbacks:
+//   • local dev without R2 → a gitignored .data/landing.json (full edit works)
+//   • production without R2 → read-only seed (writes throw a clear error)
 // Images are uploaded via catalog-store's uploadImage (shared /api/admin/upload).
 
-import { list, put } from '@vercel/blob';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { seedLanding, type LandingContent } from './landing';
+import { r2Configured, r2GetJson, r2PutJson } from './r2';
 
-const LANDING_PATH = 'content/landing.json';
+const LANDING_KEY = 'content/landing.json';
 const DEV = import.meta.env.DEV;
 const LOCAL_FILE = path.join(process.cwd(), '.data', 'landing.json');
 
-function token(): string | undefined {
-  return process.env.BLOB_READ_WRITE_TOKEN || import.meta.env.BLOB_READ_WRITE_TOKEN;
-}
-export function hasBlob(): boolean {
-  return !!token();
-}
-/** True when content can actually be written (Blob configured, or local dev). */
 export function canWrite(): boolean {
-  return hasBlob() || DEV;
+  return r2Configured() || DEV;
 }
 
 /** Merge stored content over the seed so newly-added fields keep a sane default. */
@@ -50,15 +43,13 @@ async function writeLocal(content: LandingContent): Promise<void> {
 
 /** Read the live landing content. Falls back to local file (dev) / seed. */
 export async function readLanding(): Promise<LandingContent> {
-  if (hasBlob()) {
+  if (r2Configured()) {
     try {
-      const { blobs } = await list({ prefix: LANDING_PATH, limit: 1, token: token() });
-      if (!blobs.length) { await writeLanding(seedLanding); return seedLanding; }
-      const res = await fetch(blobs[0].url, { cache: 'no-store' });
-      if (!res.ok) return seedLanding;
-      return withDefaults(await res.json());
+      const data = await r2GetJson<Partial<LandingContent>>(LANDING_KEY);
+      if (!data) { await writeLanding(seedLanding); return seedLanding; }
+      return withDefaults(data);
     } catch (err) {
-      console.error('[landing] blob read failed, using seed:', (err as Error)?.message);
+      console.error('[landing] R2 read failed, using seed:', (err as Error)?.message);
       return seedLanding;
     }
   }
@@ -73,17 +64,7 @@ export async function readLanding(): Promise<LandingContent> {
 
 /** Overwrite the landing content. Throws if no writable backend. */
 export async function writeLanding(content: LandingContent): Promise<void> {
-  if (hasBlob()) {
-    await put(LANDING_PATH, JSON.stringify(content, null, 2), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 0,
-      token: token(),
-    });
-    return;
-  }
+  if (r2Configured()) { await r2PutJson(LANDING_KEY, content); return; }
   if (DEV) { await writeLocal(content); return; }
-  throw new Error('BLOB_READ_WRITE_TOKEN lipsește — stocarea nu e configurată.');
+  throw new Error('R2 nu e configurat — stocarea nu e disponibilă.');
 }

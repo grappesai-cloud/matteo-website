@@ -1,14 +1,14 @@
-// === PICKUP STATE STORE — Vercel Blob (JSON) ===
+// === PICKUP STATE STORE — Cloudflare R2 (JSON) ===
 // Tiny single-record store that remembers the date FAN has already been asked to
 // send a courier. FAN's rule is one courier order per sender branch per day, so
 // the webhook debounces on this: it only places a pickup if none was placed for
-// the same target pickup date. Mirrors the Blob pattern of the other stores.
+// the same target pickup date. Mirrors the R2 pattern of the other stores.
 
-import { list, put } from '@vercel/blob';
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
+import { r2Configured, r2GetJson, r2PutJson } from './r2';
 
-const PICKUP_PATH = 'pickups/last.json';
+const PICKUP_KEY = 'pickups/last.json';
 const DEV = import.meta.env.DEV;
 const LOCAL_FILE = path.join(process.cwd(), '.data', 'pickup.json');
 
@@ -19,24 +19,13 @@ export interface PickupState {
   at: number;          // epoch ms when placed
 }
 
-function token(): string | undefined {
-  return process.env.BLOB_READ_WRITE_TOKEN || import.meta.env.BLOB_READ_WRITE_TOKEN;
-}
-function hasBlob(): boolean {
-  return !!token();
-}
-
 export async function readPickup(): Promise<PickupState | null> {
-  if (hasBlob()) {
+  if (r2Configured()) {
     try {
-      const { blobs } = await list({ prefix: PICKUP_PATH, limit: 1, token: token() });
-      if (!blobs.length) return null;
-      const res = await fetch(blobs[0].url, { cache: 'no-store' });
-      if (!res.ok) return null;
-      const data = await res.json();
-      return data && typeof data.date === 'string' ? (data as PickupState) : null;
+      const data = await r2GetJson<PickupState>(PICKUP_KEY);
+      return data && typeof data.date === 'string' ? data : null;
     } catch (err) {
-      console.error('[pickup] blob read failed:', (err as Error)?.message);
+      console.error('[pickup] R2 read failed:', (err as Error)?.message);
       return null;
     }
   }
@@ -47,17 +36,7 @@ export async function readPickup(): Promise<PickupState | null> {
 }
 
 export async function writePickup(state: PickupState): Promise<void> {
-  if (hasBlob()) {
-    await put(PICKUP_PATH, JSON.stringify(state, null, 2), {
-      access: 'public',
-      contentType: 'application/json',
-      addRandomSuffix: false,
-      allowOverwrite: true,
-      cacheControlMaxAge: 0,
-      token: token(),
-    });
-    return;
-  }
+  if (r2Configured()) { await r2PutJson(PICKUP_KEY, state); return; }
   if (DEV) {
     await fs.mkdir(path.dirname(LOCAL_FILE), { recursive: true });
     await fs.writeFile(LOCAL_FILE, JSON.stringify(state, null, 2), 'utf-8');
