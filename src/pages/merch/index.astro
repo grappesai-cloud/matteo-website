@@ -271,7 +271,6 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
       background: #131313;
       transition: border-color 0.3s ease;
     }
-    .pc:hover .pc-media { border-color: var(--gold, #c9a24a); }
     .pc-img {
       position: absolute; inset: 0;
       width: 100%; height: 100%;
@@ -279,9 +278,13 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
       transition: opacity 0.6s ease, transform 1.1s cubic-bezier(0.2,0.7,0.2,1);
     }
     .pc-back { opacity: 0; }
-    .pc:hover .pc-front { opacity: 0; }
-    .pc:hover .pc-back { opacity: 1; }
-    .pc:hover .pc-img { transform: scale(1.03); }
+    /* Hover swap only on real pointer devices — on touch the first tap must open the page, not flip to the back */
+    @media (hover: hover) {
+      .pc:hover .pc-media { border-color: var(--gold, #c9a24a); }
+      .pc:hover .pc-front { opacity: 0; }
+      .pc:hover .pc-back { opacity: 1; }
+      .pc:hover .pc-img { transform: scale(1.03); }
+    }
     .pc-badge {
       position: absolute; top: 12px; left: 12px;
       padding: 5px 10px;
