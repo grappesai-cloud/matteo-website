@@ -142,6 +142,40 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   return json({ ok: true, product: result });
 };
 
+// REORDER { ids } — ids is the new order of a subset of products (one artist
+// tab). The subset is permuted into the slots it already occupies in the global
+// sort order, every other product stays put, then sort is renumbered 1..N.
+export const PATCH: APIRoute = async ({ request, cookies }) => {
+  const blocked = guard(cookies);
+  if (blocked) return blocked;
+
+  let body: any;
+  try { body = await request.json(); } catch { return json({ error: 'Cerere invalidă.' }, 400); }
+
+  const ids: string[] = Array.isArray(body?.ids) ? body.ids.map((x: any) => str(x, 60)).filter(Boolean) : [];
+  if (!ids.length) return json({ error: 'Listă de ordine goală.' }, 400);
+
+  const all = await readCatalog();
+  const byId = new Map(all.map((p) => [p.id, p]));
+  const subset = ids.filter((id) => byId.has(id));
+  if (!subset.length) return json({ error: 'Niciun produs valid în ordine.' }, 400);
+
+  const subsetSet = new Set(subset);
+  const ordered = sortProducts(all);            // current global order
+  const queue = [...subset];                    // desired order for the subset
+  const next = ordered.map((p) =>
+    subsetSet.has(p.id) ? byId.get(queue.shift()!)! : p,
+  );
+  next.forEach((p, i) => { p.sort = i + 1; });   // renumber so order persists
+
+  try {
+    await writeCatalog(next);
+  } catch (err: any) {
+    return json({ error: err?.message || 'Reordonarea a eșuat.' }, 500);
+  }
+  return json({ ok: true, products: sortProducts(next) });
+};
+
 // DELETE { id }
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   const blocked = guard(cookies);

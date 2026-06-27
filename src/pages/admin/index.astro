@@ -644,7 +644,8 @@ const blobReady = canWrite();
           .map((p) => {
             const img = p.colors?.[0]?.front || '';
             return `
-            <article class="adm-row${p.active === false ? ' is-off' : ''}">
+            <article class="adm-row${p.active === false ? ' is-off' : ''}" draggable="true" data-id="${esc(p.id)}">
+              <button class="adm-row-grip mono" type="button" title="Trage ca să reordonezi" aria-label="Reordonează">⠿</button>
               <img class="adm-row-thumb" src="${esc(img)}" alt="" />
               <div class="adm-row-info">
                 <h3 class="adm-row-name">${esc(p.name)}</h3>
@@ -671,6 +672,53 @@ const blobReady = canWrite();
         const t = e.target as HTMLElement;
         if (t.dataset.edit) openEditor(products.find((p) => p.id === t.dataset.edit));
         if (t.dataset.del) del(t.dataset.del);
+      });
+
+      // ===== DRAG-AND-DROP REORDER (within the active artist) =====
+      let dragRow: HTMLElement | null = null;
+      listEl.addEventListener('dragstart', (e) => {
+        const row = (e.target as HTMLElement).closest<HTMLElement>('.adm-row');
+        if (!row) return;
+        dragRow = row;
+        row.classList.add('is-dragging');
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+      listEl.addEventListener('dragend', () => {
+        dragRow?.classList.remove('is-dragging');
+        dragRow = null;
+      });
+      listEl.addEventListener('dragover', (e) => {
+        if (!dragRow) return;
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'move';
+        const over = (e.target as HTMLElement).closest<HTMLElement>('.adm-row');
+        if (!over || over === dragRow) return;
+        const rect = over.getBoundingClientRect();
+        const after = e.clientY > rect.top + rect.height / 2;
+        listEl.insertBefore(dragRow, after ? over.nextSibling : over);
+      });
+      listEl.addEventListener('drop', async (e) => {
+        if (!dragRow) return;
+        e.preventDefault();
+        const ids = Array.from(listEl.querySelectorAll<HTMLElement>('.adm-row'))
+          .map((r) => r.dataset.id!)
+          .filter(Boolean);
+        listEl.classList.add('is-saving');
+        try {
+          const res = await fetch('/api/admin/products', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ ids }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) throw new Error(data.error || 'Reordonare eșuată.');
+          if (Array.isArray(data.products)) products = data.products;
+        } catch (err: any) {
+          alert(err?.message || 'Reordonare eșuată.');
+          renderList(); // revert to last known order
+        } finally {
+          listEl.classList.remove('is-saving');
+        }
       });
 
       async function del(id: string) {
@@ -751,18 +799,19 @@ const blobReady = canWrite();
             const f = file.files?.[0];
             if (!f) return;
             cta.textContent = '… încarc';
-            const fd = new FormData();
-            fd.append('file', f);
             try {
+              const fd = new FormData();
+              fd.append('file', f);
               const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
-              const data = await res.json();
-              if (!res.ok) throw new Error(data.error || 'Upload eșuat');
+              const data = await res.json().catch(() => ({} as any));
+              if (!res.ok) throw new Error(data.error || `Upload eșuat (${res.status}).`);
               urlInput.value = data.url;
               preview.src = data.url;
               preview.hidden = false;
               cta.textContent = side === 'front' ? 'Față ✓' : 'Spate ✓';
             } catch (e: any) {
               cta.textContent = side === 'front' ? 'Față ↑' : 'Spate ↑';
+              file.value = '';
               alert(e?.message || 'Upload eșuat');
             }
           });
@@ -1033,13 +1082,13 @@ const blobReady = canWrite();
           const f = file.files?.[0];
           if (!f) return;
           cta.textContent = '… încarc';
-          const fd = new FormData(); fd.append('file', f);
           try {
+            const fd = new FormData(); fd.append('file', f);
             const res = await fetch('/api/admin/upload', { method: 'POST', body: fd });
-            const d = await res.json();
-            if (!res.ok) throw new Error(d.error || 'Upload eșuat');
+            const d = await res.json().catch(() => ({} as any));
+            if (!res.ok) throw new Error(d.error || `Upload eșuat (${res.status}).`);
             urlInput.value = d.url; img.src = d.url; img.hidden = false; cta.textContent = 'Foto ✓';
-          } catch (e: any) { cta.textContent = 'Foto ↑'; alert(e?.message || 'Upload eșuat'); }
+          } catch (e: any) { cta.textContent = 'Foto ↑'; file.value = ''; alert(e?.message || 'Upload eșuat'); }
         });
         return node;
       }
@@ -1194,10 +1243,18 @@ const blobReady = canWrite();
     .adm-list { display: flex; flex-direction: column; gap: 10px; }
     .adm-loading, .adm-empty { padding: 30px 4px; }
     .adm-row {
-      display: grid; grid-template-columns: 56px 1fr auto; gap: 16px; align-items: center;
+      display: grid; grid-template-columns: 22px 56px 1fr auto; gap: 16px; align-items: center;
       padding: 12px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 8px; background: #0e0e0e;
     }
     .adm-row.is-off { opacity: 0.55; }
+    .adm-row.is-dragging { opacity: 0.4; border-color: var(--gold, #c9a24a); }
+    .adm-row-grip {
+      background: none; border: 0; padding: 0; cursor: grab; color: var(--dim, rgba(242,235,224,0.4));
+      font-size: 18px; line-height: 1; letter-spacing: 0.1em; align-self: stretch; display: grid; place-items: center;
+    }
+    .adm-row-grip:hover { color: var(--gold, #c9a24a); }
+    .adm-row-grip:active { cursor: grabbing; }
+    #product-list.is-saving { opacity: 0.6; pointer-events: none; }
     .adm-row-thumb { width: 56px; height: 70px; object-fit: cover; border-radius: 4px; background: #161616; }
     .adm-row-name { font-family: var(--serif, 'Fraunces', serif); font-weight: 400; font-size: 19px; margin: 0 0 3px; }
     .adm-row-meta { letter-spacing: 0.05em; }
@@ -1307,7 +1364,7 @@ const blobReady = canWrite();
     @media (max-width: 860px) { .adm-orep { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 560px) {
       .adm-grid2 { grid-template-columns: 1fr; }
-      .adm-row { grid-template-columns: 48px 1fr; }
+      .adm-row { grid-template-columns: 22px 48px 1fr; }
       .adm-row-actions { grid-column: 1 / -1; justify-content: flex-end; }
       .adm-ltile { grid-template-columns: 1fr; }
       .adm-orep { grid-template-columns: repeat(2, 1fr); }
