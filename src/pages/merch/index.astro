@@ -79,12 +79,12 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
               {p.badge && <span class="pc-badge mono">{p.badge}</span>}
               {p.discountPercent ? <span class="pc-sale mono">−{p.discountPercent}%</span> : null}
               {isSoldOut(p) && <span class="pc-soldout mono">Stoc epuizat</span>}
-              {p.colors.length > 1 && (
-                <span class="pc-colors" aria-hidden="true">
-                  {p.colors.map((col) => <span class="pc-dot" style={`--c:${col.swatch}`}></span>)}
-                </span>
-              )}
             </div>
+            {p.colors.length > 1 && (
+              <span class="pc-colors" aria-hidden="true">
+                {p.colors.map((col) => <span class="pc-dot" style={`--c:${col.swatch}`}></span>)}
+              </span>
+            )}
             <div class="pc-info">
               <div class="pc-text">
                 <h2 class="pc-name">{p.name}</h2>
@@ -304,15 +304,12 @@ const artistsWithCounts = catalogArtists(products).map((a) => ({
     }
     .pc-was { color: var(--dim, rgba(242,235,224,0.55)); text-decoration: line-through; margin-right: 8px; }
     .pc-colors {
-      position: absolute; left: 50%; top: 50%;
-      transform: translate(-50%, -50%);
-      display: flex; gap: 12px;
+      display: flex; gap: 8px;
     }
     .pc-dot {
-      width: 30px; height: 30px; border-radius: 999px;
+      width: 16px; height: 16px; border-radius: 999px;
       background: var(--c);
-      border: 1.5px solid rgba(242,235,224,0.7);
-      box-shadow: 0 0 0 3px rgba(10,10,10,0.45);
+      border: 1.5px solid rgba(242,235,224,0.55);
     }
     .pc-info { display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; }
     .pc-name {
