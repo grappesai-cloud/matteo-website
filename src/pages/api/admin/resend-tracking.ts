@@ -10,14 +10,34 @@ const json = (b: unknown, s = 200) =>
 
 const envv = (k: string) => (process.env[k] || (import.meta.env as any)[k] || '').trim();
 
-// Diagnostics: which SMTP host/port is configured (no secrets). Admin-only.
+// TCP reachability probe: can the server open a socket to host:port at all?
+async function tcpProbe(host: string, port: number, timeoutMs = 6000): Promise<string> {
+  const net = await import('node:net');
+  return new Promise((resolve) => {
+    const sock = new net.Socket();
+    let done = false;
+    const finish = (v: string) => { if (!done) { done = true; try { sock.destroy(); } catch {} resolve(v); } };
+    sock.setTimeout(timeoutMs);
+    sock.once('connect', () => finish('open'));
+    sock.once('timeout', () => finish('timeout'));
+    sock.once('error', (e: any) => finish(e?.code || 'error'));
+    try { sock.connect(port, host); } catch (e: any) { finish(e?.code || 'error'); }
+  });
+}
+
+// Diagnostics: SMTP config (no secrets) + outbound port reachability. Admin-only.
 export const GET: APIRoute = async ({ cookies }) => {
   if (!sessionRole(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  const host = envv('SMTP_HOST');
+  const probe = host
+    ? { p465: await tcpProbe(host, 465), p587: await tcpProbe(host, 587), p25: await tcpProbe(host, 25) }
+    : null;
   return json({
     configured: notifyConfigured(),
-    host: envv('SMTP_HOST') || null,
+    host: host || null,
     port: Number(envv('SMTP_PORT')) || 465,
     user: envv('SMTP_USER') || null,
+    probe,
   });
 };
 
