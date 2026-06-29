@@ -272,12 +272,14 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
       border-radius: 5px;
       overflow: hidden;
       background: #131313;
+      padding: clamp(8px, 1.1vw, 15px);
       transition: border-color 0.3s ease;
     }
     .pc-img {
-      position: absolute; inset: clamp(7px, 1vw, 13px);
-      width: auto; height: auto;
+      display: block;
+      width: 100%; height: 100%;
       object-fit: cover;
+      border-radius: 2px;
       transition: transform 1.1s cubic-bezier(0.2,0.7,0.2,1);
     }
     @media (hover: hover) {
