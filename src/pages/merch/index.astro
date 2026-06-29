@@ -79,20 +79,19 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
           >
             <div class="pc-media">
               <img class="pc-img pc-front" src={c.front} alt={p.name} loading="lazy" decoding="async" width="2400" height="3000" />
-              <img class="pc-img pc-back" src={c.back} alt={`${p.name}, spate`} loading="lazy" decoding="async" width="2400" height="3000" aria-hidden="true" />
               {p.badge && <span class="pc-badge mono">{p.badge}</span>}
               {p.discountPercent ? <span class="pc-sale mono">−{p.discountPercent}%</span> : null}
               {isSoldOut(p) && <span class="pc-soldout mono">Stoc epuizat</span>}
             </div>
-            {p.colors.length > 1 && (
-              <span class="pc-colors" aria-hidden="true">
-                {p.colors.map((col) => <span class="pc-dot" style={`--c:${col.swatch}`}></span>)}
-              </span>
-            )}
             <div class="pc-info">
               <div class="pc-text">
                 <h2 class="pc-name">{p.name}</h2>
                 <p class="pc-sub mono dim">{p.subtitle}</p>
+                {p.colors.length > 1 && (
+                  <span class="pc-colors" aria-hidden="true">
+                    {p.colors.map((col) => <span class="pc-dot" style={`--c:${col.swatch}`}></span>)}
+                  </span>
+                )}
               </div>
               <span class="pc-price">
                 {compareAtPrice(p) && <s class="pc-was">{formatPrice(compareAtPrice(p)!)}</s>}
@@ -276,17 +275,13 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
       transition: border-color 0.3s ease;
     }
     .pc-img {
-      position: absolute; inset: 0;
-      width: 100%; height: 100%;
+      position: absolute; inset: clamp(7px, 1vw, 13px);
+      width: auto; height: auto;
       object-fit: cover;
-      transition: opacity 0.6s ease, transform 1.1s cubic-bezier(0.2,0.7,0.2,1);
+      transition: transform 1.1s cubic-bezier(0.2,0.7,0.2,1);
     }
-    .pc-back { opacity: 0; }
-    /* Hover swap only on real pointer devices — on touch the first tap must open the page, not flip to the back */
     @media (hover: hover) {
       .pc:hover .pc-media { border-color: var(--gold, #c9a24a); }
-      .pc:hover .pc-front { opacity: 0; }
-      .pc:hover .pc-back { opacity: 1; }
       .pc:hover .pc-img { transform: scale(1.03); }
     }
     .pc-badge {
@@ -311,10 +306,11 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
     }
     .pc-was { color: var(--dim, rgba(242,235,224,0.55)); text-decoration: line-through; margin-right: 8px; }
     .pc-colors {
-      display: flex; gap: 8px;
+      display: flex; gap: 7px;
+      margin-top: 9px;
     }
     .pc-dot {
-      width: 16px; height: 16px; border-radius: 999px;
+      width: 14px; height: 14px; border-radius: 999px;
       background: var(--c);
       border: 1.5px solid rgba(242,235,224,0.55);
     }
