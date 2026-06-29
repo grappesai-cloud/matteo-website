@@ -510,7 +510,8 @@ const blobReady = canWrite();
             <input class="adm-input adm-o-courier" data-f="courier" placeholder="Curier" value="${esc(o.courier || 'FAN Courier')}" />
             <button class="adm-btn adm-btn-gold adm-btn-sm adm-o-save" type="button">Salvează</button>
             ${o.awb
-              ? `<a class="adm-o-track mono" href="${fanTrack(o.awb)}" target="_blank" rel="noopener">🔗 urmărește ${esc(o.awb)}</a>`
+              ? `<a class="adm-o-track mono" href="${fanTrack(o.awb)}" target="_blank" rel="noopener">🔗 urmărește ${esc(o.awb)}</a>
+                 <button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-mail" type="button" title="Trimite clientului emailul cu linkul de urmărire">✉ ${o.shippedEmailAt ? 'retrimite' : 'trimite'} tracking</button>`
               : `<button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-fan" type="button">Generează AWB FAN ⚡</button>`}
             <span class="mono dim adm-o-msg"></span>
           </div>
@@ -582,6 +583,33 @@ const blobReady = canWrite();
         } catch (err: any) {
           msg.textContent = err?.message || 'Eroare.';
           (btn as HTMLButtonElement).disabled = false;
+        }
+      });
+
+      // Send / resend the tracking email to the customer
+      ordersListEl?.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.adm-o-mail');
+        if (!btn) return;
+        const row = btn.closest<HTMLElement>('[data-order]')!;
+        const id = row.dataset.order!;
+        const msg = row.querySelector('.adm-o-msg') as HTMLElement;
+        if (!confirm('Trimit clientului emailul cu linkul de urmărire?')) return;
+        (btn as HTMLButtonElement).disabled = true; msg.textContent = '… trimit email';
+        try {
+          const res = await fetch('/api/admin/resend-tracking', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || 'Eroare la trimiterea emailului.');
+          const idx = orders.findIndex((o) => o.id === id);
+          if (idx >= 0 && d.order) orders[idx] = d.order;
+          msg.textContent = '✓ Email trimis';
+          btn.textContent = '✉ retrimite tracking';
+        } catch (err: any) {
+          msg.textContent = err?.message || 'Eroare.';
+        } finally {
+          (btn as HTMLButtonElement).disabled = false;
+          setTimeout(() => { if (msg.textContent === '✓ Email trimis') msg.textContent = ''; }, 2500);
         }
       });
 

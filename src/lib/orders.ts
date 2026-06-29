@@ -56,6 +56,7 @@ export interface Order {
   invoiceNumber?: string;// SmartBill invoice number
   note?: string;         // internal note
   updatedAt?: number;
+  shippedEmailAt?: number; // ms epoch — set once the "comanda a fost expediată" email is sent to the customer
 }
 
 /** Total units across all line items. */

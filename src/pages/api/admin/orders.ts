@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { sessionRole } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
 import { ORDER_STATUSES, type OrderStatus } from '../../../lib/orders';
+import { maybeNotifyShipped } from '../../../lib/notify';
 
 export const prerender = false;
 
@@ -40,7 +41,9 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
   try {
     const updated = await updateOrder(id, patch);
     if (!updated) return json({ error: 'Comandă inexistentă.' }, 404);
-    return json({ ok: true, order: updated });
+    // When the order is marked shipped with an AWB, email the customer a tracking link (once).
+    const finalOrder = await maybeNotifyShipped(updated);
+    return json({ ok: true, order: finalOrder });
   } catch (err: any) {
     return json({ error: err?.message || 'Salvarea a eșuat.' }, 500);
   }

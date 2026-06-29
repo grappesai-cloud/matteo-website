@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import { sessionRole } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
 import { createAwb, fanConfigured } from '../../../lib/fancourier';
+import { maybeNotifyShipped } from '../../../lib/notify';
 
 export const prerender = false;
 
@@ -34,7 +35,9 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   try {
     const updated = await updateOrder(id, { awb, courier: 'FAN Courier', status: 'shipped' });
-    return json({ ok: true, awb, order: updated });
+    // Email the customer their tracking link (once).
+    const finalOrder = updated ? await maybeNotifyShipped(updated) : updated;
+    return json({ ok: true, awb, order: finalOrder });
   } catch (err: any) {
     // AWB exists at FAN but we failed to persist — surface the number so it isn't lost.
     return json({ error: `AWB generat (${awb}) dar salvarea a eșuat: ${err?.message || ''}`, awb }, 500);

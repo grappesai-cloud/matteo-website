@@ -6,6 +6,8 @@
 
 import nodemailer from 'nodemailer';
 import { formatAddress, orderUnits, type Order } from './orders';
+import { fanTrackingUrl } from './fancourier';
+import { updateOrder } from './orders-store';
 
 function env(k: string): string {
   return (process.env[k] || (import.meta.env as any)[k] || '').trim();
@@ -37,6 +39,76 @@ function buildHtml(order: Order, adminUrl: string): string {
     <p style="margin:0 0 16px">📦 ${esc(formatAddress(order.shipping || {}) || 'fără adresă')}</p>
     <p style="margin:0"><a href="${esc(adminUrl)}" style="background:#c9a24a;color:#0a0a0a;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Deschide dashboard-ul</a></p>
   </div>`;
+}
+
+/** Public tracking URL for an order's AWB — FAN gets its tracker, others a generic note. */
+function trackUrl(order: Order): string | null {
+  if (!order.awb) return null;
+  const courier = (order.courier || '').toLowerCase();
+  if (!courier || courier.includes('fan')) return fanTrackingUrl(order.awb);
+  return null; // unknown courier — show the AWB without a link
+}
+
+function buildCustomerShippedHtml(order: Order): string {
+  const items = order.items
+    .map((i) => `<li><strong>${i.qty}×</strong> ${esc(i.name)} · ${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</li>`)
+    .join('');
+  const url = trackUrl(order);
+  const cta = url
+    ? `<p style="margin:0 0 8px"><a href="${esc(url)}" style="background:#c9a24a;color:#0a0a0a;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:bold">Urmărește comanda</a></p>
+       <p style="margin:0 0 16px;color:#666;font-size:13px">sau caută AWB-ul <strong>${esc(order.awb)}</strong> pe <a href="${esc(url)}" style="color:#0a0a0a">${esc(order.courier || 'curier')}</a></p>`
+    : `<p style="margin:0 0 16px">AWB: <strong>${esc(order.awb || '—')}</strong>${order.courier ? ' · ' + esc(order.courier) : ''}</p>`;
+  return `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
+    <h2 style="margin:0 0 4px">Comanda ta #${order.number} a fost expediată 🎉</h2>
+    <p style="margin:0 0 16px;color:#666">Mulțumim, ${esc(order.customer?.name || order.shipping?.name || 'dragă fan')}! Coletul tău e pe drum.</p>
+    <h3 style="margin:0 0 6px">Urmărire</h3>
+    ${cta}
+    <p style="margin:0 0 16px;color:#888;font-size:12px">Notă: imediat după generarea AWB-ului, curierul poate afișa „AWB înregistrat de expeditor". E normal — statusul se actualizează după ce coletul e preluat fizic.</p>
+    <h3 style="margin:0 0 6px">Produse</h3>
+    <ul style="margin:0 0 16px;padding-left:18px;line-height:1.6">${items}</ul>
+    <h3 style="margin:0 0 6px">Livrare</h3>
+    <p style="margin:0">📦 ${esc(formatAddress(order.shipping || {}) || 'fără adresă')}</p>
+    <p style="margin:24px 0 0;color:#999;font-size:12px">Mattman Music</p>
+  </div>`;
+}
+
+/**
+ * Best-effort: email the CUSTOMER that their order shipped, with a tracking link.
+ * Returns true only if the message was actually sent (so the caller can stamp
+ * shippedEmailAt and avoid re-sending). Never throws.
+ */
+export async function notifyCustomerShipped(order: Order): Promise<boolean> {
+  if (!notifyConfigured()) return false;
+  const to = (order.customer?.email || '').trim();
+  if (!to) return false;
+  const fromName = env('NOTIFY_FROM_NAME') || 'Mattman Music';
+  const from = `${fromName} <${env('SMTP_USER')}>`;
+  try {
+    await getTransport().sendMail({
+      from,
+      to,
+      subject: `Comanda #${order.number} a fost expediată 🎉`,
+      html: buildCustomerShippedHtml(order),
+    });
+    return true;
+  } catch (err: any) {
+    console.error('[notify] customer shipped email failed:', err?.message);
+    return false;
+  }
+}
+
+/**
+ * Idempotently email the customer when an order is shipped with an AWB.
+ * Sends at most once (guarded by shippedEmailAt) and stamps the order on success.
+ * Returns the (possibly stamped) order. Safe to call after every fulfillment save.
+ */
+export async function maybeNotifyShipped(order: Order): Promise<Order> {
+  if (order.status !== 'shipped' || !order.awb || order.shippedEmailAt) return order;
+  const sent = await notifyCustomerShipped(order);
+  if (!sent) return order;
+  const stamped = await updateOrder(order.id, { shippedEmailAt: Date.now() });
+  return stamped || { ...order, shippedEmailAt: Date.now() };
 }
 
 let transporter: nodemailer.Transporter | null = null;

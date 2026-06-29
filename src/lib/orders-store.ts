@@ -78,6 +78,7 @@ export async function updateOrder(
     note?: string;
     invoiceSeries?: string;
     invoiceNumber?: string;
+    shippedEmailAt?: number;
   }
 ): Promise<Order | null> {
   const all = await readOrders();
@@ -92,6 +93,7 @@ export async function updateOrder(
       ...(patch.note !== undefined ? { note: patch.note } : {}),
       ...(patch.invoiceSeries !== undefined ? { invoiceSeries: patch.invoiceSeries } : {}),
       ...(patch.invoiceNumber !== undefined ? { invoiceNumber: patch.invoiceNumber } : {}),
+      ...(patch.shippedEmailAt !== undefined ? { shippedEmailAt: patch.shippedEmailAt } : {}),
       updatedAt: Date.now(),
     };
     return updated;
