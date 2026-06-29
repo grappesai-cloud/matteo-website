@@ -57,12 +57,35 @@ export const ARTISTS: ArtistTab[] = [
   { slug: 'emily', name: 'Emily Istrate' },
 ];
 
-/** Base artists merged with any admin-created artists found in the catalog. */
-export function catalogArtists(products: Product[]): ArtistTab[] {
+/** Order + visibility overrides for artist tabs (see artists-store.ts). */
+export interface ArtistMeta {
+  order?: string[];
+  hidden?: string[];
+}
+
+/**
+ * Base artists merged with any admin-created artists found in the catalog.
+ * `meta` (optional) lets the admin reorder tabs and hide deleted artists.
+ */
+export function catalogArtists(products: Product[], meta?: ArtistMeta): ArtistTab[] {
   const map = new Map<string, string>();
   for (const a of ARTISTS) map.set(a.slug, a.name);
   for (const p of products) {
     if (p.artist && !map.has(p.artist)) map.set(p.artist, p.artistName || p.artist);
+  }
+  // drop hidden artists (e.g. a base artist the admin deleted)
+  for (const slug of meta?.hidden ?? []) map.delete(slug);
+
+  if (meta?.order?.length) {
+    const ordered: ArtistTab[] = [];
+    const seen = new Set<string>();
+    for (const slug of meta.order) {
+      if (map.has(slug) && !seen.has(slug)) { ordered.push({ slug, name: map.get(slug)! }); seen.add(slug); }
+    }
+    for (const [slug, name] of map) {
+      if (!seen.has(slug)) ordered.push({ slug, name });
+    }
+    return ordered;
   }
   return [...map.entries()].map(([slug, name]) => ({ slug, name }));
 }

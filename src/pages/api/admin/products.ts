@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '../../../lib/admin-auth';
 import { readCatalog, writeCatalog } from '../../../lib/catalog-store';
+import { readArtistMeta } from '../../../lib/artists-store';
 import {
   ARTISTS, SIZES, slugify, sortProducts, clampPct, catalogArtists,
   type Product, type ProductColor, type SizeKey,
@@ -106,8 +107,8 @@ function uniqueSlug(desired: string, id: string, all: Product[]): string {
 export const GET: APIRoute = async ({ cookies }) => {
   const blocked = guard(cookies);
   if (blocked) return blocked;
-  const all = await readCatalog();
-  return json({ products: sortProducts(all), artists: catalogArtists(all) });
+  const [all, meta] = await Promise.all([readCatalog(), readArtistMeta()]);
+  return json({ products: sortProducts(all), artists: catalogArtists(all, meta) });
 };
 
 // UPSERT

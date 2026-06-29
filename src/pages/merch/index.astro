@@ -3,11 +3,15 @@ import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
 import { catalogArtists, SIZES, formatPrice, activeProducts, effectivePrice, compareAtPrice, isSoldOut } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
+import { readArtistMeta } from '../../lib/artists-store';
 
 export const prerender = false;
 
-const products = activeProducts(await readCatalog());
-const artistsWithCounts = catalogArtists(products).map((a) => ({
+const [products, artistMeta] = await Promise.all([
+  readCatalog().then(activeProducts),
+  readArtistMeta(),
+]);
+const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
   ...a,
   count: products.filter((p) => p.artist === a.slug).length,
 }));

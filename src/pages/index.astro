@@ -164,11 +164,16 @@ const orgJsonLd = {
       const triggers = document.querySelectorAll('[data-trigger]');
       const closers = document.querySelectorAll('[data-close]');
 
+      const cards = grid.querySelectorAll('.card');
+      grid.dataset.count = String(cards.length);
+
       const setActive = (slug) => {
         const prev = grid.dataset.active;
         const next = prev === slug ? '' : slug;
         grid.dataset.active = next;
+        grid.classList.toggle('has-active', !!next);
         stage.dataset.expanded = next ? '1' : '';
+        cards.forEach((c) => c.classList.toggle('is-active', !!next && c.dataset.slug === next));
         triggers.forEach((t) => {
           t.setAttribute('aria-expanded', t.dataset.trigger === next ? 'true' : 'false');
         });
@@ -264,11 +269,9 @@ const orgJsonLd = {
                   grid-template-rows 0.65s cubic-bezier(0.7, 0, 0.2, 1);
     }
 
-    /* Active grid morphs to give active card 2.4fr, others 1fr */
-    .grid[data-active="matteo"]    { grid-template-columns: 2.4fr 1fr; grid-template-rows: 2.4fr 1fr; }
-    .grid[data-active="andrei"]    { grid-template-columns: 1fr 2.4fr; grid-template-rows: 2.4fr 1fr; }
-    .grid[data-active="georgiana"] { grid-template-columns: 2.4fr 1fr; grid-template-rows: 1fr 2.4fr; }
-    .grid[data-active="emily"]     { grid-template-columns: 1fr 2.4fr; grid-template-rows: 1fr 2.4fr; }
+    /* Closed-state base layout adapts to the number of cards. */
+    .grid[data-count="1"] { grid-template-columns: 1fr; grid-template-rows: 1fr; }
+    .grid[data-count="2"] { grid-template-rows: 1fr; }
 
     /* CARD */
     .card {
@@ -284,10 +287,7 @@ const orgJsonLd = {
     .card:hover { border-color: var(--hair-strong); }
     .grid[data-active] .card:not([data-slug]):not(.is-active) {}
 
-    .grid[data-active="matteo"] .card-matteo,
-    .grid[data-active="andrei"] .card-andrei,
-    .grid[data-active="georgiana"] .card-georgiana,
-    .grid[data-active="emily"] .card-emily {
+    .grid .card.is-active {
       border-color: var(--gold);
     }
 
@@ -380,29 +380,15 @@ const orgJsonLd = {
     }
     .card-trigger:hover .card-cue-arrow { transform: translate(2px, -2px); }
 
-    /* When card is INACTIVE during another card being active, shrink visuals */
-    .grid[data-active]:not([data-active=""]) .card:not(.card-matteo[data-slug="matteo"]):not(.card-andrei[data-slug="andrei"]):not(.card-georgiana[data-slug="georgiana"]):not(.card-emily[data-slug="emily"]) {}
-
-    .grid[data-active="matteo"] .card:not(.card-matteo) .card-name,
-    .grid[data-active="andrei"] .card:not(.card-andrei) .card-name,
-    .grid[data-active="georgiana"] .card:not(.card-georgiana) .card-name,
-    .grid[data-active="emily"] .card:not(.card-emily) .card-name {
+    /* When a card is INACTIVE while another is active, shrink its visuals */
+    .grid.has-active .card:not(.is-active) .card-name {
       font-size: clamp(18px, 2vw, 28px);
     }
-    .grid[data-active="matteo"] .card:not(.card-matteo) .card-tagline,
-    .grid[data-active="andrei"] .card:not(.card-andrei) .card-tagline,
-    .grid[data-active="georgiana"] .card:not(.card-georgiana) .card-tagline,
-    .grid[data-active="emily"] .card:not(.card-emily) .card-tagline,
-    .grid[data-active="matteo"] .card:not(.card-matteo) .card-cue,
-    .grid[data-active="andrei"] .card:not(.card-andrei) .card-cue,
-    .grid[data-active="georgiana"] .card:not(.card-georgiana) .card-cue,
-    .grid[data-active="emily"] .card:not(.card-emily) .card-cue {
+    .grid.has-active .card:not(.is-active) .card-tagline,
+    .grid.has-active .card:not(.is-active) .card-cue {
       opacity: 0;
     }
-    .grid[data-active="matteo"] .card:not(.card-matteo) .card-trigger,
-    .grid[data-active="andrei"] .card:not(.card-andrei) .card-trigger,
-    .grid[data-active="georgiana"] .card:not(.card-georgiana) .card-trigger,
-    .grid[data-active="emily"] .card:not(.card-emily) .card-trigger {
+    .grid.has-active .card:not(.is-active) .card-trigger {
       filter: saturate(0.6) brightness(0.7);
     }
 
@@ -418,19 +404,13 @@ const orgJsonLd = {
       display: flex;
       flex-direction: column;
     }
-    .grid[data-active="matteo"] .card-matteo .expand,
-    .grid[data-active="andrei"] .card-andrei .expand,
-    .grid[data-active="georgiana"] .card-georgiana .expand,
-    .grid[data-active="emily"] .card-emily .expand {
+    .grid .card.is-active .expand {
       opacity: 1;
       visibility: visible;
       pointer-events: auto;
       transition: opacity 0.45s ease 0.25s, visibility 0s linear 0s;
     }
-    .grid[data-active="matteo"] .card-matteo .card-trigger,
-    .grid[data-active="andrei"] .card-andrei .card-trigger,
-    .grid[data-active="georgiana"] .card-georgiana .card-trigger,
-    .grid[data-active="emily"] .card-emily .card-trigger {
+    .grid .card.is-active .card-trigger {
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.25s ease;
@@ -651,7 +631,7 @@ const orgJsonLd = {
       }
       .grid[data-active=""] .card { aspect-ratio: 16 / 10; }
 
-      .grid[data-active]:not([data-active=""]) {
+      .grid.has-active {
         grid-template-columns: 2.3fr 1fr;
         grid-template-rows: repeat(3, auto);
         align-items: start;
@@ -659,34 +639,22 @@ const orgJsonLd = {
         min-height: 0;
       }
       /* active card spans the full-height left column */
-      .grid[data-active="matteo"]    .card-matteo,
-      .grid[data-active="andrei"]    .card-andrei,
-      .grid[data-active="georgiana"] .card-georgiana,
-      .grid[data-active="emily"]     .card-emily {
+      .grid.has-active .card.is-active {
         grid-column: 1;
         grid-row: 1 / -1;
         align-self: stretch;
       }
-      /* the other three shrink to small cards in the right column */
-      .grid[data-active="matteo"]    .card:not(.card-matteo),
-      .grid[data-active="andrei"]    .card:not(.card-andrei),
-      .grid[data-active="georgiana"] .card:not(.card-georgiana),
-      .grid[data-active="emily"]     .card:not(.card-emily) {
+      /* the others shrink to small cards in the right column */
+      .grid.has-active .card:not(.is-active) {
         grid-column: 2;
         align-self: start;
         height: clamp(120px, 16vh, 190px);
       }
       /* active panel flows in the document instead of being a capped overlay */
-      .grid[data-active="matteo"]    .card-matteo    .expand,
-      .grid[data-active="andrei"]    .card-andrei    .expand,
-      .grid[data-active="georgiana"] .card-georgiana .expand,
-      .grid[data-active="emily"]     .card-emily     .expand {
+      .grid.has-active .card.is-active .expand {
         position: relative;
       }
-      .grid[data-active="matteo"]    .card-matteo    .expand-scroll,
-      .grid[data-active="andrei"]    .card-andrei    .expand-scroll,
-      .grid[data-active="georgiana"] .card-georgiana .expand-scroll,
-      .grid[data-active="emily"]     .card-emily     .expand-scroll {
+      .grid.has-active .card.is-active .expand-scroll {
         overflow: visible;
         flex: 0 0 auto;
       }
@@ -698,20 +666,17 @@ const orgJsonLd = {
       .header { flex-direction: row; align-items: center; justify-content: space-between; gap: 12px; padding: 4px 4px 0 14px; }
       .grid {
         grid-template-columns: 1fr 1fr !important;
-        grid-template-rows: 1fr 1fr !important;
+        grid-template-rows: none !important;
+        grid-auto-rows: 1fr;
         min-height: 70vh;
       }
       .card-name { font-size: clamp(16px, 5vw, 24px); }
       .card-tagline, .card-cue { display: none; }
       .card-meta { top: 8px; left: 10px; right: 10px; }
       .card-name-wrap { left: 10px; right: 10px; bottom: 12px; }
-      .grid[data-active]:not([data-active=""]) .card:not(.card-matteo):not(.card-andrei):not(.card-georgiana):not(.card-emily) {}
 
       /* mobile: expand becomes full-screen fixed overlay */
-      .grid[data-active="matteo"]    .card-matteo    .expand,
-      .grid[data-active="andrei"]    .card-andrei    .expand,
-      .grid[data-active="georgiana"] .card-georgiana .expand,
-      .grid[data-active="emily"]     .card-emily     .expand {
+      .grid .card.is-active .expand {
         position: fixed;
         inset: 0;
         z-index: 99;

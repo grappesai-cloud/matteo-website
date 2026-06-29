@@ -77,8 +77,12 @@ const blobReady = canWrite();
                 </button>
               ))}
             </div>
-            <button class="adm-btn adm-btn-gold" id="new-btn" type="button">+ Produs nou</button>
+            <div class="adm-toolbar-actions">
+              <button class="adm-btn adm-btn-ghost adm-btn-danger" id="del-artist-btn" type="button" title="Șterge artistul activ și produsele lui">Șterge artist</button>
+              <button class="adm-btn adm-btn-gold" id="new-btn" type="button">+ Produs nou</button>
+            </div>
           </section>
+          <p class="adm-tabs-hint mono dim">Trage taburile ca să reordonezi artiștii în magazin.</p>
 
           <section class="adm-list" id="product-list" aria-live="polite">
             <p class="adm-loading mono dim">Se încarcă…</p>
@@ -145,8 +149,9 @@ const blobReady = canWrite();
               </section>
 
               <section class="adm-lsection">
-                <span class="adm-label mono">Artiști (roster 2×2)</span>
+                <span class="adm-label mono">Artiști (roster) — trage cardurile ca să reordonezi</span>
                 <div id="l-artists" class="adm-lartists"></div>
+                <button type="button" class="adm-btn adm-btn-ghost" id="l-add-artist">➕ Adaugă artist</button>
               </section>
 
               <p class="adm-modal-err mono" id="landing-err" hidden></p>
@@ -178,7 +183,11 @@ const blobReady = canWrite();
       {!isRuvix && (
       <div class="adm-grp" style="display:contents">
       <template id="l-artist-tpl">
-        <article class="adm-lartist">
+        <article class="adm-lartist" draggable="true">
+          <div class="adm-lartist-bar">
+            <span class="adm-lartist-grip mono" title="Trage ca să reordonezi" aria-hidden="true">⠿ trage</span>
+            <button type="button" class="adm-btn adm-btn-ghost adm-btn-danger adm-btn-sm l-del-artist">Șterge artist</button>
+          </div>
           <div class="adm-lartist-head">
             <label class="adm-lupload" data-photo>
               <input type="hidden" class="l-photo-url" />
@@ -601,6 +610,8 @@ const blobReady = canWrite();
         if (res.status === 401) { location.reload(); return; }
         const data = await res.json();
         products = data.products || [];
+        // rebuild from the server's ordered artist list so tab order is honoured
+        knownArtists.clear();
         (data.artists || []).forEach((a: any) => { if (a?.slug) knownArtists.set(a.slug, a.name || a.slug); });
         products.forEach((p) => { if (p.artist && !knownArtists.has(p.artist)) knownArtists.set(p.artist, p.artistName || p.artist); });
         renderTabs();
@@ -613,11 +624,84 @@ const blobReady = canWrite();
         if (!knownArtists.has(activeArtist)) activeArtist = knownArtists.keys().next().value || 'andrei';
         tabsWrap.innerHTML = [...knownArtists.entries()]
           .map(([slug, name]) => `
-            <button class="adm-tab${slug === activeArtist ? ' is-active' : ''}" data-artist="${esc(slug)}" type="button">
-              ${esc(name)} <span class="adm-tab-count mono" data-count="${esc(slug)}">0</span>
+            <button class="adm-tab${slug === activeArtist ? ' is-active' : ''}" data-artist="${esc(slug)}" type="button" draggable="true" title="Trage ca să reordonezi">
+              <span class="adm-tab-grip mono" aria-hidden="true">⠿</span>${esc(name)} <span class="adm-tab-count mono" data-count="${esc(slug)}">0</span>
             </button>`)
           .join('');
       }
+
+      // ===== DRAG-AND-DROP REORDER of artist tabs =====
+      let dragTab: HTMLElement | null = null;
+      tabsWrap.addEventListener('dragstart', (e) => {
+        const tab = (e.target as HTMLElement).closest<HTMLElement>('.adm-tab');
+        if (!tab) return;
+        dragTab = tab;
+        tab.classList.add('is-dragging');
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+      tabsWrap.addEventListener('dragend', () => {
+        dragTab?.classList.remove('is-dragging');
+        dragTab = null;
+      });
+      tabsWrap.addEventListener('dragover', (e) => {
+        if (!dragTab) return;
+        e.preventDefault();
+        e.dataTransfer!.dropEffect = 'move';
+        const over = (e.target as HTMLElement).closest<HTMLElement>('.adm-tab');
+        if (!over || over === dragTab) return;
+        const rect = over.getBoundingClientRect();
+        const after = e.clientX > rect.left + rect.width / 2;
+        tabsWrap.insertBefore(dragTab, after ? over.nextSibling : over);
+      });
+      tabsWrap.addEventListener('drop', async (e) => {
+        if (!dragTab) return;
+        e.preventDefault();
+        const order = Array.from(tabsWrap.querySelectorAll<HTMLElement>('.adm-tab'))
+          .map((t) => t.dataset.artist!).filter(Boolean);
+        // reflect new order in the local Map so re-renders keep it
+        const reordered = new Map<string, string>();
+        order.forEach((slug) => { if (knownArtists.has(slug)) reordered.set(slug, knownArtists.get(slug)!); });
+        knownArtists.clear();
+        reordered.forEach((v, k) => knownArtists.set(k, v));
+        try {
+          const res = await fetch('/api/admin/artists', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ order }),
+          });
+          if (!res.ok) {
+            const d = await res.json().catch(() => ({} as any));
+            throw new Error(d.error || 'Reordonare eșuată.');
+          }
+        } catch (err: any) {
+          alert(err?.message || 'Reordonare eșuată.');
+          load();
+        }
+      });
+
+      // ===== DELETE the active artist (and all its products) =====
+      document.getElementById('del-artist-btn')?.addEventListener('click', async () => {
+        const slug = activeArtist;
+        const name = knownArtists.get(slug) || slug;
+        const count = products.filter((p) => p.artist === slug).length;
+        const msg = count > 0
+          ? `Ștergi artistul „${name}" și cele ${count} produse ale lui din magazin? Acțiunea nu poate fi anulată.`
+          : `Ștergi artistul „${name}" din magazin?`;
+        if (!confirm(msg)) return;
+        try {
+          const res = await fetch('/api/admin/artists', {
+            method: 'DELETE',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ slug }),
+          });
+          const d = await res.json().catch(() => ({} as any));
+          if (!res.ok) throw new Error(d.error || 'Ștergere eșuată.');
+          activeArtist = '';
+          await load();
+        } catch (err: any) {
+          alert(err?.message || 'Ștergere eșuată.');
+        }
+      });
 
       function renderArtistOptions() {
         const sel = document.getElementById('f-artist') as HTMLSelectElement;
@@ -1061,8 +1145,18 @@ const blobReady = canWrite();
 
       function buildArtist(a: any): HTMLElement {
         const node = lArtistTpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
-        node.dataset.slug = a.slug;
-        (node.querySelector('.l-slug-tag') as HTMLElement).textContent = a.slug;
+        node.dataset.slug = a.slug || '';
+        (node.querySelector('.l-slug-tag') as HTMLElement).textContent = a.slug || '(nou — slug din nume)';
+        (node.querySelector('.l-del-artist') as HTMLButtonElement).addEventListener('click', () => {
+          if (lArtistsWrap.querySelectorAll('.adm-lartist').length <= 1) {
+            alert('Trebuie să rămână cel puțin un artist în roster.');
+            return;
+          }
+          const nm = (node.querySelector('.l-name') as HTMLInputElement).value.trim() || 'acest artist';
+          if (confirm(`Ștergi „${nm}" din roster-ul de pe pagina principală? Salvează landing-ul ca să se aplice.`)) {
+            node.remove();
+          }
+        });
         (node.querySelector('.l-name') as HTMLInputElement).value = a.name || '';
         (node.querySelector('.l-tagline') as HTMLInputElement).value = a.tagline || '';
         (node.querySelector('.l-bio') as HTMLTextAreaElement).value = (a.bio || []).join('\n\n');
@@ -1092,6 +1186,42 @@ const blobReady = canWrite();
         });
         return node;
       }
+
+      // add a fresh, empty artist card (slug derived from the name on save)
+      document.getElementById('l-add-artist')?.addEventListener('click', () => {
+        if (lArtistsWrap.querySelectorAll('.adm-lartist').length >= 8) {
+          alert('Maxim 8 artiști în roster.');
+          return;
+        }
+        const node = buildArtist({ slug: '', name: '', tagline: '', photo: '', bio: [], tracks: [], socials: [], downloads: [] });
+        lArtistsWrap.appendChild(node);
+        (node.querySelector('.l-name') as HTMLInputElement)?.focus();
+        node.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      });
+
+      // ===== DRAG-AND-DROP REORDER of roster cards =====
+      let dragArtist: HTMLElement | null = null;
+      lArtistsWrap.addEventListener('dragstart', (e) => {
+        const card = (e.target as HTMLElement).closest<HTMLElement>('.adm-lartist');
+        // only start a drag from the grip area, not while selecting text in inputs
+        if (!card || (e.target as HTMLElement).closest('input, textarea')) { e.preventDefault(); return; }
+        dragArtist = card;
+        card.classList.add('is-dragging');
+        e.dataTransfer!.effectAllowed = 'move';
+      });
+      lArtistsWrap.addEventListener('dragend', () => {
+        dragArtist?.classList.remove('is-dragging');
+        dragArtist = null;
+      });
+      lArtistsWrap.addEventListener('dragover', (e) => {
+        if (!dragArtist) return;
+        e.preventDefault();
+        const over = (e.target as HTMLElement).closest<HTMLElement>('.adm-lartist');
+        if (!over || over === dragArtist) return;
+        const rect = over.getBoundingClientRect();
+        const after = e.clientY > rect.top + rect.height / 2;
+        lArtistsWrap.insertBefore(dragArtist, after ? over.nextSibling : over);
+      });
 
       function collectLanding() {
         const parseLines = (s: string) => s.split('\n').map((x) => x.trim()).filter(Boolean);
@@ -1143,6 +1273,7 @@ const blobReady = canWrite();
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.error || 'Salvare eșuată.');
+          if (data.content) renderLanding(data.content); // reflect new slugs / dropped artists
           lStatus.textContent = '✓ Salvat';
         } catch (e: any) {
           lErr.textContent = e?.message || 'Eroare.'; lErr.hidden = false;
@@ -1226,6 +1357,12 @@ const blobReady = canWrite();
     .adm-tab.is-active { background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); border-color: var(--gold, #c9a24a); }
     .adm-tab-count { background: rgba(242,235,224,0.12); border-radius: 999px; padding: 1px 7px; font-size: 10px; }
     .adm-tab.is-active .adm-tab-count { background: rgba(10,10,10,0.2); }
+    .adm-tab[draggable="true"] { cursor: grab; }
+    .adm-tab.is-dragging { opacity: 0.4; border-color: var(--gold, #c9a24a); }
+    .adm-tab-grip { opacity: 0.45; font-size: 11px; margin-right: -2px; cursor: grab; }
+    .adm-tab.is-active .adm-tab-grip { opacity: 0.7; }
+    .adm-toolbar-actions { display: inline-flex; gap: 10px; align-items: center; }
+    .adm-tabs-hint { margin: 8px 2px 0; font-size: 10px; }
 
     /* VIEW SWITCH */
     .adm-views { display: inline-flex; gap: 4px; padding: 4px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 999px; background: #0e0e0e; width: fit-content; }
@@ -1316,6 +1453,10 @@ const blobReady = canWrite();
     .adm-ltile-slug { text-transform: uppercase; letter-spacing: 0.1em; }
     .adm-lartists { display: flex; flex-direction: column; gap: 18px; }
     .adm-lartist { border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; padding: 16px; display: flex; flex-direction: column; gap: 14px; background: #0e0e0e; }
+    .adm-lartist.is-dragging { opacity: 0.45; border-color: var(--gold, #c9a24a); }
+    .adm-lartist-bar { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .adm-lartist-grip { opacity: 0.5; font-size: 11px; cursor: grab; letter-spacing: 0.08em; text-transform: uppercase; }
+    .adm-lartist:active .adm-lartist-grip { cursor: grabbing; }
     .adm-lartist-head { display: flex; gap: 14px; align-items: stretch; }
     .adm-lartist-head-fields { flex: 1; display: flex; flex-direction: column; gap: 8px; justify-content: center; }
     .adm-lartist-head-fields .l-slug-tag { text-transform: uppercase; letter-spacing: 0.1em; font-size: 11px; }

@@ -2,6 +2,10 @@ import type { APIRoute } from 'astro';
 import { isAdmin } from '../../../lib/admin-auth';
 import { readLanding, writeLanding } from '../../../lib/landing-store';
 import { seedLanding, SOCIAL_KINDS, type Artist, type LandingContent } from '../../../lib/landing';
+import { slugify } from '../../../lib/products';
+
+/** Max artists shown in the roster grid. */
+const ROSTER_MAX = 8;
 
 export const prerender = false;
 
@@ -14,7 +18,10 @@ const str = (v: unknown, max = 600) => String(v ?? '').trim().slice(0, max);
 const strs = (v: unknown, max: number, cap: number) =>
   (Array.isArray(v) ? v : []).map((x) => str(x, max)).filter(Boolean).slice(0, cap);
 
-function sanitizeArtist(input: any, seed: Artist): Artist {
+/** Sanitize one artist. Returns null when it has no usable name (drop it). */
+function sanitizeArtist(input: any): Artist | null {
+  const name = str(input?.name, 80);
+  if (!name) return null;
   const tracks = (Array.isArray(input?.tracks) ? input.tracks : [])
     .map((t: any) => ({ id: str(t?.id, 40), title: str(t?.title, 120), year: str(t?.year, 8) || undefined }))
     .filter((t: any) => t.id && t.title)
@@ -28,23 +35,32 @@ function sanitizeArtist(input: any, seed: Artist): Artist {
     .filter((s: any) => SOCIAL_KINDS.includes(s.kind) && s.href)
     .slice(0, 8);
   return {
-    slug: seed.slug, // slug is locked to the seed roster
-    name: str(input?.name, 80) || seed.name,
+    slug: slugify(str(input?.slug, 40) || name) || 'artist',
+    name,
     tagline: str(input?.tagline, 140),
-    photo: str(input?.photo, 600) || seed.photo,
+    photo: str(input?.photo, 600),
     bio: strs(input?.bio, 800, 8),
-    tracks: tracks.length ? tracks : seed.tracks,
+    tracks,
     downloads,
     socials,
   };
 }
 
 function sanitize(input: any): LandingContent {
-  const bySlug = new Map<string, any>(
-    (Array.isArray(input?.roster) ? input.roster : []).map((a: any) => [str(a?.slug, 40), a])
-  );
-  // keep the seed roster order & slugs (2x2 grid is brand-locked)
-  const roster = seedLanding.roster.map((seed) => sanitizeArtist(bySlug.get(seed.slug) ?? {}, seed));
+  // Roster is now fully editable: add / delete / reorder, in the given order.
+  const used = new Set<string>();
+  const roster: Artist[] = [];
+  for (const a of Array.isArray(input?.roster) ? input.roster : []) {
+    const art = sanitizeArtist(a);
+    if (!art) continue;
+    let slug = art.slug;
+    for (let n = 2; used.has(slug); n++) slug = `${art.slug}-${n}`;
+    used.add(slug);
+    roster.push({ ...art, slug });
+    if (roster.length >= ROSTER_MAX) break;
+  }
+  // never persist an empty roster — fall back to the seed
+  const finalRoster = roster.length ? roster : seedLanding.roster;
 
   const tilesIn = new Map<string, any>(
     (Array.isArray(input?.tiles) ? input.tiles : []).map((t: any) => [str(t?.slug, 40), t])
@@ -63,7 +79,7 @@ function sanitize(input: any): LandingContent {
   return {
     headerSub: str(input?.headerSub, 120),
     footerEmail: str(input?.footerEmail, 120) || seedLanding.footerEmail,
-    roster,
+    roster: finalRoster,
     tiles,
   };
 }
