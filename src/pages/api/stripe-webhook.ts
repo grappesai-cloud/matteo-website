@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { readCatalog, writeCatalog } from '../../lib/catalog-store';
 import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
-import { notifyRuvixNewOrder } from '../../lib/notify';
+import { notifyRuvixNewOrder, maybeNotifyShipped } from '../../lib/notify';
 import { createAwb, fanConfigured, placeCourierOrder, computePickupSlot } from '../../lib/fancourier';
 import { readPickup, writePickup } from '../../lib/pickup-store';
 import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
@@ -53,7 +53,14 @@ export const POST: APIRoute = async ({ request }) => {
     if (recorded?.created && fanConfigured() && !recorded.order.awb) {
       try {
         const { awb } = await createAwb(recorded.order);
-        await updateOrder(recorded.order.id, { awb, courier: 'FAN Courier', status: 'shipped' });
+        const shipped = await updateOrder(recorded.order.id, { awb, courier: 'FAN Courier', status: 'shipped' });
+
+        // 1b-1) Email the customer their tracking link (once, idempotent). Best-effort.
+        try {
+          if (shipped) await maybeNotifyShipped(shipped);
+        } catch (err: any) {
+          console.error('[webhook] customer tracking email failed:', err?.message);
+        }
 
         // 1b-2) Auto-schedule the courier pickup (POST /order), debounced to ONE
         //       per day (FAN: a single courier order per branch covers all ready
