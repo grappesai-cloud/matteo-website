@@ -26,17 +26,19 @@ async function tcpProbe(host: string, port: number, timeoutMs = 6000): Promise<s
 }
 
 // Diagnostics: SMTP config (no secrets) + outbound port reachability. Admin-only.
-export const GET: APIRoute = async ({ cookies }) => {
+export const GET: APIRoute = async ({ cookies, request }) => {
   if (!sessionRole(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  const provider = envv('RESEND_API_KEY') ? 'resend' : (envv('SMTP_HOST') ? 'smtp' : 'none');
+  const wantProbe = new URL(request.url).searchParams.get('probe') === '1';
   const host = envv('SMTP_HOST');
-  const probe = host
+  const probe = wantProbe && host
     ? { p465: await tcpProbe(host, 465), p587: await tcpProbe(host, 587), p25: await tcpProbe(host, 25) }
     : null;
   return json({
     configured: notifyConfigured(),
-    host: host || null,
-    port: Number(envv('SMTP_PORT')) || 465,
-    user: envv('SMTP_USER') || null,
+    provider,
+    from: envv('NOTIFY_FROM') || envv('SMTP_USER') || null,
+    notifyTo: envv('ORDER_NOTIFY_EMAIL') || null,
     probe,
   });
 };

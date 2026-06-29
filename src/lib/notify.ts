@@ -13,8 +13,49 @@ function env(k: string): string {
   return (process.env[k] || (import.meta.env as any)[k] || '').trim();
 }
 
-export function notifyConfigured(): boolean {
+function smtpConfigured(): boolean {
   return !!(env('SMTP_HOST') && env('SMTP_USER') && env('SMTP_PASS'));
+}
+
+function resendConfigured(): boolean {
+  return !!env('RESEND_API_KEY');
+}
+
+export function notifyConfigured(): boolean {
+  // Resend (HTTP) is preferred because Netcup blocks outbound SMTP ports.
+  return resendConfigured() || smtpConfigured();
+}
+
+/** The From header — env override, else the SMTP user, else Resend's sandbox sender. */
+function fromHeader(): string {
+  const name = env('NOTIFY_FROM_NAME') || 'Mattman Music';
+  const addr = env('NOTIFY_FROM') || env('SMTP_USER') || 'onboarding@resend.dev';
+  // NOTIFY_FROM may already include a display name (e.g. "X <a@b>") — use as-is then.
+  return addr.includes('<') ? addr : `${name} <${addr}>`;
+}
+
+/**
+ * Deliver one email. Prefers Resend HTTP API (port 443, works on Netcup);
+ * falls back to SMTP. Throws on failure so callers can surface the reason.
+ */
+async function deliver(msg: { from: string; to: string | string[]; subject: string; html: string }): Promise<void> {
+  if (resendConfigured()) {
+    const to = Array.isArray(msg.to) ? msg.to : [msg.to];
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env('RESEND_API_KEY')}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from: msg.from, to, subject: msg.subject, html: msg.html }),
+    });
+    if (!res.ok) {
+      const body = await res.text().catch(() => '');
+      throw new Error(`Resend ${res.status}: ${body.slice(0, 300)}`);
+    }
+    return;
+  }
+  await getTransport().sendMail(msg);
 }
 
 function esc(s: unknown): string {
@@ -83,11 +124,9 @@ export async function sendCustomerShipped(order: Order, toOverride?: string): Pr
   if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
   const to = (toOverride || order.customer?.email || '').trim();
   if (!to) return { ok: false, error: 'no recipient' };
-  const fromName = env('NOTIFY_FROM_NAME') || 'Mattman Music';
-  const from = `${fromName} <${env('SMTP_USER')}>`;
   try {
-    await getTransport().sendMail({
-      from,
+    await deliver({
+      from: fromHeader(),
       to,
       subject: `Comanda #${order.number} a fost expediată 🎉`,
       html: buildCustomerShippedHtml(order),
@@ -137,19 +176,18 @@ function getTransport(): nodemailer.Transporter {
 /** Best-effort: email owner about a new order via SMTP. Never throws. */
 export async function notifyRuvixNewOrder(order: Order, origin: string): Promise<void> {
   if (!notifyConfigured()) return;
-  const fromName = env('NOTIFY_FROM_NAME') || 'Mattman Music';
-  const from = `${fromName} <${env('SMTP_USER')}>`;
-  const to = (env('ORDER_NOTIFY_EMAIL') || env('SMTP_USER'))
+  const to = (env('ORDER_NOTIFY_EMAIL') || env('NOTIFY_FROM') || env('SMTP_USER'))
     .split(',').map((s) => s.trim()).filter(Boolean);
+  if (!to.length) return;
   const adminUrl = `${origin.replace(/\/$/, '')}/admin`;
   try {
-    await getTransport().sendMail({
-      from,
+    await deliver({
+      from: fromHeader(),
       to,
-      subject: `Comandă nouă #${order.number} — ${order.amountTotal} ${order.currency}`,
+      subject: `Comandă nouă #${order.number} ${order.amountTotal} ${order.currency}`,
       html: buildHtml(order, adminUrl),
     });
   } catch (err: any) {
-    console.error('[notify] SMTP email failed:', err?.message);
+    console.error('[notify] new-order email failed:', err?.message);
   }
 }
