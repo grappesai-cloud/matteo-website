@@ -78,10 +78,11 @@ function buildCustomerShippedHtml(order: Order): string {
  * Returns true only if the message was actually sent (so the caller can stamp
  * shippedEmailAt and avoid re-sending). Never throws.
  */
-export async function notifyCustomerShipped(order: Order, toOverride?: string): Promise<boolean> {
-  if (!notifyConfigured()) return false;
+/** Send the shipped email; returns the SMTP error message instead of swallowing it. */
+export async function sendCustomerShipped(order: Order, toOverride?: string): Promise<{ ok: boolean; error?: string }> {
+  if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
   const to = (toOverride || order.customer?.email || '').trim();
-  if (!to) return false;
+  if (!to) return { ok: false, error: 'no recipient' };
   const fromName = env('NOTIFY_FROM_NAME') || 'Mattman Music';
   const from = `${fromName} <${env('SMTP_USER')}>`;
   try {
@@ -91,11 +92,16 @@ export async function notifyCustomerShipped(order: Order, toOverride?: string): 
       subject: `Comanda #${order.number} a fost expediată 🎉`,
       html: buildCustomerShippedHtml(order),
     });
-    return true;
+    return { ok: true };
   } catch (err: any) {
-    console.error('[notify] customer shipped email failed:', err?.message);
-    return false;
+    const msg = err?.message || String(err);
+    console.error('[notify] customer shipped email failed:', msg);
+    return { ok: false, error: msg };
   }
+}
+
+export async function notifyCustomerShipped(order: Order, toOverride?: string): Promise<boolean> {
+  return (await sendCustomerShipped(order, toOverride)).ok;
 }
 
 /**
@@ -120,6 +126,10 @@ function getTransport(): nodemailer.Transporter {
     port,
     secure: port === 465, // 465 = SSL, 587 = STARTTLS
     auth: { user: env('SMTP_USER'), pass: env('SMTP_PASS') },
+    // Fail fast instead of hanging ~2 min when the SMTP host/port is unreachable.
+    connectionTimeout: 12000,
+    greetingTimeout: 8000,
+    socketTimeout: 20000,
   });
   return transporter;
 }

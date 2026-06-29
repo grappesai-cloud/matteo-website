@@ -1,12 +1,25 @@
 import type { APIRoute } from 'astro';
 import { sessionRole } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
-import { notifyCustomerShipped, notifyConfigured } from '../../../lib/notify';
+import { sendCustomerShipped, notifyConfigured } from '../../../lib/notify';
 
 export const prerender = false;
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json' } });
+
+const envv = (k: string) => (process.env[k] || (import.meta.env as any)[k] || '').trim();
+
+// Diagnostics: which SMTP host/port is configured (no secrets). Admin-only.
+export const GET: APIRoute = async ({ cookies }) => {
+  if (!sessionRole(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  return json({
+    configured: notifyConfigured(),
+    host: envv('SMTP_HOST') || null,
+    port: Number(envv('SMTP_PORT')) || 465,
+    user: envv('SMTP_USER') || null,
+  });
+};
 
 // Force-send the "comanda a fost expediată" tracking email to the customer, even
 // if it was already sent (covers orders shipped before this feature existed).
@@ -31,8 +44,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (!order.awb) return json({ error: 'Comanda nu are AWB — nu există ce urmări.' }, 400);
   if (!emailOverride && !order.customer?.email) return json({ error: 'Comanda nu are email de client.' }, 400);
 
-  const sent = await notifyCustomerShipped(order, emailOverride || undefined);
-  if (!sent) return json({ error: 'Trimiterea emailului a eșuat (vezi logurile).' }, 502);
+  const res = await sendCustomerShipped(order, emailOverride || undefined);
+  if (!res.ok) {
+    // Surface the real SMTP error on test sends so config issues are diagnosable.
+    return json({ error: emailOverride ? `Trimiterea a eșuat: ${res.error}` : 'Trimiterea emailului a eșuat (vezi logurile).' }, 502);
+  }
 
   // Only stamp the order when the REAL customer was notified, not on a test send.
   if (!emailOverride) {
