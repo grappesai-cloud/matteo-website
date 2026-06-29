@@ -19,14 +19,25 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const id = String(body?.id ?? '').trim();
   if (!id) return json({ error: 'Lipsește id-ul comenzii.' }, 400);
 
+  // Optional override recipient — for sending a test copy to a chosen address
+  // without touching the real customer or stamping the order as notified.
+  const emailOverride = String(body?.email ?? '').trim();
+  if (emailOverride && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(emailOverride)) {
+    return json({ error: 'Adresă de email invalidă.' }, 400);
+  }
+
   const order = (await readOrders()).find((o) => o.id === id);
   if (!order) return json({ error: 'Comandă inexistentă.' }, 404);
   if (!order.awb) return json({ error: 'Comanda nu are AWB — nu există ce urmări.' }, 400);
-  if (!order.customer?.email) return json({ error: 'Comanda nu are email de client.' }, 400);
+  if (!emailOverride && !order.customer?.email) return json({ error: 'Comanda nu are email de client.' }, 400);
 
-  const sent = await notifyCustomerShipped(order);
+  const sent = await notifyCustomerShipped(order, emailOverride || undefined);
   if (!sent) return json({ error: 'Trimiterea emailului a eșuat (vezi logurile).' }, 502);
 
-  const updated = await updateOrder(id, { shippedEmailAt: Date.now() });
-  return json({ ok: true, order: updated || order });
+  // Only stamp the order when the REAL customer was notified, not on a test send.
+  if (!emailOverride) {
+    const updated = await updateOrder(id, { shippedEmailAt: Date.now() });
+    return json({ ok: true, order: updated || order });
+  }
+  return json({ ok: true, test: true, sentTo: emailOverride });
 };

@@ -78,9 +78,9 @@ function buildCustomerShippedHtml(order: Order): string {
  * Returns true only if the message was actually sent (so the caller can stamp
  * shippedEmailAt and avoid re-sending). Never throws.
  */
-export async function notifyCustomerShipped(order: Order): Promise<boolean> {
+export async function notifyCustomerShipped(order: Order, toOverride?: string): Promise<boolean> {
   if (!notifyConfigured()) return false;
-  const to = (order.customer?.email || '').trim();
+  const to = (toOverride || order.customer?.email || '').trim();
   if (!to) return false;
   const fromName = env('NOTIFY_FROM_NAME') || 'Mattman Music';
   const from = `${fromName} <${env('SMTP_USER')}>`;
