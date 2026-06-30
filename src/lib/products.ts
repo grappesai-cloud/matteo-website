@@ -9,8 +9,7 @@ export const CURRENCY_LABEL = 'RON';
 /** Free shipping kicks in at this subtotal (RON). Below it, a flat rate applies. */
 export const FREE_SHIPPING_THRESHOLD = 250;
 /** Flat shipping rate (RON) charged below the free-shipping threshold. */
-// TEMP TEST: lowered to 1 RON for a live end-to-end test. REVERT to 20 after.
-export const SHIPPING_FLAT = 1;
+export const SHIPPING_FLAT = 20;
 
 export type SizeKey = 'S' | 'M' | 'L' | 'XL' | 'XXL';
 export const SIZES: SizeKey[] = ['S', 'M', 'L', 'XL', 'XXL'];

@@ -90,28 +90,115 @@ function trackUrl(order: Order): string | null {
   return null; // unknown courier — show the AWB without a link
 }
 
-function buildCustomerShippedHtml(order: Order): string {
-  const items = order.items
-    .map((i) => `<li><strong>${i.qty}×</strong> ${esc(i.name)} · ${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</li>`)
-    .join('');
-  const url = trackUrl(order);
-  const cta = url
-    ? `<p style="margin:0 0 8px"><a href="${esc(url)}" style="background:#c9a24a;color:#0a0a0a;padding:12px 22px;border-radius:6px;text-decoration:none;font-weight:bold">Urmărește comanda</a></p>
-       <p style="margin:0 0 16px;color:#666;font-size:13px">sau caută AWB-ul <strong>${esc(order.awb)}</strong> pe <a href="${esc(url)}" style="color:#0a0a0a">${esc(order.courier || 'curier')}</a></p>`
-    : `<p style="margin:0 0 16px">AWB: <strong>${esc(order.awb || '—')}</strong>${order.courier ? ' · ' + esc(order.courier) : ''}</p>`;
+// === Email design tokens — mirror the website (src/styles/global.css) ===
+const SERIF = "Georgia, 'Times New Roman', Times, serif";
+const SANS = "'Helvetica Neue', Helvetica, Arial, sans-serif";
+const INK = '#0A0A0A';
+const INK_SOFT = '#141414';
+const CREAM = '#F2EBE0';
+const CREAM_DIM = '#A89F90';
+const GOLD = '#C9A24A';
+const GOLD_BRIGHT = '#E8C16C';
+const HAIR = 'rgba(242,235,224,0.14)';
+
+/** A label/value row inside the dark info panels. */
+function emailRow(label: string, value: string): string {
   return `
-  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
-    <h2 style="margin:0 0 4px">Comanda ta #${order.number} a fost expediată 🎉</h2>
-    <p style="margin:0 0 16px;color:#666">Mulțumim, ${esc(order.customer?.name || order.shipping?.name || 'dragă fan')}! Coletul tău e pe drum.</p>
-    <h3 style="margin:0 0 6px">Urmărire</h3>
-    ${cta}
-    <p style="margin:0 0 16px;color:#888;font-size:12px">Notă: imediat după generarea AWB-ului, curierul poate afișa „AWB înregistrat de expeditor". E normal — statusul se actualizează după ce coletul e preluat fizic.</p>
-    <h3 style="margin:0 0 6px">Produse</h3>
-    <ul style="margin:0 0 16px;padding-left:18px;line-height:1.6">${items}</ul>
-    <h3 style="margin:0 0 6px">Livrare</h3>
-    <p style="margin:0">📦 ${esc(formatAddress(order.shipping || {}) || 'fără adresă')}</p>
-    <p style="margin:24px 0 0;color:#999;font-size:12px">Mattman Music</p>
-  </div>`;
+    <tr>
+      <td style="padding:3px 0;font:600 11px/1.5 ${SANS};letter-spacing:.12em;text-transform:uppercase;color:${GOLD};white-space:nowrap;vertical-align:top">${label}</td>
+      <td style="padding:3px 0 3px 16px;font:400 14px/1.55 ${SANS};color:${CREAM};vertical-align:top">${value}</td>
+    </tr>`;
+}
+
+function buildCustomerShippedHtml(order: Order): string {
+  const name = esc(order.customer?.name || order.shipping?.name || 'dragă fan');
+  const url = trackUrl(order);
+  const courier = esc(order.courier || 'curier');
+  const awb = esc(order.awb || '—');
+
+  const items = order.items
+    .map((i) => `
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid ${HAIR};font:400 15px/1.4 ${SERIF};color:${CREAM}">
+          ${esc(i.name)}
+          <span style="display:block;margin-top:3px;font:400 12px/1.4 ${SANS};letter-spacing:.04em;color:${CREAM_DIM}">${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</span>
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid ${HAIR};font:600 14px/1.4 ${SANS};color:${GOLD};text-align:right;white-space:nowrap;vertical-align:top">×${esc(i.qty)}</td>
+      </tr>`)
+    .join('');
+
+  const cta = url
+    ? `
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 14px">
+        <tr><td style="border-radius:4px;background:${GOLD}">
+          <a href="${esc(url)}" style="display:inline-block;padding:15px 34px;font:700 13px/1 ${SANS};letter-spacing:.1em;text-transform:uppercase;color:${INK};text-decoration:none">Urmărește coletul →</a>
+        </td></tr>
+      </table>
+      <p style="margin:0;font:400 13px/1.6 ${SANS};color:${CREAM_DIM}">AWB <span style="color:${CREAM};font-weight:600">${awb}</span> · ${courier}</p>`
+    : `<p style="margin:0;font:400 14px/1.6 ${SANS};color:${CREAM}">AWB <span style="font-weight:600">${awb}</span>${order.courier ? ' · ' + courier : ''}</p>`;
+
+  return `
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"></head>
+<body style="margin:0;padding:0;background:${INK};-webkit-font-smoothing:antialiased">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Comanda #${order.number} e pe drum. AWB ${awb}.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${INK}">
+    <tr><td align="center" style="padding:32px 16px">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:${INK_SOFT};border:1px solid ${HAIR};border-radius:8px;overflow:hidden">
+
+        <!-- wordmark -->
+        <tr><td style="padding:30px 36px 0;text-align:center">
+          <span style="font:700 13px/1 ${SANS};letter-spacing:.42em;text-transform:uppercase;color:${GOLD}">MATTMAN&nbsp;MUSIC</span>
+        </td></tr>
+
+        <!-- hero -->
+        <tr><td style="padding:26px 36px 8px;text-align:center">
+          <span style="display:inline-block;margin:0 0 14px;padding:6px 14px;border:1px solid ${HAIR};border-radius:999px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${CREAM_DIM}">Comanda #${order.number}</span>
+          <h1 style="margin:0;font:400 34px/1.1 ${SERIF};color:${CREAM}">Coletul tău<br><em style="color:${GOLD_BRIGHT};font-style:italic">e pe drum.</em></h1>
+          <p style="margin:14px 0 0;font:400 15px/1.6 ${SANS};color:${CREAM_DIM}">Mulțumim, ${name}. L-am predat curierului și pornește spre tine.</p>
+        </td></tr>
+
+        <!-- tracking -->
+        <tr><td style="padding:24px 36px 4px;text-align:center">${cta}</td></tr>
+
+        <!-- divider -->
+        <tr><td style="padding:24px 36px 0"><div style="height:1px;background:${HAIR};line-height:1px;font-size:0">&nbsp;</div></td></tr>
+
+        <!-- produse -->
+        <tr><td style="padding:22px 36px 0">
+          <p style="margin:0 0 4px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${GOLD}">Produse</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}
+            <tr><td style="padding:14px 0 0;font:600 12px/1.4 ${SANS};letter-spacing:.04em;color:${CREAM_DIM}">Total</td>
+                <td style="padding:14px 0 0;font:700 15px/1.4 ${SANS};color:${CREAM};text-align:right">${esc(order.amountTotal)} ${esc(order.currency)}</td></tr>
+          </table>
+        </td></tr>
+
+        <!-- livrare -->
+        <tr><td style="padding:22px 36px 0">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${INK};border:1px solid ${HAIR};border-radius:6px">
+            <tr><td style="padding:16px 18px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${emailRow('Livrare', esc(formatAddress(order.shipping || {}) || 'fără adresă'))}
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- note -->
+        <tr><td style="padding:18px 36px 0">
+          <p style="margin:0;font:400 12px/1.6 ${SANS};color:${CREAM_DIM}">Imediat după preluare, curierul poate afișa „AWB înregistrat de expeditor". E normal: statusul se actualizează după ce coletul e scanat fizic.</p>
+        </td></tr>
+
+        <!-- footer -->
+        <tr><td style="padding:28px 36px 30px;text-align:center;border-top:1px solid ${HAIR};margin-top:8px">
+          <p style="margin:24px 0 4px;font:700 12px/1 ${SANS};letter-spacing:.3em;text-transform:uppercase;color:${GOLD}">MATTMAN MUSIC</p>
+          <p style="margin:0;font:400 12px/1.5 ${SANS};color:${CREAM_DIM}"><a href="https://mattman.ro" style="color:${CREAM_DIM};text-decoration:none">mattman.ro</a></p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
 }
 
 /**
