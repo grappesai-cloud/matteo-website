@@ -210,3 +210,29 @@ export async function createAwb(order: Order): Promise<FanAwbResult> {
   const cost = Number(first?.cost ?? first?.tariff);
   return { awb, cost: Number.isFinite(cost) ? cost : undefined };
 }
+
+/**
+ * Delete (cancel) an AWB at FAN Courier. Only works while the shipment hasn't
+ * been picked up yet (same-day, before the courier scans it). Endpoint per FAN
+ * API v2.0: DELETE /awb?clientId=&awb= with the Bearer token.
+ */
+export async function deleteAwb(awb: string): Promise<void> {
+  if (!fanConfigured()) {
+    throw new Error('FAN Courier nu e configurat (FAN_USERNAME / FAN_PASSWORD / FAN_CLIENT_ID).');
+  }
+  const clean = String(awb || '').trim();
+  if (!clean) throw new Error('Lipsește numărul AWB.');
+  const token = await getToken();
+  const qs = new URLSearchParams({ clientId: env('FAN_CLIENT_ID'), awb: clean });
+  const res = await fetch(`${BASE}/awb?${qs.toString()}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) {
+    const msg = data?.message
+      || (Array.isArray(data?.errors) ? data.errors.join('; ') : '')
+      || 'Ștergerea AWB FAN a eșuat (poate a fost deja preluat de curier).';
+    throw new Error(msg);
+  }
+}

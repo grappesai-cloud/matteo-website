@@ -511,7 +511,8 @@ const blobReady = canWrite();
             <button class="adm-btn adm-btn-gold adm-btn-sm adm-o-save" type="button">Salvează</button>
             ${o.awb
               ? `<a class="adm-o-track mono" href="${fanTrack(o.awb)}" target="_blank" rel="noopener">🔗 urmărește ${esc(o.awb)}</a>
-                 <button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-mail" type="button" title="Trimite clientului emailul cu linkul de urmărire">✉ ${o.shippedEmailAt ? 'retrimite' : 'trimite'} tracking</button>`
+                 <button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-mail" type="button" title="Trimite clientului emailul cu linkul de urmărire">✉ ${o.shippedEmailAt ? 'retrimite' : 'trimite'} tracking</button>
+                 <button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-delawb" type="button" title="Anulează AWB-ul la FAN (doar înainte de ridicare)">🗑 șterge AWB</button>`
               : `<button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-fan" type="button">Generează AWB FAN ⚡</button>`}
             <span class="mono dim adm-o-msg"></span>
           </div>
@@ -610,6 +611,32 @@ const blobReady = canWrite();
         } finally {
           (btn as HTMLButtonElement).disabled = false;
           setTimeout(() => { if (msg.textContent === '✓ Email trimis') msg.textContent = ''; }, 2500);
+        }
+      });
+
+      // Delete (cancel) the FAN AWB for an order
+      ordersListEl?.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.adm-o-delawb');
+        if (!btn) return;
+        const row = btn.closest<HTMLElement>('[data-order]')!;
+        const id = row.dataset.order!;
+        const msg = row.querySelector('.adm-o-msg') as HTMLElement;
+        if (!confirm('Anulez AWB-ul la FAN Courier? Merge doar dacă nu a fost încă ridicat. Comanda revine la „Nouă".')) return;
+        (btn as HTMLButtonElement).disabled = true; msg.textContent = '… șterg AWB';
+        try {
+          const res = await fetch('/api/admin/fan-awb', {
+            method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || 'Eroare la ștergerea AWB.');
+          const idx = orders.findIndex((o) => o.id === id);
+          if (idx >= 0 && d.order) orders[idx] = d.order;
+          renderReport();
+          msg.textContent = '✓ AWB șters';
+          renderOrders();
+        } catch (err: any) {
+          msg.textContent = err?.message || 'Eroare.';
+          (btn as HTMLButtonElement).disabled = false;
         }
       });
 
