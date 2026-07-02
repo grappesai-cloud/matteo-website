@@ -643,7 +643,7 @@ const blobReady = canWrite();
       if (isRuvix) loadOrders();
 
       if (!isRuvix) {
-      const SIZES = ['S', 'M', 'L', 'XL', 'XXL'];
+      const SIZES = ['S', 'M', 'L', 'XL', 'XXL', '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y'];
       const slugify = (s: string) =>
         String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);

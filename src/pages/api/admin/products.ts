@@ -65,7 +65,7 @@ function sanitize(input: any, existing?: Product): Product | { error: string } {
   if (colors.length === 0) return { error: 'Adaugă cel puțin o culoare cu poză față și spate.' };
 
   const sizes = (Array.isArray(input?.sizes) ? input.sizes : SIZES)
-    .map((s: any) => str(s, 4) as SizeKey)
+    .map((s: any) => str(s, 8) as SizeKey)
     .filter((s: SizeKey) => SIZES.includes(s));
   if (sizes.length === 0) return { error: 'Selectează cel puțin o mărime.' };
 

@@ -11,8 +11,15 @@ export const FREE_SHIPPING_THRESHOLD = 250;
 /** Flat shipping rate (RON) charged below the free-shipping threshold. */
 export const SHIPPING_FLAT = 20;
 
-export type SizeKey = 'S' | 'M' | 'L' | 'XL' | 'XXL';
-export const SIZES: SizeKey[] = ['S', 'M', 'L', 'XL', 'XXL'];
+export type SizeKey =
+  | 'S' | 'M' | 'L' | 'XL' | 'XXL'
+  | '18-24m' | '24-36m' | '3-4y' | '5-6y' | '7-8y' | '9-11y';
+export const SIZES: SizeKey[] = [
+  'S', 'M', 'L', 'XL', 'XXL',
+  '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y',
+];
+/** Adult sizes only — used as the default for the seed/adult tees. */
+export const ADULT_SIZES: SizeKey[] = ['S', 'M', 'L', 'XL', 'XXL'];
 
 export type ColorKey = string; // 'black' | 'pink' | custom (admin-defined)
 
@@ -123,7 +130,7 @@ export const seedProducts: Product[] = [
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/bagabont-front.webp`, back: `${IMG}/bagabont-back.webp` },
     ],
-    sizes: SIZES,
+    sizes: ADULT_SIZES,
     active: true,
     sort: 1,
   },
@@ -141,7 +148,7 @@ export const seedProducts: Product[] = [
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/mama-front.webp`, back: `${IMG}/mama-back.webp` },
     ],
-    sizes: SIZES,
+    sizes: ADULT_SIZES,
     active: true,
     sort: 2,
   },
@@ -159,7 +166,7 @@ export const seedProducts: Product[] = [
     colors: [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/tatal-front.webp`, back: `${IMG}/tatal-back.webp` },
     ],
-    sizes: SIZES,
+    sizes: ADULT_SIZES,
     active: true,
     sort: 3,
   },
@@ -177,7 +184,7 @@ export const seedProducts: Product[] = [
       { key: 'black', label: 'Negru', swatch: '#111111', front: `${IMG}/papusa-black-front.webp`, back: `${IMG}/papusa-black-back.webp` },
       { key: 'pink', label: 'Pink Joy', swatch: '#E3A0AC', front: `${IMG}/papusa-pink-front.webp`, back: `${IMG}/papusa-pink-back.webp` },
     ],
-    sizes: SIZES,
+    sizes: ADULT_SIZES,
     active: true,
     sort: 4,
   },
