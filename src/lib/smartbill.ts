@@ -14,6 +14,7 @@
 // client se activează doar după ce configurezi SMTP în SmartBill.
 
 import type { Order } from './orders';
+import { judetFromPostalCode } from './orders';
 
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
 
@@ -73,7 +74,9 @@ function buildInvoice(order: Order) {
       isTaxPayer: false,
       address: [s.line1, s.line2].filter(Boolean).join(', '),
       city: s.city || '',
-      county: s.state || s.city || '',
+      // Județul din cod poștal (autoritar). NU folosi orașul ca fallback:
+      // „Vălenii de Munte" nu e județ valid și ANAF respinge e-Factura.
+      county: judetFromPostalCode(s.postalCode) || s.state || '',
       country: s.country || 'Romania',
       email: order.customer?.email || '',
       saveToDb: false,

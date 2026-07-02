@@ -64,6 +64,36 @@ export function orderUnits(o: Order): number {
   return o.items.reduce((n, i) => n + (Number(i.qty) || 0), 0);
 }
 
+// Prefixul de 2 cifre al codului poștal RO identifică județul (01–06 = sectoarele
+// Bucureștiului). Sursă autoritară pentru județ, spre deosebire de câmpul `state`
+// de la Stripe care e adesea gol. NU folosi orașul ca fallback pentru județ:
+// „Vălenii de Munte" (oraș în Prahova) nu e un județ valid și ANAF respinge e-Factura.
+const JUDET_BY_ZIP2: Record<string, string> = {
+  '01': 'București', '02': 'București', '03': 'București',
+  '04': 'București', '05': 'București', '06': 'București',
+  '07': 'Ilfov', '08': 'Giurgiu',
+  '10': 'Prahova', '11': 'Argeș', '12': 'Buzău', '13': 'Dâmbovița', '14': 'Teleorman',
+  '20': 'Dolj', '21': 'Gorj', '22': 'Mehedinți', '23': 'Olt', '24': 'Vâlcea',
+  '30': 'Timiș', '31': 'Arad', '32': 'Caraș-Severin', '33': 'Hunedoara',
+  '40': 'Cluj', '41': 'Bihor', '42': 'Bistrița-Năsăud', '43': 'Maramureș',
+  '44': 'Satu Mare', '45': 'Sălaj',
+  '50': 'Brașov', '51': 'Alba', '52': 'Covasna', '53': 'Harghita', '54': 'Mureș', '55': 'Sibiu',
+  '60': 'Bacău', '61': 'Neamț', '62': 'Vrancea',
+  '70': 'Iași', '71': 'Botoșani', '72': 'Suceava', '73': 'Vaslui',
+  '80': 'Galați', '81': 'Brăila', '82': 'Tulcea',
+  '90': 'Constanța', '91': 'Călărași', '92': 'Ialomița',
+};
+
+/**
+ * Deduce județul din codul poștal RO (primele 2 cifre). Returnează '' dacă nu se
+ * poate deduce, ca apelantul să decidă fallback-ul (NICIODATĂ orașul → e-Factura invalidă).
+ */
+export function judetFromPostalCode(postalCode?: string): string {
+  const digits = (postalCode || '').replace(/\D/g, '');
+  if (digits.length < 2) return '';
+  return JUDET_BY_ZIP2[digits.slice(0, 2)] || '';
+}
+
 /** A one-line address string for display. */
 export function formatAddress(a: OrderAddress): string {
   return [a.line1, a.line2, a.city, a.postalCode, a.state, a.country]

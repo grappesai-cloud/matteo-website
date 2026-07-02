@@ -11,6 +11,7 @@
 // the single place to adjust — see buildShipment() below.
 
 import type { Order } from './orders';
+import { judetFromPostalCode } from './orders';
 
 const BASE = 'https://api.fancourier.ro';
 
@@ -75,7 +76,7 @@ function buildShipment(order: Order) {
       phone: order.customer?.phone || '',
       email: order.customer?.email || '',
       address: {
-        county: s.state || s.city || '',
+        county: judetFromPostalCode(s.postalCode) || s.state || '',
         locality: s.city || '',
         street: [s.line1, s.line2].filter(Boolean).join(', '),
         number: '',
