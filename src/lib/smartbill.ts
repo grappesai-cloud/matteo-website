@@ -36,6 +36,10 @@ function todayISO(): string {
 function buildInvoice(order: Order) {
   const s = order.shipping || {};
   const cif = env('SMARTBILL_CIF');
+  // Gestiunea din care se descarcă marfa la emiterea facturii („Descarcă gestiunea").
+  // Trebuie să fie o gestiune de tip „Consum" în contul SmartBill. Numele exact e
+  // configurabil; default „Consum".
+  const warehouse = env('SMARTBILL_WAREHOUSE') || 'Consum';
 
   const products = order.items.map((i) => ({
     name: `${i.name}${i.size ? ` (${i.size}${i.colorLabel ? `, ${i.colorLabel}` : ''})` : ''}`,
@@ -48,6 +52,7 @@ function buildInvoice(order: Order) {
     taxPercentage: TVA,
     saveToDb: false,
     isService: false,
+    warehouseName: warehouse, // gestiunea de consum din care se descarcă
   }));
 
   // Transportul ca linie de serviciu (dacă a fost taxat).
@@ -63,6 +68,7 @@ function buildInvoice(order: Order) {
       taxPercentage: TVA,
       saveToDb: false,
       isService: true,
+      warehouseName: warehouse, // ignorat pentru servicii, dar păstrează tipul uniform
     });
   }
 
@@ -87,7 +93,7 @@ function buildInvoice(order: Order) {
     dueDate: todayISO(),
     mentions: `Comanda #${order.number}`,
     observations: `Comanda online #${order.number}`,
-    useStock: false,
+    useStock: true, // „Descarcă gestiunea" bifat — scade stocul din gestiunea de consum
     sendEmail: env('SMARTBILL_SEND_EMAIL') === 'true',
     products,
   };
