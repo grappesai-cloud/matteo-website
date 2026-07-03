@@ -23,7 +23,28 @@ const {
 
 const canonical = new URL(Astro.url.pathname, SITE).href.replace(/\/$/, '') || SITE;
 const ogImage = image.startsWith('http') ? image : new URL(image, SITE).href;
-const jsonLdList = jsonLd ? (Array.isArray(jsonLd) ? jsonLd : [jsonLd]) : [];
+
+// Default site-wide structured data. Pages may pass their own `jsonLd`
+// (e.g. the homepage MusicGroup with members, or a product Product schema),
+// in which case that overrides this default so there is no duplicate.
+const defaultJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'MusicGroup',
+  name: 'Mattman Music',
+  alternateName: 'Mattman Music · Independent label',
+  url: SITE,
+  logo: new URL('/android-chrome-512x512.png', SITE).href,
+  image: new URL('/images/mattman/og-image.png', SITE).href,
+  description:
+    'Label muzical independent din România: Matteo, Andrei Bănuță, Georgiana Neagu, Emily Istrate.',
+  address: { '@type': 'PostalAddress', addressCountry: 'RO' },
+};
+
+const jsonLdList = jsonLd
+  ? Array.isArray(jsonLd)
+    ? jsonLd
+    : [jsonLd]
+  : [defaultJsonLd];
 ---
 <!doctype html>
 <html lang="ro">
