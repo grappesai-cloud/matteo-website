@@ -34,12 +34,14 @@ function sanitizeColors(input: any): ProductColor[] {
     const label = str(c?.label, 40) || 'Culoare';
     const front = str(c?.front, 600);
     const back = str(c?.back, 600);
-    if (!front || !back) continue; // both images required
+    const macro = str(c?.macro, 600);
+    if (!front || !back) continue; // front + back required; macro optional
     let key = slugify(str(c?.key, 40) || label) || 'c';
     while (used.has(key)) key += '-x';
     used.add(key);
     const swatch = /^#[0-9a-fA-F]{3,8}$/.test(str(c?.swatch, 9)) ? str(c?.swatch, 9) : '#111111';
     const color: ProductColor = { key, label, swatch, front, back };
+    if (macro) color.macro = macro;
     const stock = sanitizeStock(c?.stock);
     if (stock) color.stock = stock;
     out.push(color);

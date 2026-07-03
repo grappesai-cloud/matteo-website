@@ -72,6 +72,9 @@ const productJsonLd = {
           <button class="pd-thumb" type="button" data-view="back">
             <img src={first.back} alt="Spate" id="pd-thumb-back" loading="lazy" decoding="async" />
           </button>
+          <button class="pd-thumb" type="button" data-view="macro" id="pd-thumb-macro-btn" hidden={!first.macro}>
+            <img src={first.macro || first.front} alt="Detaliu" id="pd-thumb-macro" loading="lazy" decoding="async" />
+          </button>
         </div>
       </section>
 
@@ -99,6 +102,7 @@ const productJsonLd = {
                   data-color={c.key}
                   data-front={c.front}
                   data-back={c.back}
+                  data-macro={c.macro || ''}
                   data-label={c.label}
                   data-stock={JSON.stringify(c.stock || {})}
                   style={`--c:${c.swatch}`}
@@ -113,9 +117,13 @@ const productJsonLd = {
           <span class="pd-field-label mono dim">Mărime</span>
           <div class="pd-sizes" id="pd-sizes" role="group">
             {product.sizes.map((s) => (
-              <button class="pd-size" type="button" data-size={s}>{s}</button>
+              <button class="pd-size" type="button" data-size={s}>
+                <span class="pd-size-lbl">{s}</span>
+                <span class="pd-size-stock mono" hidden></span>
+              </button>
             ))}
           </div>
+          <p class="pd-stockline mono" id="pd-stockline" hidden></p>
           <a class="pd-sizeguide mono" href="#size-guide">Ghid de mărimi ↓</a>
         </div>
 
@@ -169,44 +177,76 @@ const productJsonLd = {
     const root = document.querySelector<HTMLElement>('.pd')!;
     const slug = root.dataset.slug!;
 
+    const LOW_STOCK = 5; // show "ultimele N" at or below this many units
+
     const mainImg = document.getElementById('pd-main') as HTMLImageElement;
     const thumbFront = document.getElementById('pd-thumb-front') as HTMLImageElement;
     const thumbBack = document.getElementById('pd-thumb-back') as HTMLImageElement;
+    const thumbMacro = document.getElementById('pd-thumb-macro') as HTMLImageElement;
+    const thumbMacroBtn = document.getElementById('pd-thumb-macro-btn') as HTMLButtonElement;
     const thumbBtns = Array.from(document.querySelectorAll<HTMLElement>('.pd-thumb'));
+    const stockLine = document.getElementById('pd-stockline') as HTMLElement;
+
+    const firstColorBtn = document.querySelector('.pd-color') as HTMLElement | null;
 
     let color = (document.querySelector('.pd-color.is-active') as HTMLElement)?.dataset.color
-      || (document.querySelector('.pd-color') as HTMLElement)?.dataset.color
+      || firstColorBtn?.dataset.color
       || 'black';
-    let view: 'front' | 'back' = 'front';
+    let view: 'front' | 'back' | 'macro' = 'front';
     let size = '';
     let qty = 1;
 
     let frontSrc = thumbFront.src;
     let backSrc = thumbBack.src;
+    let macroSrc = firstColorBtn?.dataset.macro || '';
 
     const trackStock = root.dataset.trackStock === '1';
     const hintEl = document.getElementById('pd-hint')!;
+    const qtyEl = document.getElementById('pd-qty')!;
 
     function currentStockMap(): Record<string, number> {
       const activeColorBtn = document.querySelector('.pd-color.is-active') as HTMLElement | null;
       const raw = activeColorBtn?.dataset.stock ?? root.dataset.stock ?? '{}';
       try { return JSON.parse(raw); } catch { return {}; }
     }
+    function stockFor(sz: string): number {
+      return Math.max(0, currentStockMap()[sz] ?? 0);
+    }
+    function maxQty(): number {
+      return trackStock && size ? Math.min(10, stockFor(size)) : 10;
+    }
+    // Reflect the selected size's availability under the size grid.
+    function updateStockLine() {
+      if (!trackStock || !size) { stockLine.hidden = true; return; }
+      const n = stockFor(size);
+      stockLine.hidden = false;
+      stockLine.classList.remove('is-low', 'is-out');
+      if (n <= 0) { stockLine.textContent = 'Stoc epuizat pe această mărime'; stockLine.classList.add('is-out'); }
+      else if (n === 1) { stockLine.textContent = 'Ultima bucată în stoc'; stockLine.classList.add('is-low'); }
+      else if (n <= LOW_STOCK) { stockLine.textContent = `Ultimele ${n} bucăți în stoc`; stockLine.classList.add('is-low'); }
+      else { stockLine.textContent = `${n} bucăți în stoc`; }
+    }
     function updateSizes() {
-      if (!trackStock) return;
       const stock = currentStockMap();
       document.querySelectorAll<HTMLButtonElement>('.pd-size').forEach((b) => {
         const sz = b.dataset.size!;
-        const out = (stock[sz] ?? 0) <= 0;
+        const badge = b.querySelector<HTMLElement>('.pd-size-stock');
+        if (!trackStock) { if (badge) badge.hidden = true; return; }
+        const n = Math.max(0, stock[sz] ?? 0);
+        const out = n <= 0;
         b.classList.toggle('is-out', out);
+        b.classList.toggle('is-low', !out && n <= LOW_STOCK);
         b.disabled = out;
+        if (badge) { badge.hidden = false; badge.textContent = out ? 'epuizat' : String(n); }
         if (out && size === sz) { size = ''; b.classList.remove('is-active'); }
       });
+      updateStockLine();
     }
 
-    function setView(v: 'front' | 'back') {
+    function setView(v: 'front' | 'back' | 'macro') {
+      if (v === 'macro' && !macroSrc) v = 'front';
       view = v;
-      mainImg.src = v === 'front' ? frontSrc : backSrc;
+      mainImg.src = v === 'front' ? frontSrc : v === 'back' ? backSrc : macroSrc;
       thumbBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.view === v));
     }
 
@@ -217,9 +257,13 @@ const productJsonLd = {
       color = btn.dataset.color!;
       frontSrc = btn.dataset.front!;
       backSrc = btn.dataset.back!;
+      macroSrc = btn.dataset.macro || '';
       thumbFront.src = frontSrc;
       thumbBack.src = backSrc;
-      setView(view);
+      thumbMacroBtn.hidden = !macroSrc;
+      if (macroSrc) thumbMacro.src = macroSrc;
+      // if the current view is no longer available for this color, fall back to front
+      setView(view === 'macro' && !macroSrc ? 'front' : view);
       document.querySelectorAll('.pd-color').forEach((c) => c.classList.toggle('is-active', c === btn));
       const lbl = document.getElementById('pd-color-label');
       if (lbl) lbl.textContent = btn.dataset.label!;
@@ -227,7 +271,7 @@ const productJsonLd = {
     });
 
     // thumbnail view toggle
-    thumbBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'front' | 'back')));
+    thumbBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'front' | 'back' | 'macro')));
 
     // size
     document.getElementById('pd-sizes')!.addEventListener('click', (e) => {
@@ -236,12 +280,24 @@ const productJsonLd = {
       size = btn.dataset.size!;
       document.querySelectorAll('.pd-size').forEach((s) => s.classList.toggle('is-active', s === btn));
       hintEl.hidden = true;
+      // clamp qty to what's left for the newly selected size
+      qty = Math.min(qty, maxQty()) || 1;
+      qtyEl.textContent = String(qty);
+      updateStockLine();
     });
 
     // qty
-    const qtyEl = document.getElementById('pd-qty')!;
     document.getElementById('pd-dec')!.addEventListener('click', () => { qty = Math.max(1, qty - 1); qtyEl.textContent = String(qty); });
-    document.getElementById('pd-inc')!.addEventListener('click', () => { qty = Math.min(10, qty + 1); qtyEl.textContent = String(qty); });
+    document.getElementById('pd-inc')!.addEventListener('click', () => {
+      const cap = maxQty();
+      if (qty >= cap) {
+        hintEl.textContent = 'Ai atins stocul disponibil pentru această mărime.';
+        hintEl.hidden = false;
+        return;
+      }
+      qty = qty + 1;
+      qtyEl.textContent = String(qty);
+    });
 
     // add to cart
     document.getElementById('pd-add')!.addEventListener('click', () => {
@@ -250,7 +306,7 @@ const productJsonLd = {
         hintEl.hidden = false;
         return;
       }
-      if (trackStock && (currentStockMap()[size] ?? 0) < qty) {
+      if (trackStock && stockFor(size) < qty) {
         hintEl.textContent = 'Stoc insuficient pentru această mărime.';
         hintEl.hidden = false;
         return;
@@ -369,16 +425,25 @@ const productJsonLd = {
 
     .pd-sizes { display: flex; flex-wrap: wrap; gap: 8px; }
     .pd-size {
-      min-width: 48px; padding: 12px 14px;
+      min-width: 48px; padding: 9px 14px;
+      display: inline-flex; flex-direction: column; align-items: center; gap: 2px; line-height: 1.1;
       border: 1px solid var(--hair-strong, rgba(242,235,224,0.32));
       border-radius: 6px; background: transparent;
       color: var(--cream, #f2ebe0); font-family: var(--mono, monospace); font-size: 13px;
       cursor: pointer; transition: background 0.2s, color 0.2s, border-color 0.2s;
     }
+    .pd-size-stock { font-size: 9.5px; letter-spacing: 0.04em; color: var(--dim, rgba(242,235,224,0.55)); }
+    .pd-size.is-low { border-color: var(--gold, #c9a24a); }
+    .pd-size.is-low .pd-size-stock { color: var(--gold, #c9a24a); }
     .pd-size:hover { border-color: var(--cream, #f2ebe0); }
     .pd-size.is-active { background: var(--cream, #f2ebe0); color: var(--ink, #0a0a0a); border-color: var(--cream, #f2ebe0); }
-    .pd-size.is-out { opacity: 0.35; text-decoration: line-through; cursor: not-allowed; }
+    .pd-size.is-active .pd-size-stock { color: rgba(10,10,10,0.65); }
+    .pd-size.is-out { opacity: 0.4; cursor: not-allowed; }
+    .pd-size.is-out .pd-size-lbl { text-decoration: line-through; }
     .pd-size.is-out:hover { border-color: var(--hair-strong, rgba(242,235,224,0.32)); }
+    .pd-stockline { margin: 12px 0 0; letter-spacing: 0.06em; color: var(--dim, rgba(242,235,224,0.6)); font-size: 12px; }
+    .pd-stockline.is-low { color: var(--gold, #c9a24a); }
+    .pd-stockline.is-out { color: #d9534f; }
     .pd-sizeguide { display: inline-block; margin-top: 12px; color: var(--dim, rgba(242,235,224,0.55)); letter-spacing: 0.1em; transition: color 0.2s; }
     .pd-sizeguide:hover { color: var(--gold, #c9a24a); }
 

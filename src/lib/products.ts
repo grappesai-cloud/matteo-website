@@ -29,6 +29,7 @@ export interface ProductColor {
   swatch: string;  // hex used for the selector dot
   front: string;   // image url (local /images or Blob https url)
   back: string;    // image url
+  macro?: string;  // optional close-up / detail shot (third gallery image)
   stock?: Partial<Record<SizeKey, number>>; // per-size units (only when trackStock)
 }
 
@@ -225,6 +226,19 @@ export function isVariantAvailable(p: Product, colorKey: string, size: SizeKey, 
 export function isSoldOut(p: Product): boolean {
   if (!p.trackStock) return false;
   return p.colors.every((c) => p.sizes.every((s) => (c.stock?.[s] ?? 0) <= 0));
+}
+/** Total tracked units across all colours × sizes. null = stock not tracked. */
+export function totalStock(p: Product): number | null {
+  if (!p.trackStock) return null;
+  return p.colors.reduce(
+    (sum, c) => sum + p.sizes.reduce((a, s) => a + Math.max(0, c.stock?.[s] ?? 0), 0),
+    0,
+  );
+}
+/** True when stock is tracked, some units remain, but the total is running low. */
+export function isLowStock(p: Product, threshold = 5): boolean {
+  const t = totalStock(p);
+  return t !== null && t > 0 && t <= threshold;
 }
 
 /** Shipping cost (RON) for a given subtotal, per the free-over-threshold rule. */

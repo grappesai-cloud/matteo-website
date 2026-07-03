@@ -308,7 +308,7 @@ const blobReady = canWrite();
 
             <div class="adm-field">
               <div class="adm-colors-head">
-                <span class="adm-label mono">Culori &amp; poze (față + spate)</span>
+                <span class="adm-label mono">Culori &amp; poze (față, spate, detaliu)</span>
                 <button type="button" class="adm-btn adm-btn-ghost adm-btn-sm" id="add-color">+ Culoare</button>
               </div>
               <div id="f-colors" class="adm-colors"></div>
@@ -362,6 +362,14 @@ const blobReady = canWrite();
           <span class="adm-upload-inner">
             <img class="adm-upload-preview" hidden />
             <span class="adm-upload-cta mono">Spate ↑</span>
+          </span>
+          <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
+        </label>
+        <label class="adm-upload" data-side="macro">
+          <input type="hidden" class="adm-img-url" />
+          <span class="adm-upload-inner">
+            <img class="adm-upload-preview" hidden />
+            <span class="adm-upload-cta mono">Detaliu ↑</span>
           </span>
           <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
         </label>
@@ -926,14 +934,16 @@ const blobReady = canWrite();
         const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
         (node.querySelector('.adm-color-label') as HTMLInputElement).value = c?.label || '';
         (node.querySelector('.adm-color-swatch') as HTMLInputElement).value = c?.swatch || '#111111';
+        const SIDE_LABEL: Record<string, string> = { front: 'Față', back: 'Spate', macro: 'Detaliu' };
         node.querySelectorAll<HTMLElement>('.adm-upload').forEach((up) => {
-          const side = up.dataset.side as 'front' | 'back';
+          const side = up.dataset.side as 'front' | 'back' | 'macro';
+          const label = SIDE_LABEL[side] || side;
           const url = c?.[side] || '';
           const urlInput = up.querySelector('.adm-img-url') as HTMLInputElement;
           const preview = up.querySelector('.adm-upload-preview') as HTMLImageElement;
           const cta = up.querySelector('.adm-upload-cta') as HTMLElement;
           const file = up.querySelector('.adm-file') as HTMLInputElement;
-          if (url) { urlInput.value = url; preview.src = url; preview.hidden = false; cta.textContent = side === 'front' ? 'Față ✓' : 'Spate ✓'; }
+          if (url) { urlInput.value = url; preview.src = url; preview.hidden = false; cta.textContent = `${label} ✓`; }
           file.addEventListener('change', async () => {
             const f = file.files?.[0];
             if (!f) return;
@@ -947,9 +957,9 @@ const blobReady = canWrite();
               urlInput.value = data.url;
               preview.src = data.url;
               preview.hidden = false;
-              cta.textContent = side === 'front' ? 'Față ✓' : 'Spate ✓';
+              cta.textContent = `${label} ✓`;
             } catch (e: any) {
-              cta.textContent = side === 'front' ? 'Față ↑' : 'Spate ↑';
+              cta.textContent = `${label} ↑`;
               file.value = '';
               alert(e?.message || 'Upload eșuat');
             }
@@ -968,11 +978,26 @@ const blobReady = canWrite();
       }
       document.getElementById('add-color')?.addEventListener('click', () => addColor());
 
+      // Only show stock inputs for the sizes actually selected for this product.
+      function selectedSizes(): Set<string> {
+        return new Set(
+          Array.from(document.querySelectorAll<HTMLInputElement>('#f-sizes input:checked')).map((c) => c.value)
+        );
+      }
+      function syncStockCells() {
+        const sel = selectedSizes();
+        document.querySelectorAll<HTMLElement>('.adm-stock-cell').forEach((cell) => {
+          const sz = cell.querySelector<HTMLInputElement>('.adm-stock-input')?.dataset.size || '';
+          cell.hidden = !sel.has(sz);
+        });
+      }
       function applyStockVisibility() {
         const on = ($('f-track') as HTMLInputElement).checked;
         document.querySelectorAll<HTMLElement>('.adm-color-stock').forEach((el) => { el.hidden = !on; });
+        if (on) syncStockCells();
       }
       $('f-track').addEventListener('change', applyStockVisibility);
+      document.getElementById('f-sizes')?.addEventListener('change', () => { if (($('f-track') as HTMLInputElement).checked) syncStockCells(); });
 
       // show the "new artist name" field only when "Artist nou…" is picked
       function applyArtistVisibility() {
@@ -1062,6 +1087,7 @@ const blobReady = canWrite();
             swatch: (row.querySelector('.adm-color-swatch') as HTMLInputElement).value,
             front: get(0),
             back: get(1),
+            macro: get(2),
             stock,
           };
         });
@@ -1485,7 +1511,7 @@ const blobReady = canWrite();
     .adm-color-swatch { width: 44px; height: 40px; padding: 2px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; background: #131313; cursor: pointer; }
     .adm-color-del { width: 40px; height: 40px; border-radius: 6px; border: 1px solid rgba(217,83,79,0.4); background: transparent; color: #d9534f; font-size: 18px; cursor: pointer; }
     .adm-color-del:hover { background: #d9534f; color: #fff; }
-    .adm-color-imgs { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .adm-color-imgs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; }
     .adm-upload { position: relative; aspect-ratio: 4/5; border: 1px dashed var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; cursor: pointer; overflow: hidden; background: #161616; display: block; }
     .adm-upload:hover { border-color: var(--gold, #c9a24a); }
     .adm-upload-inner { position: absolute; inset: 0; display: grid; place-items: center; }
@@ -1495,6 +1521,7 @@ const blobReady = canWrite();
     .adm-color-stock { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
     .adm-stock-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .adm-stock-cell { display: flex; flex-direction: column; gap: 4px; align-items: center; }
+    .adm-stock-cell[hidden] { display: none; }
     .adm-stock-cell span { color: var(--dim, rgba(242,235,224,0.55)); font-size: 11px; }
     .adm-stock-input { width: 100%; text-align: center; padding: 8px 4px; background: #131313; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; color: var(--cream, #f2ebe0); font-family: var(--mono, monospace); font-size: 13px; }
     .adm-stock-input:focus { outline: none; border-color: var(--gold, #c9a24a); }
