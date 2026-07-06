@@ -498,7 +498,8 @@ const blobReady = canWrite();
       }
 
       function orderCard(o: any): string {
-        const addr = oneLine([o.shipping?.line1, o.shipping?.line2, o.shipping?.city, o.shipping?.postalCode, o.shipping?.state, o.shipping?.country]);
+        // `o.county` = județul dedus din codul poștal (Stripe pune adesea orașul în `state`).
+        const addr = oneLine([o.shipping?.line1, o.shipping?.line2, o.shipping?.city, o.shipping?.postalCode, o.county || o.shipping?.state, o.shipping?.country]);
         const items = (o.items || [])
           .map((i: any) => `<li>${i.qty}× ${esc(i.name)} — <span class="mono">${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</span></li>`)
           .join('');
@@ -651,7 +652,7 @@ const blobReady = canWrite();
       if (isRuvix) loadOrders();
 
       if (!isRuvix) {
-      const SIZES = ['S', 'M', 'L', 'XL', 'XXL', '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y'];
+      const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y', '12-14y'];
       const slugify = (s: string) =>
         String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);

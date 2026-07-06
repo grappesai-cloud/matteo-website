@@ -3,9 +3,7 @@ import Stripe from 'stripe';
 import { readCatalog, writeCatalog } from '../../lib/catalog-store';
 import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
-import { notifyRuvixNewOrder, maybeNotifyShipped } from '../../lib/notify';
-import { createAwb, fanConfigured, placeCourierOrder, computePickupSlot } from '../../lib/fancourier';
-import { readPickup, writePickup } from '../../lib/pickup-store';
+import { notifyRuvixNewOrder } from '../../lib/notify';
 import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
 import type { SizeKey } from '../../lib/products';
 
@@ -59,52 +57,11 @@ export const POST: APIRoute = async ({ request }) => {
       console.error('[webhook] order record failed:', err?.message);
     }
 
-    // 1b) Auto-generate the FAN Courier AWB on first insert (best-effort).
-    //     Guarded on `created` so duplicate webhook deliveries don't double-create
-    //     a label, and on missing awb. On failure the order stays AWB-less and the
-    //     admin "Generează AWB FAN" button is the fallback. Never blocks the 200.
-    if (recorded?.created && !recorded.order.awb && (isLive ? fanConfigured() : true)) {
-      try {
-        // LIVE: generate a real FAN AWB. TEST: use a dummy AWB so the rest of the
-        // chain (status→shipped + customer tracking email) runs without a real label.
-        const awb = isLive
-          ? (await createAwb(recorded.order)).awb
-          : `TEST-${recorded.order.number}`;
-        const shipped = await updateOrder(recorded.order.id, {
-          awb,
-          courier: isLive ? 'FAN Courier' : 'TEST (mod test)',
-          status: 'shipped',
-        });
-
-        // 1b-1) Email the customer their tracking link (once, idempotent). Best-effort.
-        try {
-          if (shipped) await maybeNotifyShipped(shipped);
-        } catch (err: any) {
-          console.error('[webhook] customer tracking email failed:', err?.message);
-        }
-
-        // 1b-2) Auto-schedule the courier pickup — LIVE only. Debounced to ONE per
-        //       day (FAN: a single courier order per branch covers all ready AWBs).
-        //       Best-effort; failure leaves the AWB ready for a portal pickup.
-        if (isLive) {
-          try {
-            const slot = computePickupSlot();
-            const last = await readPickup();
-            if (last?.date !== slot.date) {
-              const { orderId } = await placeCourierOrder({ ...recorded.order, awb });
-              await writePickup({ date: slot.date, fanOrderId: orderId, orderNumber: recorded.order.number, at: Date.now() });
-              console.log('[webhook] FAN pickup scheduled for', slot.date, 'order', orderId);
-            } else {
-              console.log('[webhook] FAN pickup already scheduled for', slot.date, '— skipping');
-            }
-          } catch (err: any) {
-            console.error('[webhook] FAN pickup schedule failed:', err?.message);
-          }
-        }
-      } catch (err: any) {
-        console.error('[webhook] AWB auto-generate failed:', err?.message);
-      }
-    }
+    // NOTE: comanda rămâne pe status „Nouă" la plată — NU se mai generează AWB și NU
+    // se mai trece automat pe „Trimisă". Fluxul e acum manual și legat de AWB:
+    //   Nouă → (Ruvix) În producție → Generează AWB ⇒ Trimisă → Livrată / Anulată.
+    // Generarea AWB (butonul „Generează AWB FAN" / POST /api/admin/fan-awb) e cea care
+    // trece comanda pe „Trimisă", trimite emailul de tracking și programează ridicarea.
 
     // 1c) Auto-issue the SmartBill fiscal invoice on first insert — LIVE only
     //     (a test order must NOT create a real fiscal document). Best-effort.

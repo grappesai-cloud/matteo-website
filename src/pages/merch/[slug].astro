@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut } from '../../lib/products';
+import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut, ADULT_SIZE_GUIDE, KIDS_SIZE_GUIDE } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
 
 export const prerender = false;
@@ -13,6 +13,10 @@ if (!product) return Astro.redirect('/merch', 302);
 
 const artistName = artistLabel(product.artist, catalog);
 const first = product.colors[0];
+
+// Size guide rows, filtered to the sizes this product actually offers.
+const adultGuide = product.sizes.filter((s) => ADULT_SIZE_GUIDE[s]);
+const kidsGuide = product.sizes.filter((s) => KIDS_SIZE_GUIDE[s]);
 
 const SITE = 'https://mattman.ro';
 const absImg = (u: string | undefined) =>
@@ -150,17 +154,38 @@ const productJsonLd = {
         </div>
 
         <div class="pd-sizeguide-block" id="size-guide">
-          <span class="pd-field-label mono dim">Ghid de mărimi (oversized, cm)</span>
-          <table class="pd-table mono">
-            <thead><tr><th>Mărime</th><th>Lățime piept</th><th>Lungime</th></tr></thead>
-            <tbody>
-              <tr><td>S</td><td>56</td><td>71</td></tr>
-              <tr><td>M</td><td>58</td><td>73</td></tr>
-              <tr><td>L</td><td>60</td><td>75</td></tr>
-              <tr><td>XL</td><td>62</td><td>77</td></tr>
-              <tr><td>XXL</td><td>64</td><td>79</td></tr>
-            </tbody>
-          </table>
+          <span class="pd-field-label mono dim">Ghid de mărimi</span>
+          {adultGuide.length > 0 && (
+            <>
+              <table class="pd-table mono">
+                <thead><tr><th>Mărime</th><th>Lățime piept</th><th>Lungime</th><th>Mânecă</th></tr></thead>
+                <tbody>
+                  {adultGuide.map((s) => (
+                    <tr>
+                      <td>{s}</td>
+                      <td>{ADULT_SIZE_GUIDE[s]!.chest}</td>
+                      <td>{ADULT_SIZE_GUIDE[s]!.length}</td>
+                      <td>{ADULT_SIZE_GUIDE[s]!.sleeve}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              <p class="pd-guide-note mono dim">Valori în cm, pe produs întins. Lățimea pieptului e jumătate de circumferință (subraț la subraț). Croială oversized.</p>
+            </>
+          )}
+          {kidsGuide.length > 0 && (
+            <>
+              <table class="pd-table mono" style={adultGuide.length ? 'margin-top:24px' : ''}>
+                <thead><tr><th>Mărime</th><th>Înălțime orientativă</th></tr></thead>
+                <tbody>
+                  {kidsGuide.map((s) => (
+                    <tr><td>{s}</td><td>{KIDS_SIZE_GUIDE[s]} cm</td></tr>
+                  ))}
+                </tbody>
+              </table>
+              <p class="pd-guide-note mono dim">Înălțimea copilului e orientativă. Croială oversized, lasă loc de creștere.</p>
+            </>
+          )}
         </div>
       </section>
     </main>
@@ -482,6 +507,7 @@ const productJsonLd = {
     .pd-table { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 12px; }
     .pd-table th, .pd-table td { text-align: left; padding: 10px 8px; border-bottom: 1px solid var(--hair, rgba(242,235,224,0.14)); }
     .pd-table th { color: var(--dim, rgba(242,235,224,0.55)); letter-spacing: 0.1em; font-weight: 400; }
+    .pd-guide-note { margin: 10px 0 0; font-size: 11px; line-height: 1.6; letter-spacing: 0.03em; max-width: 52ch; }
 
     .m-foot {
       margin-top: auto; display: flex; justify-content: space-between; align-items: center; gap: 16px;

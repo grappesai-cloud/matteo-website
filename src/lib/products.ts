@@ -12,14 +12,40 @@ export const FREE_SHIPPING_THRESHOLD = 250;
 export const SHIPPING_FLAT = 20;
 
 export type SizeKey =
-  | 'S' | 'M' | 'L' | 'XL' | 'XXL'
-  | '18-24m' | '24-36m' | '3-4y' | '5-6y' | '7-8y' | '9-11y';
+  | 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'
+  | '18-24m' | '24-36m' | '3-4y' | '5-6y' | '7-8y' | '9-11y' | '12-14y';
 export const SIZES: SizeKey[] = [
-  'S', 'M', 'L', 'XL', 'XXL',
-  '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y',
+  'XS', 'S', 'M', 'L', 'XL', 'XXL',
+  '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y', '12-14y',
 ];
 /** Adult sizes only — used as the default for the seed/adult tees. */
-export const ADULT_SIZES: SizeKey[] = ['S', 'M', 'L', 'XL', 'XXL'];
+export const ADULT_SIZES: SizeKey[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
+
+/**
+ * Size guide — measurements of the actual blank (Stanley/Stella Blaster 2.0,
+ * oversized). Adult sizes carry laid-flat cm measurements: A = half chest
+ * (armpit to armpit), B = body length, C = sleeve length. Kids sizes map an
+ * age range to an approximate child height in cm.
+ */
+export interface AdultMeasure { chest: number; length: number; sleeve: number }
+export const ADULT_SIZE_GUIDE: Partial<Record<SizeKey, AdultMeasure>> = {
+  XS:  { chest: 61, length: 67, sleeve: 21.5 },
+  S:   { chest: 63, length: 71, sleeve: 23 },
+  M:   { chest: 67, length: 75, sleeve: 24.5 },
+  L:   { chest: 70, length: 77, sleeve: 25 },
+  XL:  { chest: 73, length: 79, sleeve: 25.5 },
+  XXL: { chest: 77, length: 81, sleeve: 26 },
+};
+/** Kids age size → approximate child height range (cm). */
+export const KIDS_SIZE_GUIDE: Partial<Record<SizeKey, string>> = {
+  '18-24m': '86–92',
+  '24-36m': '92–98',
+  '3-4y':   '98–104',
+  '5-6y':   '110–116',
+  '7-8y':   '122–128',
+  '9-11y':  '134–146',
+  '12-14y': '152–164',
+};
 
 export type ColorKey = string; // 'black' | 'pink' | custom (admin-defined)
 

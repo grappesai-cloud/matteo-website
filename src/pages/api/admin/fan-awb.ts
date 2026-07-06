@@ -1,7 +1,8 @@
 import type { APIRoute } from 'astro';
 import { sessionRole } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
-import { createAwb, deleteAwb, fanConfigured } from '../../../lib/fancourier';
+import { createAwb, deleteAwb, fanConfigured, placeCourierOrder, computePickupSlot } from '../../../lib/fancourier';
+import { readPickup, writePickup } from '../../../lib/pickup-store';
 import { maybeNotifyShipped } from '../../../lib/notify';
 
 export const prerender = false;
@@ -37,6 +38,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
     const updated = await updateOrder(id, { awb, courier: 'FAN Courier', status: 'shipped' });
     // Email the customer their tracking link (once).
     const finalOrder = updated ? await maybeNotifyShipped(updated) : updated;
+
+    // Programează ridicarea FAN — debounced la O SINGURĂ comandă de curier pe zi
+    // (o comandă de ridicare acoperă toate AWB-urile gata din ziua respectivă).
+    // Best-effort: dacă eșuează, AWB-ul rămâne gata pentru o ridicare din portalul FAN.
+    try {
+      const slot = computePickupSlot();
+      const last = await readPickup();
+      if (last?.date !== slot.date) {
+        const { orderId } = await placeCourierOrder({ ...order, awb });
+        await writePickup({ date: slot.date, fanOrderId: orderId, orderNumber: order.number, at: Date.now() });
+      }
+    } catch (err: any) {
+      console.error('[fan-awb] FAN pickup schedule failed:', err?.message);
+    }
+
     return json({ ok: true, awb, order: finalOrder });
   } catch (err: any) {
     // AWB exists at FAN but we failed to persist — surface the number so it isn't lost.

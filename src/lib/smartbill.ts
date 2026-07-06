@@ -15,8 +15,23 @@
 
 import type { Order } from './orders';
 import { judetFromPostalCode } from './orders';
+import { ADULT_SIZES } from './products';
 
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
+
+// Denumirile EXACTE ale produselor din gestiunea SmartBill. Pentru ca „descărcarea
+// gestiunii" (useStock) să scadă stocul, numele liniei de pe factură trebuie să fie
+// IDENTIC cu numele produsului din gestiune. Ilinca primește de la Ruvix doar 3 SKU-uri
+// generice — TRICOU ADULTI / TRICOU COPIL / PUNGA — indiferent de model/culoare, deci
+// factura trebuie să folosească aceleași denumiri, iar modelul concret merge în descriere.
+// Configurabile prin env dacă denumirile din gestiune diferă.
+function gestiuneName(size: string): string {
+  const s = String(size || '').trim();
+  const isKid = !!s && !(ADULT_SIZES as readonly string[]).includes(s);
+  return isKid
+    ? (env('SMARTBILL_NAME_KID') || 'TRICOU COPIL')
+    : (env('SMARTBILL_NAME_ADULT') || 'TRICOU ADULTI');
+}
 
 function env(k: string): string {
   return (process.env[k] || (import.meta.env as any)[k] || '').trim();
@@ -41,24 +56,32 @@ function buildInvoice(order: Order) {
   // configurabil; default „Consum".
   const warehouse = env('SMARTBILL_WAREHOUSE') || 'Consum';
 
-  const products = order.items.map((i) => ({
-    name: `${i.name}${i.size ? ` (${i.size}${i.colorLabel ? `, ${i.colorLabel}` : ''})` : ''}`,
-    measuringUnitName: 'buc',
-    currency: order.currency || 'RON',
-    quantity: Number(i.qty) || 1,
-    price: Number(i.unitPrice) || 0, // preț unitar CU TVA inclus
-    isTaxIncluded: true,
-    taxName: 'Normala',
-    taxPercentage: TVA,
-    saveToDb: false,
-    isService: false,
-    warehouseName: warehouse, // gestiunea de consum din care se descarcă
-  }));
+  const products = order.items.map((i) => {
+    // Modelul concret + mărime + culoare merg în DESCRIERE (apare sub denumire pe
+    // factură ca „opțiune"), iar denumirea rămâne generică ca să se potrivească cu
+    // gestiunea și să se facă scăderea automată.
+    const optiune = [i.name, i.size, i.colorLabel].map((x) => String(x || '').trim()).filter(Boolean).join(' · ');
+    return {
+      name: gestiuneName(i.size),          // ex. „TRICOU ADULTI" — identic cu gestiunea
+      productDescription: optiune,         // ex. „Asta e o Păpușă · M · Negru"
+      measuringUnitName: 'buc',
+      currency: order.currency || 'RON',
+      quantity: Number(i.qty) || 1,
+      price: Number(i.unitPrice) || 0, // preț unitar CU TVA inclus
+      isTaxIncluded: true,
+      taxName: 'Normala',
+      taxPercentage: TVA,
+      saveToDb: false,
+      isService: false,
+      warehouseName: warehouse, // gestiunea de consum din care se descarcă
+    };
+  });
 
   // Transportul ca linie de serviciu (dacă a fost taxat).
   if (Number(order.shippingAmount) > 0) {
     products.push({
       name: 'Transport',
+      productDescription: '',
       measuringUnitName: 'buc',
       currency: order.currency || 'RON',
       quantity: 1,
