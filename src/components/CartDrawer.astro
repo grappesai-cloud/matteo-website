@@ -407,30 +407,11 @@ const cfg = {
     }
   });
 
-  // checkout
-  checkoutBtn.addEventListener('click', async () => {
-    const items = read();
-    if (items.length === 0) return;
-    checkoutBtn.disabled = true;
-    errorEl.hidden = true;
-    const label = checkoutBtn.querySelector('.cart-checkout-label')!;
-    const prev = label.textContent;
-    label.textContent = 'Se pregătește…';
-    try {
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ items }),
-      });
-      const data = await res.json();
-      if (!res.ok || !data.url) throw new Error(data.error || 'Checkout indisponibil. Încearcă din nou.');
-      window.location.href = data.url;
-    } catch (err: any) {
-      errorEl.textContent = err?.message || 'A apărut o eroare. Încearcă din nou.';
-      errorEl.hidden = false;
-      checkoutBtn.disabled = false;
-      label.textContent = prev;
-    }
+  // checkout → go to the address step (where we collect the address and quote the
+  // real FAN shipping before creating the Stripe session).
+  checkoutBtn.addEventListener('click', () => {
+    if (read().length === 0) return;
+    window.location.href = '/merch/checkout';
   });
 
   // open / close wiring

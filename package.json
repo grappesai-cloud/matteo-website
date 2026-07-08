@@ -21,6 +21,8 @@
     "stripe": "^17.5.0"
   },
   "devDependencies": {
-    "@types/nodemailer": "^8.0.1"
+    "@astrojs/check": "^0.9.9",
+    "@types/nodemailer": "^8.0.1",
+    "typescript": "^6.0.3"
   }
 }

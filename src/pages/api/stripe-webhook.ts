@@ -5,6 +5,7 @@ import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
 import { notifyRuvixNewOrder } from '../../lib/notify';
 import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
+import { readPendingCheckout } from '../../lib/checkout-store';
 import type { SizeKey } from '../../lib/products';
 
 export const prerender = false;
@@ -49,9 +50,16 @@ export const POST: APIRoute = async ({ request }) => {
 
     // 1) Record the order (idempotent by session id) so admin & Ruvix can see it,
     //    and email Ruvix once on first insert.
+    // Our pre-Stripe checkout data (authoritative address + FAN-quoted shipping),
+    // keyed by the token we put in the session metadata.
+    const pending = await readPendingCheckout(String(session.metadata?.pc || '')).catch(() => null);
+    const override = pending
+      ? { address: pending.address, customer: pending.customer, shippingAmount: pending.shippingAmount }
+      : undefined;
+
     let recorded: Awaited<ReturnType<typeof addOrder>> | null = null;
     try {
-      recorded = await addOrder(orderFromStripeSession(session, catalog));
+      recorded = await addOrder(orderFromStripeSession(session, catalog, override));
       if (recorded.created) await notifyRuvixNewOrder(recorded.order, new URL(request.url).origin);
     } catch (err: any) {
       console.error('[webhook] order record failed:', err?.message);

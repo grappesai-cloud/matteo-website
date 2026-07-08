@@ -136,8 +136,20 @@ function pickAddress(session: any): OrderAddress {
 /**
  * Build an Order from a completed Stripe Checkout Session + the live catalog.
  * `number` is left at 0 — the store assigns the sequential number on insert.
+ *
+ * `override` carries the data we collected on OUR side before Stripe (address with
+ * the correct county + postal code, name/phone, and the FAN-quoted shipping). When
+ * present it wins over Stripe's hosted-form values; email still comes from Stripe.
  */
-export function orderFromStripeSession(session: any, catalog: Product[]): Order {
+export function orderFromStripeSession(
+  session: any,
+  catalog: Product[],
+  override?: {
+    address?: OrderAddress;
+    customer?: { name?: string; email?: string; phone?: string };
+    shippingAmount?: number;
+  },
+): Order {
   const cart = readCart(session?.metadata);
   const items: OrderItem[] = [];
   for (const entry of cart) {
@@ -156,9 +168,9 @@ export function orderFromStripeSession(session: any, catalog: Product[]): Order 
   }
 
   const amountTotal = Math.round((Number(session?.amount_total) || 0) / 100);
-  const shippingAmount = Math.round(
-    (Number(session?.total_details?.amount_shipping) || 0) / 100
-  );
+  const shippingAmount = override?.shippingAmount !== undefined
+    ? Math.round(Number(override.shippingAmount) || 0)
+    : Math.round((Number(session?.total_details?.amount_shipping) || 0) / 100);
 
   return {
     id: String(session?.id || `order_${Date.now()}`),
@@ -171,10 +183,11 @@ export function orderFromStripeSession(session: any, catalog: Product[]): Order 
     shippingAmount,
     currency: String(session?.currency || 'ron').toUpperCase(),
     customer: {
-      name: session?.customer_details?.name || undefined,
-      email: session?.customer_details?.email || undefined,
-      phone: session?.customer_details?.phone || undefined,
+      // Name/phone come from our form; email from Stripe (it collects the receipt email).
+      name: override?.customer?.name || session?.customer_details?.name || undefined,
+      email: session?.customer_details?.email || override?.customer?.email || undefined,
+      phone: override?.customer?.phone || session?.customer_details?.phone || undefined,
     },
-    shipping: pickAddress(session),
+    shipping: override?.address || pickAddress(session),
   };
 }

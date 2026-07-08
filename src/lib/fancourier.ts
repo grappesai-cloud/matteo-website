@@ -51,9 +51,12 @@ async function getToken(): Promise<string> {
 }
 
 /** Rough parcel weight: ~0.4 kg per t-shirt, min 1 kg. */
+export function parcelWeightForUnits(units: number): number {
+  return Math.max(1, Math.round((Number(units) || 0) * 0.4 * 10) / 10);
+}
 function estimateWeight(order: Order): number {
   const units = order.items.reduce((n, i) => n + (Number(i.qty) || 0), 0);
-  return Math.max(1, Math.round(units * 0.4 * 10) / 10);
+  return parcelWeightForUnits(units);
 }
 
 function buildShipment(order: Order) {
@@ -89,6 +92,154 @@ function buildShipment(order: Order) {
 export interface FanAwbResult {
   awb: string;
   cost?: number;
+}
+
+// === LIVE SHIPPING QUOTE (GET /reports/awb/internal-tariff) ===
+// Returns the REAL FAN tariff for a destination BEFORE an AWB exists, so the
+// storefront can charge the customer exactly what the shipment will cost instead
+// of a flat guess. County + locality + weight drive the price (declaredValue adds
+// insurance). The endpoint is a GET whose body is a nested object serialized with
+// PHP-style bracket keys (info[weight]=…&recipient[county]=…).
+
+/** Build `a[b][c]=v` bracket query pairs from a nested plain object. */
+function bracketQuery(obj: Record<string, any>, prefix = ''): string[] {
+  const pairs: string[] = [];
+  for (const [k, v] of Object.entries(obj)) {
+    if (v === undefined || v === null || v === '') continue;
+    const key = prefix ? `${prefix}[${k}]` : k;
+    if (typeof v === 'object') pairs.push(...bracketQuery(v, key));
+    else pairs.push(`${encodeURIComponent(key)}=${encodeURIComponent(String(v))}`);
+  }
+  return pairs;
+}
+
+export interface FanTariff {
+  total: number;     // RON, VAT included (what we charge for shipping)
+  costNoVat: number; // RON without VAT
+  vat: number;       // RON VAT
+}
+
+/**
+ * Live FAN tariff for a Standard home delivery to (county, locality). `weight` in
+ * kg, `declaredValue` in RON (insurance basis). Throws a clear RO message on failure
+ * so the caller can decide to fall back to the flat rate.
+ */
+export async function getInternalTariff(params: {
+  county: string;
+  locality: string;
+  weight: number;
+  declaredValue?: number;
+  parcels?: number;
+}): Promise<FanTariff> {
+  if (!fanConfigured()) throw new Error('FAN Courier nu e configurat.');
+  const token = await getToken();
+  const data = {
+    clientId: Number(env('FAN_CLIENT_ID')),
+    info: {
+      service: 'Standard',
+      payment: 'expeditor',
+      weight: Math.max(0.1, Number(params.weight) || 1),
+      packages: { parcel: Math.max(1, Number(params.parcels) || 1) },
+      ...(params.declaredValue ? { declaredValue: Math.round(Number(params.declaredValue)) } : {}),
+    },
+    recipient: { county: params.county, locality: params.locality },
+  };
+  const qs = bracketQuery(data).join('&');
+  const res = await fetch(`${BASE}/reports/awb/internal-tariff?${qs}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body?.status === 'error') {
+    const msg = body?.message || (Array.isArray(body?.errors) ? body.errors.join('; ') : '') || 'Calcul tarif FAN eșuat.';
+    throw new Error(String(msg));
+  }
+  // The costs live under `data` (single object) — occasionally an array of one.
+  const d = Array.isArray(body?.data) ? body.data[0] : (body?.data ?? body);
+  const costNoVat = Number(d?.costNoVAT ?? d?.costNoVat ?? d?.cost ?? 0);
+  const vat = Number(d?.vat ?? 0);
+  const total = Number(d?.total ?? d?.costTotal ?? (costNoVat + vat));
+  if (!Number.isFinite(total) || total <= 0) {
+    throw new Error('FAN a răspuns dar fără tarif valid (verifică județ/localitate).');
+  }
+  return { total: Math.round(total * 100) / 100, costNoVat, vat };
+}
+
+// === GEO LOOKUPS (counties / localities / streets) — for the address form ===
+// Proxied server-side (the FAN token must not reach the browser) and cached in the
+// warm lambda since these lists are effectively static.
+
+interface Cached<T> { at: number; value: T; }
+const GEO_TTL = 6 * 60 * 60 * 1000; // 6h
+let countiesCache: Cached<string[]> | null = null;
+const localitiesCache = new Map<string, Cached<string[]>>();
+
+async function fanGet(path: string): Promise<any> {
+  if (!fanConfigured()) throw new Error('FAN Courier nu e configurat.');
+  const token = await getToken();
+  const res = await fetch(`${BASE}/${path}`, {
+    headers: { Authorization: `Bearer ${token}`, Accept: 'application/json' },
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok || body?.status === 'error') {
+    throw new Error(body?.message || `Cerere FAN eșuată (${path}).`);
+  }
+  return body;
+}
+
+/** All Romanian county names, sorted, cached. */
+export async function listCounties(): Promise<string[]> {
+  if (countiesCache && Date.now() - countiesCache.at < GEO_TTL) return countiesCache.value;
+  const body = await fanGet('reports/counties');
+  const value = (Array.isArray(body?.data) ? body.data : [])
+    .map((c: any) => String(c?.name ?? c?.county ?? '').trim())
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b, 'ro'));
+  countiesCache = { at: Date.now(), value };
+  return value;
+}
+
+/** Locality names for a county, sorted, cached. */
+export async function listLocalities(county: string): Promise<string[]> {
+  const key = county.trim().toLowerCase();
+  const hit = localitiesCache.get(key);
+  if (hit && Date.now() - hit.at < GEO_TTL) return hit.value;
+  const body = await fanGet(`reports/localities?county=${encodeURIComponent(county)}`);
+  const value = (Array.isArray(body?.data) ? body.data : [])
+    .map((c: any) => String(c?.name ?? c?.locality ?? '').trim())
+    .filter(Boolean)
+    .sort((a: string, b: string) => a.localeCompare(b, 'ro'));
+  localitiesCache.set(key, { at: Date.now(), value });
+  return value;
+}
+
+/**
+ * Best-effort postal-code lookup: fetch the streets of a locality and match the
+ * user's street name, returning its zipCode. Cached per county+locality. Returns
+ * '' when nothing matches (the customer then types it manually).
+ */
+const streetsCache = new Map<string, Cached<{ street: string; zip: string }[]>>();
+export async function lookupZip(county: string, locality: string, street: string): Promise<string> {
+  const needle = street.trim().toLowerCase();
+  if (!needle) return '';
+  const key = `${county.trim().toLowerCase()}|${locality.trim().toLowerCase()}`;
+  let hit = streetsCache.get(key);
+  if (!hit || Date.now() - hit.at >= GEO_TTL) {
+    const body = await fanGet(
+      `reports/streets?county=${encodeURIComponent(county)}&locality=${encodeURIComponent(locality)}&page=1&perPage=1000`,
+    );
+    const value = (Array.isArray(body?.data) ? body.data : []).map((s: any) => ({
+      street: String(s?.street ?? '').trim(),
+      zip: String(s?.details?.zipCode ?? '').trim(),
+    }));
+    hit = { at: Date.now(), value };
+    streetsCache.set(key, hit);
+  }
+  const norm = (s: string) => s.toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '');
+  const n = norm(needle);
+  const exact = hit.value.find((s) => s.zip && norm(s.street) === n);
+  if (exact) return exact.zip;
+  const partial = hit.value.find((s) => s.zip && (norm(s.street).includes(n) || n.includes(norm(s.street))));
+  return partial?.zip || '';
 }
 
 // === COURIER PICKUP ORDER (POST /order) ===

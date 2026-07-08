@@ -1,0 +1,353 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import { readCatalog } from '../../lib/catalog-store';
+import {
+  CURRENCY_LABEL, FREE_SHIPPING_THRESHOLD, SHIPPING_FLAT,
+  effectivePrice, compareAtPrice,
+} from '../../lib/products';
+import { fanConfigured } from '../../lib/fancourier';
+
+export const prerender = false;
+
+const products = await readCatalog();
+const clientCatalog = products.map((p) => ({
+  slug: p.slug,
+  name: p.name,
+  price: effectivePrice(p),
+  compareAt: compareAtPrice(p),
+  colors: p.colors.map((c) => ({ key: c.key, label: c.label, front: c.front })),
+}));
+const cfg = {
+  currency: CURRENCY_LABEL,
+  freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
+  shippingFlat: SHIPPING_FLAT,
+  fan: fanConfigured(),
+};
+---
+
+<Layout title="Finalizează comanda · Mattman Shop" description="Adresa de livrare și transport.">
+  <script type="application/json" id="co-catalog" set:html={JSON.stringify(clientCatalog)} />
+  <script type="application/json" id="co-config" set:html={JSON.stringify(cfg)} />
+
+  <div class="co">
+    <header class="co-header">
+      <a href="/merch" class="co-brand">
+        <img src="/images/mattman/logo-head.webp" alt="Mattman Music" class="co-brand-logo" width="320" height="291" decoding="async" />
+      </a>
+      <a href="/merch" class="co-back mono">← Înapoi la shop</a>
+    </header>
+
+    <main class="co-main">
+      <h1 class="co-title">Finalizează comanda</h1>
+
+      <div class="co-grid">
+        <!-- LEFT: address form -->
+        <form class="co-form" id="co-form" novalidate>
+          <p class="co-sec mono">Date de livrare</p>
+
+          <div class="co-field">
+            <label for="f-name">Nume și prenume *</label>
+            <input id="f-name" name="name" autocomplete="name" required />
+          </div>
+          <div class="co-row2">
+            <div class="co-field">
+              <label for="f-phone">Telefon *</label>
+              <input id="f-phone" name="phone" inputmode="tel" autocomplete="tel" placeholder="07xxxxxxxx" required />
+            </div>
+            <div class="co-field">
+              <label for="f-email">Email</label>
+              <input id="f-email" name="email" type="email" autocomplete="email" placeholder="pentru confirmare" />
+            </div>
+          </div>
+
+          <p class="co-sec mono">Adresă</p>
+          <div class="co-row2">
+            <div class="co-field">
+              <label for="f-county">Județ *</label>
+              <select id="f-county" name="county" required>
+                <option value="">Se încarcă…</option>
+              </select>
+            </div>
+            <div class="co-field">
+              <label for="f-locality">Localitate *</label>
+              <input id="f-locality" name="locality" list="co-localities" autocomplete="off" required disabled placeholder="alege întâi județul" />
+              <datalist id="co-localities"></datalist>
+            </div>
+          </div>
+          <div class="co-row-street">
+            <div class="co-field">
+              <label for="f-street">Stradă *</label>
+              <input id="f-street" name="street" autocomplete="address-line1" required />
+            </div>
+            <div class="co-field co-field-no">
+              <label for="f-streetNo">Nr. *</label>
+              <input id="f-streetNo" name="streetNo" required />
+            </div>
+            <div class="co-field co-field-zip">
+              <label for="f-zip">Cod poștal *</label>
+              <input id="f-zip" name="zip" inputmode="numeric" autocomplete="postal-code" required />
+            </div>
+          </div>
+          <div class="co-row4">
+            <div class="co-field"><label for="f-building">Bloc</label><input id="f-building" name="building" /></div>
+            <div class="co-field"><label for="f-entrance">Scară</label><input id="f-entrance" name="entrance" /></div>
+            <div class="co-field"><label for="f-floor">Etaj</label><input id="f-floor" name="floor" /></div>
+            <div class="co-field"><label for="f-apartment">Ap.</label><input id="f-apartment" name="apartment" /></div>
+          </div>
+          <p class="co-hint mono" id="co-zip-hint" hidden></p>
+        </form>
+
+        <!-- RIGHT: order summary -->
+        <aside class="co-summary">
+          <p class="co-sec mono">Comanda ta</p>
+          <ul class="co-items" id="co-items"></ul>
+          <div class="co-row"><span class="mono dim">Subtotal</span><span id="co-subtotal">0 RON</span></div>
+          <div class="co-row">
+            <span class="mono dim">Transport</span>
+            <span id="co-shipping">—</span>
+          </div>
+          <p class="co-ship-note mono" id="co-ship-note"></p>
+          <div class="co-row co-row-total"><span class="mono">Total</span><span id="co-total">0 RON</span></div>
+          <button class="co-pay" id="co-pay" type="submit" form="co-form" disabled>
+            <span class="co-pay-label">Continuă spre plată</span>
+            <span aria-hidden="true">→</span>
+          </button>
+          <p class="co-error mono" id="co-error" hidden></p>
+          <p class="co-secure mono">Plată securizată prin Stripe · card / Apple Pay / Google Pay</p>
+        </aside>
+      </div>
+    </main>
+
+    <footer class="co-foot mono">
+      <span>© {new Date().getFullYear()} Mattman Music</span>
+    </footer>
+  </div>
+
+  <style>
+    .co { min-height: 100dvh; background: #0a0a0a; color: var(--cream, #f2ebe0); display: flex; flex-direction: column; }
+    .co-header { display: flex; align-items: center; justify-content: space-between; padding: 20px clamp(16px, 5vw, 48px); border-bottom: 1px solid var(--hair, rgba(242,235,224,0.14)); }
+    .co-brand-logo { height: 34px; width: auto; }
+    .co-back { color: var(--gold, #c9a24a); letter-spacing: 0.1em; font-size: 12px; text-decoration: none; }
+    .co-back:hover { text-decoration: underline; }
+    .co-main { flex: 1 1 auto; width: min(1040px, 100%); margin: 0 auto; padding: clamp(24px, 5vw, 48px) clamp(16px, 5vw, 48px) 64px; }
+    .co-title { font-family: var(--serif, 'Fraunces', serif); font-size: clamp(28px, 5vw, 44px); margin: 0 0 28px; }
+    .co-grid { display: grid; grid-template-columns: 1.3fr 1fr; gap: clamp(24px, 4vw, 48px); align-items: start; }
+    @media (max-width: 800px) { .co-grid { grid-template-columns: 1fr; } }
+
+    .co-sec { text-transform: uppercase; letter-spacing: 0.16em; font-size: 11px; color: var(--gold, #c9a24a); margin: 4px 0 14px; }
+    .co-form .co-sec:not(:first-child) { margin-top: 26px; }
+    .co-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+    .co-field label { font-family: var(--mono, monospace); font-size: 11px; letter-spacing: 0.06em; color: var(--dim, rgba(242,235,224,0.55)); text-transform: uppercase; }
+    .co-field input, .co-field select {
+      background: #111; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px;
+      color: var(--cream, #f2ebe0); padding: 12px 13px; font-size: 15px; font-family: inherit; width: 100%;
+    }
+    .co-field input:focus, .co-field select:focus { outline: none; border-color: var(--gold, #c9a24a); }
+    .co-field input:disabled { opacity: 0.5; }
+    .co-field select { appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath fill='%23c9a24a' d='M1 1l5 5 5-5'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 14px center; padding-right: 34px; }
+    .co-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .co-row-street { display: grid; grid-template-columns: 1fr 90px 130px; gap: 12px; }
+    .co-row4 { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+    @media (max-width: 520px) { .co-row2, .co-row-street, .co-row4 { grid-template-columns: 1fr 1fr; } }
+    .co-hint { color: var(--gold, #c9a24a); font-size: 11px; margin: 2px 0 0; }
+
+    .co-summary { background: #0d0d0d; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 12px; padding: 22px; position: sticky; top: 24px; }
+    .co-items { list-style: none; margin: 0 0 16px; padding: 0; }
+    .co-item { display: grid; grid-template-columns: 48px 1fr auto; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--hair, rgba(242,235,224,0.1)); align-items: center; }
+    .co-item-thumb { width: 48px; height: 60px; object-fit: cover; border-radius: 3px; background: #151515; }
+    .co-item-name { font-family: var(--serif, 'Fraunces', serif); font-size: 15px; margin: 0; line-height: 1.15; }
+    .co-item-variant { color: var(--dim, rgba(242,235,224,0.55)); font-size: 11px; }
+    .co-item-price { font-family: var(--mono, monospace); font-size: 12px; white-space: nowrap; }
+    .co-row { display: flex; justify-content: space-between; align-items: baseline; padding: 5px 0; font-size: 14px; }
+    .co-ship-note { color: var(--dim, rgba(242,235,224,0.55)); font-size: 11px; margin: 2px 0 0; line-height: 1.4; }
+    .co-row-total { padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); font-size: 16px; }
+    .co-row-total span:last-child { font-family: var(--serif, 'Fraunces', serif); font-size: 24px; }
+    .co-pay {
+      width: 100%; margin-top: 18px; padding: 16px; background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a);
+      border: 0; border-radius: 999px; font-family: var(--mono, monospace); text-transform: uppercase;
+      letter-spacing: 0.14em; font-size: 12px; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px;
+      transition: background 0.25s, gap 0.25s, opacity 0.25s;
+    }
+    .co-pay:hover:not(:disabled) { background: var(--gold-bright, #e8c16c); gap: 16px; }
+    .co-pay:disabled { opacity: 0.45; cursor: not-allowed; }
+    .co-error { color: #d9534f; margin: 10px 0 0; line-height: 1.4; font-size: 12px; }
+    .co-secure { color: var(--dim, rgba(242,235,224,0.55)); margin: 12px 0 0; text-align: center; font-size: 10px; }
+    .co-foot { display: flex; justify-content: center; padding: 20px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); color: var(--dim, rgba(242,235,224,0.4)); font-size: 11px; }
+  </style>
+
+  <script>
+    const STORAGE_KEY = 'mattman_cart';
+    const RO_COUNTIES = ['Alba','Arad','Argeș','Bacău','Bihor','Bistrița-Năsăud','Botoșani','Brăila','Brașov','București','Buzău','Călărași','Caraș-Severin','Cluj','Constanța','Covasna','Dâmbovița','Dolj','Galați','Giurgiu','Gorj','Harghita','Hunedoara','Ialomița','Iași','Ilfov','Maramureș','Mehedinți','Mureș','Neamț','Olt','Prahova','Sălaj','Satu Mare','Sibiu','Suceava','Teleorman','Timiș','Tulcea','Vâlcea','Vaslui','Vrancea'];
+
+    type Cart = { slug: string; color: string; size: string; qty: number };
+    type CatColor = { key: string; label: string; front: string };
+    type CatProduct = { slug: string; name: string; price: number; compareAt: number | null; colors: CatColor[] };
+
+    const catalog: CatProduct[] = JSON.parse(document.getElementById('co-catalog')?.textContent || '[]');
+    const config = JSON.parse(document.getElementById('co-config')?.textContent || '{}');
+    const find = (slug: string) => catalog.find((p) => p.slug === slug);
+    const money = (n: number) => `${n} ${config.currency || 'RON'}`;
+
+    function readCart(): Cart[] {
+      try {
+        const raw = JSON.parse(localStorage.getItem(STORAGE_KEY) || '[]');
+        return Array.isArray(raw) ? raw.filter((i) => i && find(i.slug)) : [];
+      } catch { return []; }
+    }
+    const cart = readCart();
+    if (cart.length === 0) { location.href = '/merch'; }
+
+    // --- refs ---
+    const $ = <T extends HTMLElement = HTMLElement>(id: string) => document.getElementById(id) as T;
+    const countyEl = $<HTMLSelectElement>('f-county');
+    const localityEl = $<HTMLInputElement>('f-locality');
+    const localityList = $('co-localities');
+    const streetEl = $<HTMLInputElement>('f-street');
+    const zipEl = $<HTMLInputElement>('f-zip');
+    const zipHint = $('co-zip-hint');
+    const itemsEl = $('co-items');
+    const subtotalEl = $('co-subtotal');
+    const shippingEl = $('co-shipping');
+    const shipNoteEl = $('co-ship-note');
+    const totalEl = $('co-total');
+    const payBtn = $<HTMLButtonElement>('co-pay');
+    const errorEl = $('co-error');
+    const form = $<HTMLFormElement>('co-form');
+
+    // --- order summary ---
+    const subtotal = cart.reduce((s, i) => s + (find(i.slug)?.price || 0) * i.qty, 0);
+    itemsEl.innerHTML = cart.map((i) => {
+      const p = find(i.slug)!; const c = p.colors.find((x) => x.key === i.color) || p.colors[0];
+      const variant = (p.colors.length > 1 ? `${c?.label} · ` : '') + `Mărime ${i.size}`;
+      return `<li class="co-item"><img class="co-item-thumb" src="${c?.front}" alt="${p.name}" />
+        <div><h3 class="co-item-name">${p.name}</h3><span class="co-item-variant mono">${variant} · ${i.qty} buc</span></div>
+        <span class="co-item-price">${money(p.price * i.qty)}</span></li>`;
+    }).join('');
+    subtotalEl.textContent = money(subtotal);
+
+    let shipping: number | null = null;
+    const freeShip = subtotal >= (config.freeShippingThreshold ?? 250);
+
+    function renderTotals() {
+      if (freeShip) { shipping = 0; }
+      if (shipping === null) {
+        shippingEl.textContent = 'alege localitatea';
+        totalEl.textContent = money(subtotal) + ' + transport';
+      } else {
+        shippingEl.textContent = shipping === 0 ? 'Gratuit' : money(shipping);
+        totalEl.textContent = money(subtotal + shipping);
+      }
+      updatePayState();
+    }
+
+    // --- counties ---
+    async function loadCounties() {
+      let items: string[] = [];
+      if (config.fan) {
+        try {
+          const r = await fetch('/api/fan/geo?type=counties');
+          const d = await r.json();
+          if (Array.isArray(d.items) && d.items.length) items = d.items;
+        } catch {}
+      }
+      if (!items.length) items = RO_COUNTIES;
+      countyEl.innerHTML = '<option value="">Alege județul</option>' +
+        items.map((c) => `<option value="${c}">${c}</option>`).join('');
+    }
+
+    async function loadLocalities(county: string) {
+      localityEl.value = '';
+      localityList.innerHTML = '';
+      localityEl.disabled = true;
+      localityEl.placeholder = 'se încarcă…';
+      shipping = null; renderTotals();
+      if (config.fan && county) {
+        try {
+          const r = await fetch(`/api/fan/geo?type=localities&county=${encodeURIComponent(county)}`);
+          const d = await r.json();
+          if (Array.isArray(d.items)) localityList.innerHTML = d.items.map((l: string) => `<option value="${l}"></option>`).join('');
+        } catch {}
+      }
+      localityEl.disabled = false;
+      localityEl.placeholder = 'scrie sau alege';
+    }
+
+    // --- live shipping quote (debounced) ---
+    let quoteTimer: any;
+    async function quote() {
+      if (freeShip) { renderTotals(); return; }
+      const county = countyEl.value.trim();
+      const locality = localityEl.value.trim();
+      if (!county || !locality) { shipping = null; renderTotals(); return; }
+      shippingEl.textContent = 'se calculează…';
+      shipNoteEl.textContent = '';
+      try {
+        const r = await fetch('/api/shipping-quote', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: cart, county, locality }),
+        });
+        const d = await r.json();
+        if (!r.ok) throw new Error(d.error || 'Eroare');
+        shipping = d.shipping;
+        shipNoteEl.textContent = d.source === 'fan' ? 'Tarif real FAN Courier pentru localitatea ta.' : 'Tarif standard (transport estimat).';
+      } catch {
+        shipping = config.shippingFlat ?? 20;
+        shipNoteEl.textContent = 'Tarif standard (transport estimat).';
+      }
+      renderTotals();
+    }
+    const debouncedQuote = () => { clearTimeout(quoteTimer); quoteTimer = setTimeout(quote, 400); };
+
+    // --- zip autofill (best-effort) ---
+    async function fillZip() {
+      const county = countyEl.value.trim(), locality = localityEl.value.trim(), street = streetEl.value.trim();
+      if (!config.fan || !county || !locality || !street || zipEl.value.trim()) return;
+      try {
+        const r = await fetch(`/api/fan/geo?type=zip&county=${encodeURIComponent(county)}&locality=${encodeURIComponent(locality)}&street=${encodeURIComponent(street)}`);
+        const d = await r.json();
+        if (d.zip) { zipEl.value = d.zip; zipHint.hidden = false; zipHint.textContent = '✓ cod poștal completat automat (poți edita)'; }
+      } catch {}
+    }
+
+    // --- pay button state ---
+    const required = ['name', 'phone', 'county', 'locality', 'street', 'streetNo', 'zip'];
+    function updatePayState() {
+      const filled = required.every((n) => (form.elements.namedItem(n) as HTMLInputElement)?.value.trim());
+      payBtn.disabled = !(filled && shipping !== null);
+    }
+
+    countyEl.addEventListener('change', () => { loadLocalities(countyEl.value.trim()); });
+    localityEl.addEventListener('change', () => { debouncedQuote(); fillZip(); });
+    localityEl.addEventListener('input', updatePayState);
+    streetEl.addEventListener('blur', fillZip);
+    form.addEventListener('input', updatePayState);
+
+    // --- submit ---
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      if (payBtn.disabled) return;
+      errorEl.hidden = true;
+      const fd = new FormData(form);
+      const address = Object.fromEntries(fd.entries());
+      payBtn.disabled = true;
+      const label = payBtn.querySelector('.co-pay-label')!;
+      const prev = label.textContent; label.textContent = 'Se pregătește…';
+      try {
+        const r = await fetch('/api/checkout', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ items: cart, address }),
+        });
+        const d = await r.json();
+        if (!r.ok || !d.url) throw new Error(d.error || 'Checkout indisponibil. Încearcă din nou.');
+        window.location.href = d.url;
+      } catch (err: any) {
+        errorEl.textContent = err?.message || 'A apărut o eroare. Încearcă din nou.';
+        errorEl.hidden = false;
+        payBtn.disabled = false; label.textContent = prev;
+      }
+    });
+
+    loadCounties();
+    renderTotals();
+  </script>
+</Layout>
