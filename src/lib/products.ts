@@ -6,9 +6,8 @@
 export const CURRENCY = 'ron' as const;
 export const CURRENCY_LABEL = 'RON';
 
-/** Free shipping kicks in at this subtotal (RON). Below it, a flat rate applies. */
-export const FREE_SHIPPING_THRESHOLD = 250;
-/** Flat shipping rate (RON) charged below the free-shipping threshold. */
+/** Fallback flat shipping (RON) — used only when the real FAN tariff can't be
+ *  computed (FAN down, or no destination yet). Normal shipping is the live FAN price. */
 export const SHIPPING_FLAT = 20;
 
 export type SizeKey =
@@ -268,8 +267,10 @@ export function isLowStock(p: Product, threshold = 5): boolean {
 }
 
 /** Shipping cost (RON) for a given subtotal, per the free-over-threshold rule. */
-export function shippingFor(subtotal: number): number {
-  return subtotal >= FREE_SHIPPING_THRESHOLD ? 0 : SHIPPING_FLAT;
+export function shippingFor(_subtotal: number): number {
+  // No more free-over-threshold — always the flat fallback (the real price comes
+  // from FAN at checkout). Kept as a function so callers have a single source.
+  return SHIPPING_FLAT;
 }
 
 /** URL-safe slug from a name (handles RO diacritics). */

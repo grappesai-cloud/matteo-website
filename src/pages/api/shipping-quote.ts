@@ -29,9 +29,6 @@ export async function quoteShipping(
     subtotal += effectivePrice(p) * qty;
     units += qty;
   }
-  // Free shipping still honours the storefront threshold, whatever FAN would cost.
-  if (shippingFor(subtotal) === 0) return { shipping: 0, source: 'flat', subtotal, units };
-
   if (county && locality && fanConfigured()) {
     try {
       const t = await getInternalTariff({

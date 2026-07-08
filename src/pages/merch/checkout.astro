@@ -1,10 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import { readCatalog } from '../../lib/catalog-store';
-import {
-  CURRENCY_LABEL, FREE_SHIPPING_THRESHOLD, SHIPPING_FLAT,
-  effectivePrice, compareAtPrice,
-} from '../../lib/products';
+import { CURRENCY_LABEL, SHIPPING_FLAT, effectivePrice, compareAtPrice } from '../../lib/products';
 import { fanConfigured } from '../../lib/fancourier';
 
 export const prerender = false;
@@ -19,7 +16,6 @@ const clientCatalog = products.map((p) => ({
 }));
 const cfg = {
   currency: CURRENCY_LABEL,
-  freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
   shippingFlat: SHIPPING_FLAT,
   fan: fanConfigured(),
 };
@@ -226,10 +222,8 @@ const cfg = {
     subtotalEl.textContent = money(subtotal);
 
     let shipping: number | null = null;
-    const freeShip = subtotal >= (config.freeShippingThreshold ?? 250);
 
     function renderTotals() {
-      if (freeShip) { shipping = 0; }
       if (shipping === null) {
         shippingEl.textContent = 'alege localitatea';
         totalEl.textContent = money(subtotal) + ' + transport';
@@ -275,7 +269,6 @@ const cfg = {
     // --- live shipping quote (debounced) ---
     let quoteTimer: any;
     async function quote() {
-      if (freeShip) { renderTotals(); return; }
       const county = countyEl.value.trim();
       const locality = localityEl.value.trim();
       if (!county || !locality) { shipping = null; renderTotals(); return; }

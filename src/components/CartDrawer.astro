@@ -1,8 +1,6 @@
 ---
 import {
   CURRENCY_LABEL,
-  FREE_SHIPPING_THRESHOLD,
-  SHIPPING_FLAT,
   effectivePrice,
   compareAtPrice,
   type Product,
@@ -24,8 +22,6 @@ const clientCatalog = products.map((p) => ({
 
 const cfg = {
   currency: CURRENCY_LABEL,
-  freeShippingThreshold: FREE_SHIPPING_THRESHOLD,
-  shippingFlat: SHIPPING_FLAT,
 };
 ---
 
@@ -265,7 +261,7 @@ const cfg = {
   const catalog: CatProduct[] = JSON.parse(
     document.getElementById('merch-catalog')?.textContent || '[]'
   );
-  const config: { currency: string; freeShippingThreshold: number; shippingFlat: number } =
+  const config: { currency: string } =
     JSON.parse(document.getElementById('merch-config')?.textContent || '{}');
 
   const find = (slug: string) => catalog.find((p) => p.slug === slug);
@@ -379,18 +375,12 @@ const cfg = {
       .join('');
 
     const subtotal = items.reduce((sum, i) => sum + (find(i.slug)?.price || 0) * i.qty, 0);
-    const threshold = config.freeShippingThreshold ?? 250;
-    const shipping = subtotal >= threshold ? 0 : config.shippingFlat ?? 20;
 
     subtotalEl.textContent = money(subtotal);
-    shippingEl.textContent = shipping === 0 ? 'Gratuit' : money(shipping);
-    totalEl.textContent = money(subtotal + shipping);
-
-    if (shipping === 0) {
-      shipHintEl.textContent = '✓ Transport gratuit aplicat';
-    } else {
-      shipHintEl.textContent = `Mai adaugă ${threshold - subtotal} RON pentru transport gratuit`;
-    }
+    // Real shipping depends on the delivery address (FAN tariff) — computed at checkout.
+    shippingEl.textContent = 'la checkout';
+    totalEl.textContent = money(subtotal);
+    shipHintEl.textContent = 'Transportul se calculează la checkout, în funcție de localitate.';
   }
 
   // delegated qty / remove
