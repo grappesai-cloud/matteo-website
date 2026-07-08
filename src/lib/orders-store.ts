@@ -7,7 +7,7 @@
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import type { Order, OrderStatus } from './orders';
-import { r2Configured, r2GetJson, r2PutJson } from './r2';
+import { r2Configured, r2GetJson, r2GetJsonMeta, r2PutJson, r2PutJsonConditional, R2PreconditionFailed } from './r2';
 
 const ORDERS_KEY = 'orders/orders.json';
 const DEV = import.meta.env.DEV;
@@ -53,19 +53,67 @@ export async function writeOrders(orders: Order[]): Promise<void> {
 }
 
 /**
+ * Atomic read-modify-write on the whole orders blob (optimistic concurrency).
+ *
+ * All orders live in ONE R2 object, so two concurrent writers (a webhook inserting
+ * a new order, an AWB stamp, an invoice-number patch, the success-page fallback…)
+ * would otherwise clobber each other — the last PUT wins and silently drops the
+ * other's change. That's how a self-AWB generated at FAN could vanish from the admin.
+ *
+ * `mutate` receives the current orders and returns the next list plus a caller
+ * result. We write with If-Match on the ETag we read; if the object changed under
+ * us we re-read and re-apply `mutate` on the fresh state, up to MAX_RETRIES. DEV
+ * (local file, single process) skips the conditional dance.
+ */
+const MAX_RETRIES = 8;
+
+async function mutateOrders<R>(
+  mutate: (orders: Order[]) => { next: Order[]; result: R },
+): Promise<R> {
+  if (!r2Configured()) {
+    // Local dev: no concurrent writers, a plain read-modify-write is fine.
+    const all = (DEV ? await readLocal() : null) ?? [];
+    const { next, result } = mutate(all);
+    if (DEV) await writeLocal(next);
+    return result;
+  }
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { value, etag } = await r2GetJsonMeta<Order[]>(ORDERS_KEY);
+    const all = Array.isArray(value) ? value : [];
+    const { next, result } = mutate(all);
+    try {
+      await r2PutJsonConditional(ORDERS_KEY, next, etag);
+      return result;
+    } catch (err) {
+      if (err instanceof R2PreconditionFailed) {
+        lastErr = err;
+        // Someone wrote between our read and write — back off briefly and retry.
+        await new Promise((r) => setTimeout(r, 40 + attempt * 40));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(
+    `Salvarea comenzii a eșuat după ${MAX_RETRIES} încercări (scrieri concurente). ${(lastErr as Error)?.message || ''}`,
+  );
+}
+
+/**
  * Insert an order, idempotent by id (Stripe session id). If it already exists,
  * the stored copy is kept (we never clobber fulfillment edits). Assigns the
  * next sequential `number`. Returns the persisted order + whether it was new
  * (so callers can fire a one-time notification).
  */
 export async function addOrder(order: Order): Promise<{ order: Order; created: boolean }> {
-  const all = await readOrders();
-  const existing = all.find((o) => o.id === order.id);
-  if (existing) return { order: existing, created: false };
-  const maxNum = all.reduce((m, o) => Math.max(m, o.number || 0), 1000);
-  const toSave: Order = { ...order, number: maxNum + 1 };
-  await writeOrders([...all, toSave]);
-  return { order: toSave, created: true };
+  return mutateOrders<{ order: Order; created: boolean }>((all) => {
+    const existing = all.find((o) => o.id === order.id);
+    if (existing) return { next: all, result: { order: existing, created: false } };
+    const maxNum = all.reduce((m, o) => Math.max(m, o.number || 0), 1000);
+    const toSave: Order = { ...order, number: maxNum + 1 };
+    return { next: [...all, toSave], result: { order: toSave, created: true } };
+  });
 }
 
 /** Patch fulfillment fields on an order. Returns the updated order or null. */
@@ -81,24 +129,23 @@ export async function updateOrder(
     shippedEmailAt?: number;
   }
 ): Promise<Order | null> {
-  const all = await readOrders();
-  let updated: Order | null = null;
-  const next = all.map((o) => {
-    if (o.id !== id) return o;
-    updated = {
-      ...o,
-      ...(patch.status ? { status: patch.status } : {}),
-      ...(patch.awb !== undefined ? { awb: patch.awb } : {}),
-      ...(patch.courier !== undefined ? { courier: patch.courier } : {}),
-      ...(patch.note !== undefined ? { note: patch.note } : {}),
-      ...(patch.invoiceSeries !== undefined ? { invoiceSeries: patch.invoiceSeries } : {}),
-      ...(patch.invoiceNumber !== undefined ? { invoiceNumber: patch.invoiceNumber } : {}),
-      ...(patch.shippedEmailAt !== undefined ? { shippedEmailAt: patch.shippedEmailAt } : {}),
-      updatedAt: Date.now(),
-    };
-    return updated;
+  return mutateOrders<Order | null>((all) => {
+    let updated: Order | null = null;
+    const next = all.map((o) => {
+      if (o.id !== id) return o;
+      updated = {
+        ...o,
+        ...(patch.status ? { status: patch.status } : {}),
+        ...(patch.awb !== undefined ? { awb: patch.awb } : {}),
+        ...(patch.courier !== undefined ? { courier: patch.courier } : {}),
+        ...(patch.note !== undefined ? { note: patch.note } : {}),
+        ...(patch.invoiceSeries !== undefined ? { invoiceSeries: patch.invoiceSeries } : {}),
+        ...(patch.invoiceNumber !== undefined ? { invoiceNumber: patch.invoiceNumber } : {}),
+        ...(patch.shippedEmailAt !== undefined ? { shippedEmailAt: patch.shippedEmailAt } : {}),
+        updatedAt: Date.now(),
+      };
+      return updated;
+    });
+    return { next, result: updated };
   });
-  if (!updated) return null;
-  await writeOrders(next);
-  return updated;
 }

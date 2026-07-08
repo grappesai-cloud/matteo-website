@@ -74,18 +74,39 @@ async function streamToBuffer(body: any): Promise<Buffer> {
 
 /** Read + JSON-parse an object. Returns null when the key doesn't exist. */
 export async function r2GetJson<T>(key: string): Promise<T | null> {
+  return (await r2GetJsonMeta<T>(key)).value;
+}
+
+/**
+ * Read + JSON-parse an object together with its ETag (for optimistic concurrency).
+ * `value` is null when the key doesn't exist; `etag` is null when there's nothing
+ * to match against (missing object) — callers pass it back to r2PutJsonConditional.
+ */
+export async function r2GetJsonMeta<T>(key: string): Promise<{ value: T | null; etag: string | null }> {
   try {
     const out = await client().send(
       new GetObjectCommand({ Bucket: bucket(), Key: fullKey(key) }),
     );
     const buf = await streamToBuffer(out.Body);
-    if (!buf.length) return null;
-    return JSON.parse(buf.toString('utf-8')) as T;
+    const etag = out.ETag || null;
+    if (!buf.length) return { value: null, etag };
+    return { value: JSON.parse(buf.toString('utf-8')) as T, etag };
   } catch (err: any) {
     const code = err?.name || err?.Code || err?.$metadata?.httpStatusCode;
-    if (code === 'NoSuchKey' || code === 'NotFound' || code === 404) return null;
+    if (code === 'NoSuchKey' || code === 'NotFound' || code === 404) return { value: null, etag: null };
     throw err;
   }
+}
+
+/** Thrown when a conditional write loses the race (another writer got there first). */
+export class R2PreconditionFailed extends Error {
+  constructor() { super('R2 conditional write precondition failed'); this.name = 'R2PreconditionFailed'; }
+}
+
+function isPreconditionError(err: any): boolean {
+  const name = err?.name || err?.Code;
+  const status = err?.$metadata?.httpStatusCode;
+  return name === 'PreconditionFailed' || status === 412;
 }
 
 /** Write a value as pretty JSON. */
@@ -99,6 +120,36 @@ export async function r2PutJson(key: string, value: unknown): Promise<void> {
       CacheControl: 'no-store',
     }),
   );
+}
+
+/**
+ * Conditional write for optimistic concurrency. Pass the `etag` from r2GetJsonMeta:
+ *   • etag string → writes only if the object is UNCHANGED (If-Match).
+ *   • etag null   → writes only if the object still DOESN'T exist (If-None-Match: *).
+ * Throws R2PreconditionFailed when the object changed under us, so the caller can
+ * re-read and retry the whole read-modify-write. Returns the new ETag.
+ */
+export async function r2PutJsonConditional(
+  key: string,
+  value: unknown,
+  etag: string | null,
+): Promise<string | null> {
+  try {
+    const out = await client().send(
+      new PutObjectCommand({
+        Bucket: bucket(),
+        Key: fullKey(key),
+        Body: JSON.stringify(value, null, 2),
+        ContentType: 'application/json',
+        CacheControl: 'no-store',
+        ...(etag ? { IfMatch: etag } : { IfNoneMatch: '*' }),
+      }),
+    );
+    return out.ETag || null;
+  } catch (err: any) {
+    if (isPreconditionError(err)) throw new R2PreconditionFailed();
+    throw err;
+  }
 }
 
 /** Upload a binary object (e.g. an image) and return its public URL. */
