@@ -3,5 +3,6 @@ Allow: /
 Disallow: /admin
 Disallow: /api/
 Disallow: /merch/success
+Disallow: /merch/checkout
 
 Sitemap: https://mattman.ro/sitemap.xml
