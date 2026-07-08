@@ -23,6 +23,15 @@ export function fanConfigured(): boolean {
   return !!(env('FAN_USERNAME') && env('FAN_PASSWORD') && env('FAN_CLIENT_ID'));
 }
 
+// FAN's county/locality database is stored WITHOUT diacritics ("Arges", "Ploiesti",
+// "Bucuresti"). Sending "Argeș"/"Ploiești" returns HTTP 422 "recipient.locality is
+// invalid". So we strip diacritics on every county/locality we hand to FAN — for the
+// tariff AND the AWB (an address typed with diacritics would otherwise fail to ship).
+// NB: only for FAN — SmartBill/ANAF still get the proper diacritic county name.
+function fanName(s: string): string {
+  return String(s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').trim();
+}
+
 /** Public tracking URL for an AWB (works regardless of API config). */
 export function fanTrackingUrl(awb: string): string {
   return `https://www.fancourier.ro/awb-tracking/?awb=${encodeURIComponent(awb)}`;
@@ -79,8 +88,8 @@ function buildShipment(order: Order) {
       phone: order.customer?.phone || '',
       email: order.customer?.email || '',
       address: {
-        county: judetFromPostalCode(s.postalCode) || s.state || '',
-        locality: s.city || '',
+        county: fanName(judetFromPostalCode(s.postalCode) || s.state || ''),
+        locality: fanName(s.city || ''),
         street: [s.line1, s.line2].filter(Boolean).join(', '),
         number: '',
         zipCode: s.postalCode || '',
@@ -142,7 +151,7 @@ export async function getInternalTariff(params: {
       packages: { parcel: Math.max(1, Number(params.parcels) || 1) },
       ...(params.declaredValue ? { declaredValue: Math.round(Number(params.declaredValue)) } : {}),
     },
-    recipient: { county: params.county, locality: params.locality },
+    recipient: { county: fanName(params.county), locality: fanName(params.locality) },
   };
   const qs = bracketQuery(data).join('&');
   const res = await fetch(`${BASE}/reports/awb/internal-tariff?${qs}`, {
