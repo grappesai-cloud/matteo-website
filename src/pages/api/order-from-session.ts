@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { readCatalog } from '../../lib/catalog-store';
 import { addOrder, readOrders } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
-import { notifyRuvixNewOrder } from '../../lib/notify';
+import { notifyRuvixNewOrder, maybeNotifyConfirmation } from '../../lib/notify';
 import { readPendingCheckout } from '../../lib/checkout-store';
 
 // Idempotent fallback: the success page pings this so an order is recorded even
@@ -51,7 +51,10 @@ export const GET: APIRoute = async ({ url }) => {
       ? { address: pending.address, customer: pending.customer, shippingAmount: pending.shippingAmount }
       : undefined;
     const { order, created } = await addOrder(orderFromStripeSession(session, catalog, override));
-    if (created) await notifyRuvixNewOrder(order, url.origin);
+    if (created) {
+      try { await maybeNotifyConfirmation(order); } catch (err: any) { console.error('[order-from-session] confirmation email failed:', err?.message); }
+      await notifyRuvixNewOrder(order, url.origin);
+    }
     return json({ ok: true, number: order.number });
   } catch (err: any) {
     console.error('[order-from-session] failed:', err?.message);

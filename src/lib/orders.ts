@@ -56,6 +56,7 @@ export interface Order {
   invoiceNumber?: string;// SmartBill invoice number
   note?: string;         // internal note
   updatedAt?: number;
+  confirmEmailAt?: number; // ms epoch — set once the "comandă confirmată" email is sent to the customer
   shippedEmailAt?: number; // ms epoch — set once the "comanda a fost expediată" email is sent to the customer
   returnRequestedAt?: number; // ms epoch — clientul a cerut retur prin formularul online
   refundId?: string;     // Stripe refund id — set when the order is refunded (retur)

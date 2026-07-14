@@ -3,7 +3,7 @@ import Stripe from 'stripe';
 import { readCatalog, writeCatalog } from '../../lib/catalog-store';
 import { addOrder, updateOrder } from '../../lib/orders-store';
 import { orderFromStripeSession } from '../../lib/orders';
-import { notifyRuvixNewOrder, maybeNotifyShipped } from '../../lib/notify';
+import { notifyRuvixNewOrder, maybeNotifyShipped, maybeNotifyConfirmation } from '../../lib/notify';
 import { createAwb, fanConfigured, placeCourierOrder, computePickupSlot } from '../../lib/fancourier';
 import { readPickup, writePickup } from '../../lib/pickup-store';
 import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
@@ -62,7 +62,11 @@ export const POST: APIRoute = async ({ request }) => {
     let recorded: Awaited<ReturnType<typeof addOrder>> | null = null;
     try {
       recorded = await addOrder(orderFromStripeSession(session, catalog, override));
-      if (recorded.created) await notifyRuvixNewOrder(recorded.order, new URL(request.url).origin);
+      if (recorded.created) {
+        // Confirmarea către client pleacă prima (înainte de emailul de expediere).
+        try { await maybeNotifyConfirmation(recorded.order); } catch (err: any) { console.error('[webhook] confirmation email failed:', err?.message); }
+        await notifyRuvixNewOrder(recorded.order, new URL(request.url).origin);
+      }
     } catch (err: any) {
       console.error('[webhook] order record failed:', err?.message);
     }

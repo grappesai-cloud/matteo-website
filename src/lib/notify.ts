@@ -323,24 +323,133 @@ function buildReturnInstructionsHtml(order: Order): string {
 </body></html>`;
 }
 
-/** Send a TEST return-instructions email to arbitrary addresses. Surfaces the real error. */
-export async function sendTestEmail(to: string[]): Promise<{ ok: boolean; error?: string }> {
+function buildCustomerConfirmationHtml(order: Order): string {
+  const name = esc(order.customer?.name || order.shipping?.name || 'dragă fan');
+  const items = order.items
+    .map((i) => `
+      <tr>
+        <td style="padding:10px 0;border-bottom:1px solid ${HAIR};font:400 15px/1.4 ${SERIF};color:${CREAM}">
+          ${esc(i.name)}
+          <span style="display:block;margin-top:3px;font:400 12px/1.4 ${SANS};letter-spacing:.04em;color:${CREAM_DIM}">${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</span>
+        </td>
+        <td style="padding:10px 0;border-bottom:1px solid ${HAIR};font:600 14px/1.4 ${SANS};color:${GOLD};text-align:right;white-space:nowrap;vertical-align:top">×${esc(i.qty)}</td>
+      </tr>`)
+    .join('');
+  const shippingRow = Number(order.shippingAmount) > 0
+    ? `<tr><td style="padding:8px 0 0;font:400 13px/1.4 ${SANS};color:${CREAM_DIM}">Transport</td>
+        <td style="padding:8px 0 0;font:400 13px/1.4 ${SANS};color:${CREAM_DIM};text-align:right">${esc(order.shippingAmount)} ${esc(order.currency)}</td></tr>`
+    : '';
+
+  return `
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"></head>
+<body style="margin:0;padding:0;background:${INK};-webkit-font-smoothing:antialiased">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Comanda #${order.number} e confirmată. Mulțumim!</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${INK}">
+    <tr><td align="center" style="padding:32px 16px">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:${INK_SOFT};border:1px solid ${HAIR};border-radius:8px;overflow:hidden">
+
+        <tr><td style="padding:30px 36px 0;text-align:center">
+          <span style="font:700 13px/1 ${SANS};letter-spacing:.42em;text-transform:uppercase;color:${GOLD}">MATTMAN&nbsp;MUSIC</span>
+        </td></tr>
+
+        <tr><td style="padding:26px 36px 8px;text-align:center">
+          <span style="display:inline-block;margin:0 0 14px;padding:6px 14px;border:1px solid ${HAIR};border-radius:999px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${CREAM_DIM}">Comanda #${order.number}</span>
+          <h1 style="margin:0;font:400 34px/1.1 ${SERIF};color:${CREAM}">Mulțumim, ${name}.<br><em style="color:${GOLD_BRIGHT};font-style:italic">Comanda ta e confirmată.</em></h1>
+          <p style="margin:14px 0 0;font:400 15px/1.6 ${SANS};color:${CREAM_DIM}">Am primit comanda și plata. O pregătim acum.</p>
+        </td></tr>
+
+        <tr><td style="padding:26px 36px 0"><div style="height:1px;background:${HAIR};line-height:1px;font-size:0">&nbsp;</div></td></tr>
+
+        <!-- produse -->
+        <tr><td style="padding:22px 36px 0">
+          <p style="margin:0 0 4px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${GOLD}">Produse</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}
+            ${shippingRow}
+            <tr><td style="padding:14px 0 0;font:600 12px/1.4 ${SANS};letter-spacing:.04em;color:${CREAM_DIM}">Total</td>
+                <td style="padding:14px 0 0;font:700 15px/1.4 ${SANS};color:${CREAM};text-align:right">${esc(order.amountTotal)} ${esc(order.currency)}</td></tr>
+          </table>
+        </td></tr>
+
+        <!-- livrare -->
+        <tr><td style="padding:22px 36px 0">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${INK};border:1px solid ${HAIR};border-radius:6px">
+            <tr><td style="padding:16px 18px">
+              <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                ${emailRow('Livrare', esc(formatAddress(order.shipping || {}) || 'fără adresă'))}
+              </table>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- next -->
+        <tr><td style="padding:20px 36px 0">
+          <p style="margin:0;font:400 14px/1.6 ${SANS};color:${CREAM}">Urmează un email separat cu <strong style="color:${GOLD_BRIGHT}">linkul de urmărire</strong> imediat ce coletul pleacă spre tine. Curierul te anunță și prin SMS in ziua livrării.</p>
+        </td></tr>
+
+        <tr><td style="padding:28px 36px 30px;text-align:center;border-top:1px solid ${HAIR};margin-top:8px">
+          <p style="margin:24px 0 4px;font:700 12px/1 ${SANS};letter-spacing:.3em;text-transform:uppercase;color:${GOLD}">MATTMAN MUSIC</p>
+          <p style="margin:0;font:400 12px/1.5 ${SANS};color:${CREAM_DIM}"><a href="https://mattman.ro" style="color:${CREAM_DIM};text-decoration:none">mattman.ro</a></p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+/** Best-effort: email the CUSTOMER an order confirmation. Never throws. */
+export async function sendCustomerConfirmation(order: Order): Promise<{ ok: boolean; error?: string }> {
+  if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
+  const to = (order.customer?.email || '').trim();
+  if (!to) return { ok: false, error: 'no recipient' };
+  try {
+    await deliver({
+      from: fromHeader(),
+      to,
+      subject: `Comanda #${order.number} e confirmată — mulțumim!`,
+      html: buildCustomerConfirmationHtml(order),
+    });
+    return { ok: true };
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error('[notify] customer confirmation email failed:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+/**
+ * Idempotently email the customer an order confirmation right after the order is
+ * created. Sends at most once (guarded by confirmEmailAt) and stamps on success.
+ */
+export async function maybeNotifyConfirmation(order: Order): Promise<Order> {
+  if (order.confirmEmailAt || !order.customer?.email) return order;
+  const sent = await sendCustomerConfirmation(order);
+  if (!sent.ok) return order;
+  const stamped = await updateOrder(order.id, { confirmEmailAt: Date.now() });
+  return stamped || { ...order, confirmEmailAt: Date.now() };
+}
+
+/** Send a TEST email (confirmation / shipped / return template) to arbitrary addresses. */
+export async function sendTestEmail(to: string[], type: 'confirm' | 'shipped' | 'return' = 'return'): Promise<{ ok: boolean; error?: string }> {
   if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
   const recipients = to.map((s) => s.trim()).filter(Boolean);
   if (!recipients.length) return { ok: false, error: 'no recipient' };
   const sample: Order = {
-    id: 'test', number: 9999, createdAt: Date.now(), status: 'delivered',
+    id: 'test', number: 9999, createdAt: Date.now(), status: 'shipped',
     items: [{ slug: 'menu', name: 'Menu', color: 'natural', colorLabel: 'Natural', size: 'L', qty: 1, unitPrice: 130 }],
     amountTotal: 155, shippingAmount: 25, currency: 'RON',
-    customer: { name: 'Test', email: recipients[0] }, shipping: {},
+    customer: { name: 'Test', email: recipients[0] },
+    shipping: { line1: 'Str. Exemplu 1', city: 'București', postalCode: '010001', country: 'RO' },
+    awb: '7000000000000', courier: 'FAN Courier',
   };
+  const tpl = type === 'confirm'
+    ? { subject: '[TEST] Comandă confirmată', html: buildCustomerConfirmationHtml(sample) }
+    : type === 'shipped'
+      ? { subject: '[TEST] Comanda a fost expediată', html: buildCustomerShippedHtml(sample) }
+      : { subject: '[TEST] Mattman — verificare email retur', html: buildReturnInstructionsHtml(sample) };
   try {
-    await deliver({
-      from: fromHeader(),
-      to: recipients,
-      subject: '[TEST] Mattman — verificare email retur',
-      html: buildReturnInstructionsHtml(sample),
-    });
+    await deliver({ from: fromHeader(), to: recipients, ...tpl });
     return { ok: true };
   } catch (err: any) {
     const msg = err?.message || String(err);

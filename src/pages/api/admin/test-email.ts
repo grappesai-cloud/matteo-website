@@ -18,7 +18,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   const to = String(body?.to ?? '').split(',').map((s) => s.trim()).filter(Boolean);
   if (!to.length) return json({ error: 'Lipsește adresa destinatarului.' }, 400);
 
-  const r = await sendTestEmail(to);
+  const type = ['confirm', 'shipped', 'return'].includes(body?.type) ? body.type : 'return';
+  const r = await sendTestEmail(to, type);
   if (!r.ok) return json({ error: r.error || 'Trimiterea a eșuat.' }, 502);
   return json({ ok: true, sentTo: to });
 };

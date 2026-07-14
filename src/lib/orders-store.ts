@@ -126,6 +126,7 @@ export async function updateOrder(
     note?: string;
     invoiceSeries?: string;
     invoiceNumber?: string;
+    confirmEmailAt?: number;
     shippedEmailAt?: number;
     returnRequestedAt?: number;
     refundId?: string;
@@ -147,6 +148,7 @@ export async function updateOrder(
         ...(patch.note !== undefined ? { note: patch.note } : {}),
         ...(patch.invoiceSeries !== undefined ? { invoiceSeries: patch.invoiceSeries } : {}),
         ...(patch.invoiceNumber !== undefined ? { invoiceNumber: patch.invoiceNumber } : {}),
+        ...(patch.confirmEmailAt !== undefined ? { confirmEmailAt: patch.confirmEmailAt } : {}),
         ...(patch.shippedEmailAt !== undefined ? { shippedEmailAt: patch.shippedEmailAt } : {}),
         ...(patch.returnRequestedAt !== undefined ? { returnRequestedAt: patch.returnRequestedAt } : {}),
         ...(patch.refundId !== undefined ? { refundId: patch.refundId } : {}),
