@@ -1,0 +1,59 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import { COMPANY, RETURN, AUTHORITIES } from '../lib/legal';
+export const prerender = false;
+---
+
+<LegalLayout
+  title="Termeni și condiții"
+  description="Termenii și condițiile de utilizare a magazinului online Mattman Music: comenzi, prețuri, plată, livrare, retur și garanții."
+>
+  <h2>1. Părțile</h2>
+  <p>Prezentele condiții reglementează utilizarea website-ului și a magazinului online disponibile pe <strong>{COMPANY.site}</strong> („Site-ul"), operat de:</p>
+  <ul>
+    <li><strong>{COMPANY.legalName}</strong> („Vânzătorul", „noi")</li>
+    <li>CIF {COMPANY.cif}, Nr. Reg. Com. {COMPANY.onrc}</li>
+    <li>Sediul social: {COMPANY.address}</li>
+    <li>E-mail: <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> · Telefon: {COMPANY.phone}</li>
+    <li>Cont bancar: {COMPANY.iban}, deschis la {COMPANY.bank}</li>
+  </ul>
+  <p>Prin utilizarea Site-ului și prin plasarea unei comenzi confirmi că ai citit, ai înțeles și ești de acord cu acești termeni.</p>
+
+  <h2>2. Produsele și prețurile</h2>
+  <p>Prezentăm produsele cu descrieri, imagini și prețuri cât mai exacte. Pot exista mici diferențe de nuanță între fotografii și produsul real, cauzate de setările ecranului tău.</p>
+  <p>Toate prețurile sunt exprimate în <strong>lei (RON)</strong> și <strong>includ TVA</strong>. Costul livrării se calculează separat și îți este afișat la finalizarea comenzii, înainte de plată.</p>
+  <p>Ne rezervăm dreptul de a modifica prețurile și disponibilitatea produselor în orice moment. Prețul aplicabil comenzii tale este cel afișat la momentul plasării comenzii.</p>
+
+  <h2>3. Comanda și încheierea contractului</h2>
+  <p>Adaugi produsele în coș, completezi datele de livrare și finalizezi plata. Contractul de vânzare se consideră încheiat în momentul în care primești <strong>confirmarea comenzii</strong> pe e-mail.</p>
+  <p>Ne rezervăm dreptul de a anula o comandă dacă produsul nu mai este disponibil, dacă prețul a fost afișat eronat sau dacă suspectăm o utilizare frauduloasă. În aceste cazuri te informăm și îți rambursăm integral orice sumă plătită.</p>
+
+  <h2>4. Plata</h2>
+  <p>Plata se face online, cu cardul, prin procesatorul <strong>Stripe</strong> (inclusiv Apple Pay / Google Pay). Nu stocăm datele cardului tău; acestea sunt procesate în mod securizat de Stripe. Pentru fiecare comandă emitem <strong>factură</strong>, transmisă electronic.</p>
+
+  <h2>5. Livrarea</h2>
+  <p>Livrăm prin curier (<strong>FAN Courier</strong>) pe teritoriul României. Termenul estimativ de livrare este de <strong>2-5 zile lucrătoare</strong> de la confirmarea comenzii, în funcție de disponibilitatea produselor și de zona de livrare.</p>
+  <p>Costul de transport se calculează în funcție de adresă și îți este afișat la checkout, înainte de plată. Riscul de pierdere sau deteriorare a produselor trece la tine în momentul în care intri în posesia fizică a acestora.</p>
+
+  <h2>6. Dreptul de retragere și retururile</h2>
+  <p>În calitate de consumator, ai dreptul de a te retrage din contract în termen de <strong>{RETURN.windowDays} zile</strong>, în condițiile descrise integral în <a href="/retur">Politica de retur</a>, care face parte din acești termeni.</p>
+
+  <h2>7. Garanția legală de conformitate</h2>
+  <p>Produsele beneficiază de garanția legală de conformitate de <strong>2 ani</strong>, conform OUG nr. 140/2021. Detalii privind produsele defecte sau neconforme găsești în <a href="/retur">Politica de retur</a>, secțiunea 8.</p>
+
+  <h2>8. Proprietate intelectuală</h2>
+  <p>Toate elementele Site-ului (logo, texte, grafică, fotografii, design-urile produselor) aparțin Vânzătorului sau artiștilor colaboratori și sunt protejate de legislația privind drepturile de autor. Nu pot fi reproduse fără acordul nostru scris.</p>
+
+  <h2>9. Răspundere</h2>
+  <p>Depunem eforturi rezonabile pentru ca informațiile de pe Site să fie corecte și actualizate, dar nu garantăm că Site-ul va fi permanent disponibil sau lipsit de erori. Nu răspundem pentru daune indirecte rezultate din utilizarea Site-ului, în limitele permise de lege.</p>
+
+  <h2>10. Prelucrarea datelor</h2>
+  <p>Datele tale personale sunt prelucrate conform <a href="/confidentialitate">Politicii de confidențialitate</a>. Site-ul folosește cookie-uri conform <a href="/cookies">Politicii de cookies</a>.</p>
+
+  <h2>11. Legea aplicabilă și soluționarea litigiilor</h2>
+  <p>Prezentele condiții sunt guvernate de <strong>legea română</strong>. Eventualele litigii se soluționează pe cale amiabilă sau, dacă nu este posibil, de instanțele competente din România.</p>
+  <p>Te poți adresa <a href={AUTHORITIES.anpc} target="_blank" rel="noopener noreferrer">ANPC</a>, poți folosi <a href={AUTHORITIES.sal} target="_blank" rel="noopener noreferrer">soluționarea alternativă a litigiilor (SAL)</a> sau <a href={AUTHORITIES.sol} target="_blank" rel="noopener noreferrer">platforma europeană SOL (ODR)</a>.</p>
+
+  <h2>12. Modificări</h2>
+  <p>Putem actualiza acești termeni periodic. Versiunea aplicabilă comenzii tale este cea publicată pe Site la momentul plasării comenzii.</p>
+</LegalLayout>

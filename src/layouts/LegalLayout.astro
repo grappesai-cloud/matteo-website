@@ -1,0 +1,206 @@
+---
+import Layout from './Layout.astro';
+import { COMPANY, AUTHORITIES, LEGAL_PAGES, LEGAL_UPDATED } from '../lib/legal';
+
+interface Props {
+  title: string;        // page H1 + <title>
+  description?: string;
+  updated?: string;
+}
+const { title, description, updated = LEGAL_UPDATED } = Astro.props;
+const path = Astro.url.pathname.replace(/\/$/, '');
+---
+
+<Layout title={`${title} · Mattman Music`} description={description ?? title}>
+  <div class="lg">
+    <header class="lg-header">
+      <a href="/" class="lg-brand" aria-label="Mattman Music, acasă">
+        <img src="/images/mattman/logo-head.webp" alt="Mattman Music" width="320" height="291" />
+      </a>
+      <nav class="lg-nav mono">
+        <a href="/merch" class="lg-back">← Shop</a>
+      </nav>
+    </header>
+
+    <main class="lg-main">
+      <p class="lg-eyebrow mono">Informații legale</p>
+      <h1 class="lg-title display">{title}</h1>
+      <p class="lg-updated mono">Ultima actualizare: {updated}</p>
+
+      <article class="lg-body">
+        <slot />
+      </article>
+
+      <nav class="lg-cross mono" aria-label="Alte documente legale">
+        {LEGAL_PAGES.map((p) => (
+          p.href === path
+            ? <span class="lg-cross-link is-current">{p.label}</span>
+            : <a class="lg-cross-link" href={p.href}>{p.label}</a>
+        ))}
+      </nav>
+    </main>
+
+    <footer class="lg-foot mono">
+      <div class="lg-foot-company">
+        <strong>{COMPANY.legalName}</strong>
+        <span>CIF {COMPANY.cif} · {COMPANY.onrc}</span>
+        <span>{COMPANY.address}</span>
+        <span><a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> · {COMPANY.phone}</span>
+      </div>
+      <div class="lg-foot-anpc">
+        <a href={AUTHORITIES.anpc} target="_blank" rel="noopener noreferrer">ANPC</a>
+        <a href={AUTHORITIES.sal} target="_blank" rel="noopener noreferrer">SAL</a>
+        <a href={AUTHORITIES.sol} target="_blank" rel="noopener noreferrer">Platforma SOL (UE)</a>
+      </div>
+      <div class="lg-foot-copy">
+        <span>© {new Date().getFullYear()} {COMPANY.brand}</span>
+        <a href="https://grappes.dev" target="_blank" rel="noopener">made by grappes</a>
+      </div>
+    </footer>
+  </div>
+</Layout>
+
+<style>
+  .lg {
+    min-height: 100dvh;
+    background: var(--cream, #f2ebe0);
+    color: var(--ink, #0a0a0a);
+    display: flex;
+    flex-direction: column;
+    --hair: rgba(10, 10, 10, 0.12);
+    --dim: rgba(10, 10, 10, 0.6);
+  }
+  .lg :global(a) { color: inherit; }
+
+  .lg-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px clamp(16px, 5vw, 48px);
+    border-bottom: 1px solid var(--hair);
+  }
+  .lg-brand img { height: 40px; width: auto; display: block; }
+  .lg-back {
+    letter-spacing: 0.1em;
+    font-size: 13px;
+    color: var(--dim);
+    text-decoration: none;
+    transition: color 0.2s;
+  }
+  .lg-back:hover { color: var(--burgundy, #6b1a1a); }
+
+  .lg-main {
+    width: 100%;
+    max-width: 760px;
+    margin: 0 auto;
+    padding: clamp(40px, 8vw, 80px) clamp(16px, 5vw, 48px) clamp(48px, 8vw, 96px);
+    flex: 1;
+  }
+  .lg-eyebrow {
+    font-size: 12px;
+    letter-spacing: 0.24em;
+    text-transform: uppercase;
+    color: var(--gold, #c9a24a);
+    margin: 0 0 14px;
+  }
+  .lg-title {
+    font-size: clamp(34px, 6vw, 60px);
+    line-height: 1.02;
+    letter-spacing: -0.02em;
+    margin: 0 0 14px;
+    font-weight: 400;
+  }
+  .lg-updated { font-size: 12px; color: var(--dim); margin: 0 0 clamp(28px, 5vw, 48px); }
+
+  /* Long-form legal typography */
+  .lg-body { font-size: clamp(15px, 1.35vw, 17px); line-height: 1.72; }
+  .lg-body :global(h2) {
+    font-family: var(--font-display, 'Fraunces', serif);
+    font-size: clamp(20px, 2.6vw, 27px);
+    line-height: 1.18;
+    letter-spacing: -0.01em;
+    font-weight: 400;
+    margin: clamp(34px, 5vw, 52px) 0 12px;
+    padding-top: clamp(20px, 3vw, 28px);
+    border-top: 1px solid var(--hair);
+  }
+  .lg-body :global(h2:first-child) { margin-top: 0; padding-top: 0; border-top: 0; }
+  .lg-body :global(h3) {
+    font-size: 15px;
+    font-weight: 600;
+    letter-spacing: 0.01em;
+    margin: 26px 0 8px;
+  }
+  .lg-body :global(p) { margin: 0 0 16px; }
+  .lg-body :global(ul), .lg-body :global(ol) { margin: 0 0 16px; padding-left: 22px; }
+  .lg-body :global(li) { margin: 0 0 8px; }
+  .lg-body :global(a) { color: var(--burgundy, #6b1a1a); text-underline-offset: 3px; }
+  .lg-body :global(strong) { font-weight: 600; }
+  .lg-body :global(.lg-note) {
+    background: rgba(201, 162, 74, 0.12);
+    border-left: 3px solid var(--gold, #c9a24a);
+    padding: 16px 20px;
+    margin: 0 0 22px;
+    border-radius: 2px;
+  }
+  .lg-body :global(.lg-note p:last-child) { margin-bottom: 0; }
+  .lg-body :global(.lg-form) {
+    background: #fff;
+    border: 1px solid var(--hair);
+    border-radius: 3px;
+    padding: clamp(20px, 4vw, 32px);
+    margin: 8px 0 24px;
+  }
+  .lg-body :global(.lg-form p) { margin-bottom: 12px; }
+  .lg-body :global(table) {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 0 0 22px;
+    font-size: 14px;
+  }
+  .lg-body :global(th), .lg-body :global(td) {
+    text-align: left;
+    padding: 10px 12px;
+    border-bottom: 1px solid var(--hair);
+    vertical-align: top;
+  }
+  .lg-body :global(th) { font-weight: 600; }
+
+  .lg-cross {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 18px;
+    margin-top: clamp(40px, 6vw, 64px);
+    padding-top: 24px;
+    border-top: 1px solid var(--hair);
+    font-size: 12px;
+    letter-spacing: 0.04em;
+  }
+  .lg-cross-link { text-decoration: none; color: var(--dim); transition: color 0.2s; }
+  .lg-cross-link:hover { color: var(--burgundy, #6b1a1a); }
+  .lg-cross-link.is-current { color: var(--ink, #0a0a0a); font-weight: 500; }
+
+  .lg-foot {
+    border-top: 1px solid var(--hair);
+    padding: clamp(28px, 5vw, 44px) clamp(16px, 5vw, 48px);
+    display: flex;
+    flex-wrap: wrap;
+    gap: 20px 48px;
+    align-items: flex-start;
+    justify-content: space-between;
+    font-size: 12px;
+    color: var(--dim);
+  }
+  .lg-foot-company { display: flex; flex-direction: column; gap: 4px; max-width: 42ch; }
+  .lg-foot-company strong { color: var(--ink, #0a0a0a); font-weight: 600; letter-spacing: 0.02em; }
+  .lg-foot-anpc { display: flex; gap: 16px; }
+  .lg-foot-anpc a { text-decoration: none; }
+  .lg-foot-anpc a:hover { color: var(--burgundy, #6b1a1a); }
+  .lg-foot-copy { display: flex; flex-direction: column; gap: 4px; text-align: right; }
+  .lg-foot-copy a { text-decoration: none; opacity: 0.7; }
+
+  @media (max-width: 620px) {
+    .lg-foot { flex-direction: column; gap: 18px; }
+    .lg-foot-copy { text-align: left; }
+  }
+</style>

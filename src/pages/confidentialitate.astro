@@ -1,0 +1,70 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import { COMPANY } from '../lib/legal';
+export const prerender = false;
+---
+
+<LegalLayout
+  title="Politica de confidențialitate"
+  description="Cum colectăm, folosim și protejăm datele tale personale atunci când cumperi de pe mattman.ro, în conformitate cu Regulamentul (UE) 2016/679 (GDPR)."
+>
+  <p>Confidențialitatea ta este importantă pentru noi. Această politică explică ce date personale colectăm, în ce scop și ce drepturi ai, în conformitate cu <strong>Regulamentul (UE) 2016/679 (GDPR)</strong>.</p>
+
+  <h2>1. Operatorul de date</h2>
+  <p><strong>{COMPANY.legalName}</strong>, CIF {COMPANY.cif}, {COMPANY.onrc}, sediul social în {COMPANY.address}. Pentru orice întrebare privind datele tale, ne poți scrie la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.</p>
+
+  <h2>2. Ce date colectăm</h2>
+  <ul>
+    <li><strong>Date de identificare și contact:</strong> nume, prenume, adresă de e-mail, număr de telefon;</li>
+    <li><strong>Date de livrare și facturare:</strong> adresa de livrare, județ, localitate, cod poștal;</li>
+    <li><strong>Date privind comanda:</strong> produsele comandate, valoarea, istoricul comenzilor;</li>
+    <li><strong>Date de plată:</strong> plata este procesată de Stripe. <strong>Nu stocăm datele cardului tău</strong> pe serverele noastre.</li>
+  </ul>
+
+  <h2>3. Scopurile și temeiurile prelucrării</h2>
+  <table>
+    <thead>
+      <tr><th>Scop</th><th>Temei legal</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Procesarea și livrarea comenzii</td><td>Executarea contractului (art. 6 alin. 1 lit. b GDPR)</td></tr>
+      <tr><td>Emiterea facturii și obligații fiscale/contabile</td><td>Obligație legală (art. 6 alin. 1 lit. c GDPR)</td></tr>
+      <tr><td>Comunicări legate de comandă (confirmare, livrare, retur)</td><td>Executarea contractului (art. 6 alin. 1 lit. b GDPR)</td></tr>
+      <tr><td>Soluționarea reclamațiilor și a returului</td><td>Executarea contractului și interes legitim (art. 6 alin. 1 lit. b și f GDPR)</td></tr>
+    </tbody>
+  </table>
+
+  <h2>4. Cui divulgăm datele</h2>
+  <p>Transmitem datele strict necesare unor furnizori care ne ajută să îți onorăm comanda, în calitate de persoane împuternicite:</p>
+  <ul>
+    <li><strong>Stripe</strong>: procesarea plăților;</li>
+    <li><strong>FAN Courier</strong>: livrarea coletelor;</li>
+    <li><strong>SmartBill</strong>: emiterea facturilor;</li>
+    <li>furnizorii noștri de <strong>găzduire, e-mail și stocare</strong> a datelor.</li>
+  </ul>
+  <p>Putem divulga date și autorităților publice, atunci când legea ne obligă. Nu vindem datele tale personale.</p>
+
+  <h2>5. Cât timp păstrăm datele</h2>
+  <p>Păstrăm datele legate de comenzi pe durata necesară executării contractului și ulterior pe perioada impusă de obligațiile legale (de exemplu, documentele contabile și fiscale se păstrează 10 ani, conform legislației în vigoare).</p>
+
+  <h2>6. Drepturile tale</h2>
+  <p>Conform GDPR, ai dreptul de:</p>
+  <ul>
+    <li><strong>acces</strong> la datele tale și de a obține o copie a acestora;</li>
+    <li><strong>rectificare</strong> a datelor inexacte sau incomplete;</li>
+    <li><strong>ștergere</strong> („dreptul de a fi uitat"), în condițiile legii;</li>
+    <li><strong>restricționare</strong> a prelucrării;</li>
+    <li><strong>portabilitate</strong> a datelor;</li>
+    <li><strong>opoziție</strong> la prelucrare, în anumite condiții.</li>
+  </ul>
+  <p>Îți poți exercita aceste drepturi scriindu-ne la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>. Ai de asemenea dreptul de a depune o plângere la <strong>Autoritatea Națională de Supraveghere a Prelucrării Datelor cu Caracter Personal (ANSPDCP)</strong>: <a href="https://www.dataprotection.ro" target="_blank" rel="noopener noreferrer">dataprotection.ro</a>.</p>
+
+  <h2>7. Securitate</h2>
+  <p>Aplicăm măsuri tehnice și organizatorice rezonabile pentru a-ți proteja datele împotriva accesului neautorizat, pierderii sau divulgării. Conexiunea la Site este securizată prin HTTPS.</p>
+
+  <h2>8. Cookies</h2>
+  <p>Site-ul folosește cookie-uri și tehnologii similare, descrise în <a href="/cookies">Politica de cookies</a>.</p>
+
+  <h2>9. Modificări</h2>
+  <p>Putem actualiza această politică periodic. Versiunea curentă este cea publicată pe această pagină.</p>
+</LegalLayout>

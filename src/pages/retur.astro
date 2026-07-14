@@ -1,0 +1,84 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import { COMPANY, RETURN, AUTHORITIES } from '../lib/legal';
+export const prerender = false;
+---
+
+<LegalLayout
+  title="Politica de retur"
+  description="Dreptul de retragere de 14 zile, procedura de returnare, rambursarea și garanția legală de conformitate pentru comenzile din magazinul Mattman Music."
+>
+  <div class="lg-note">
+    <p><strong>Pe scurt:</strong> ai dreptul să returnezi produsele în termen de <strong>{RETURN.windowDays} zile</strong> de la primire, fără să ne spui motivul. Ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, îți trimitem adresa și instrucțiunile, ne trimiți produsele înapoi, iar noi îți returnăm banii în maximum 14 zile.</p>
+  </div>
+
+  <h2>1. Cine suntem</h2>
+  <p>Magazinul de pe <strong>{COMPANY.site}</strong> este operat de <strong>{COMPANY.legalName}</strong>, CIF {COMPANY.cif}, {COMPANY.onrc}, cu sediul în {COMPANY.address}. Ne poți contacta oricând la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> sau la telefon {COMPANY.phone}.</p>
+  <p>Această politică se aplică <strong>consumatorilor</strong> (persoane fizice care cumpără în afara activității lor comerciale) și transpune drepturile prevăzute de <strong>OUG nr. 34/2014</strong> privind drepturile consumatorilor în cadrul contractelor încheiate la distanță.</p>
+
+  <h2>2. Dreptul de retragere (14 zile)</h2>
+  <p>Ai dreptul să te retragi din contract în termen de <strong>{RETURN.windowDays} zile calendaristice, fără a fi nevoie să invoci vreun motiv</strong> și fără penalități.</p>
+  <p>Termenul de {RETURN.windowDays} zile începe să curgă din ziua în care tu (sau o persoană indicată de tine, alta decât curierul) intri în posesia fizică a produselor. Dacă o comandă conține mai multe produse livrate separat, termenul curge de la primirea ultimului produs.</p>
+  <p>Pentru a-ți exercita dreptul de retragere ne poți informa printr-o declarație neechivocă:</p>
+  <ul>
+    <li>prin e-mail la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, sau</li>
+    <li>folosind <a href="#formular">formularul-tip de retragere</a> de mai jos (opțional).</li>
+  </ul>
+  <p>Pentru respectarea termenului este suficient să ne trimiți comunicarea privind retragerea <strong>înainte de expirarea celor {RETURN.windowDays} zile</strong>.</p>
+
+  <h2>3. Cum returnezi produsele</h2>
+  <ol>
+    <li><strong>Ne anunți.</strong> Scrie la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> cu numărul comenzii și produsele pe care vrei să le returnezi.</li>
+    <li><strong>Primești instrucțiunile.</strong> Îți răspundem cu adresa de returnare și pașii de urmat.</li>
+    <li><strong>Trimiți coletul.</strong> Ne returnezi produsele fără întârzieri nejustificate și, în orice caz, în cel mult <strong>14 zile</strong> de la data la care ne-ai comunicat retragerea. Termenul este respectat dacă expediezi produsele înainte de expirarea acestei perioade.</li>
+    <li><strong>Primești banii.</strong> După ce verificăm produsele, îți rambursăm suma (vezi secțiunea 6).</li>
+  </ol>
+
+  <h2>4. Condiția produselor returnate</h2>
+  <p>Poți încerca produsele exact cum ai face-o într-un magazin fizic. Ești însă responsabil pentru <strong>diminuarea valorii produselor</strong> care rezultă din manipulări diferite de cele necesare pentru a stabili natura, caracteristicile și modul de funcționare a produselor.</p>
+  <p>Ca să primești rambursarea integrală, produsele trebuie returnate:</p>
+  <ul>
+    <li>nepurtate și nespălate, fără urme de folosire, parfum, machiaj sau deteriorări;</li>
+    <li>cu etichetele originale atașate;</li>
+    <li>în ambalajul original, în stare care permite revânzarea.</li>
+  </ul>
+  <p>Dacă valoarea produselor s-a diminuat din cauza manipulării excesive, putem reține o sumă proporțională din rambursare.</p>
+
+  <h2>5. Costurile returnării</h2>
+  <p><strong>Costul returnării produselor este suportat de tine.</strong> Îți recomandăm un serviciu de curierat cu urmărire (AWB), deoarece răspunderea pentru colet îți aparține până când ajunge la noi.</p>
+  <p>La rambursare îți returnăm <strong>și costul livrării inițiale</strong> către tine. Conform legii, dacă la comandă ai ales o metodă de livrare mai scumpă decât cea standard oferită de noi, rambursăm costul livrării standard.</p>
+
+  <h2>6. Rambursarea</h2>
+  <p>Îți rambursăm toate sumele primite de la tine (inclusiv costul livrării inițiale, în condițiile de mai sus) <strong>fără întârzieri nejustificate și în cel mult 14 zile</strong> de la data la care am fost informați cu privire la decizia ta de retragere.</p>
+  <p>Rambursarea se face folosind <strong>aceeași modalitate de plată</strong> pe care ai utilizat-o la comandă (cardul, prin Stripe), fără a-ți percepe comisioane suplimentare.</p>
+  <p>Putem amâna rambursarea până când <strong>primim produsele înapoi</strong> sau până când ne faci dovada că le-ai expediat, oricare dintre aceste momente survine primul.</p>
+
+  <h2>7. Excepții de la dreptul de retragere</h2>
+  <p>Legea prevede câteva categorii de produse pentru care dreptul de retragere de 14 zile nu se aplică, de exemplu produsele confecționate după specificațiile clientului sau clar personalizate și produsele sigilate care nu pot fi returnate din motive de igienă, o dată desigilate.</p>
+  <p><strong>Tricourile și produsele din catalogul nostru NU se încadrează în aceste excepții</strong>: le alegi dintr-o gamă standard de modele, mărimi și culori, deci beneficiezi integral de dreptul de retragere de {RETURN.windowDays} zile.</p>
+
+  <h2>8. Produse defecte sau neconforme (garanția legală)</h2>
+  <p>Independent de dreptul de retragere de mai sus, beneficiezi de <strong>garanția legală de conformitate</strong> conform OUG nr. 140/2021, pe o durată de <strong>2 ani</strong> de la livrare.</p>
+  <p>Dacă produsul primit este defect, deteriorat la livrare sau nu corespunde comenzii, contactează-ne la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, de preferință cu fotografii. Ai dreptul, după caz, la <strong>repararea sau înlocuirea</strong> produsului, iar dacă acestea nu sunt posibile, la <strong>reducerea prețului sau rambursarea integrală</strong>. În acest caz, <strong>costurile de returnare sunt suportate de noi</strong>.</p>
+
+  <h2 id="formular">9. Formular-tip de retragere</h2>
+  <p>Completarea acestui formular este opțională. Ne poți anunța retragerea și printr-un simplu e-mail. Îl poți copia și trimite la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>.</p>
+  <div class="lg-form">
+    <p>Către <strong>{COMPANY.legalName}</strong>, {COMPANY.address}, e-mail {COMPANY.email}:</p>
+    <p>Vă informez prin prezenta cu privire la retragerea mea din contractul referitor la vânzarea următoarelor produse:</p>
+    <p>_______________________________________________</p>
+    <p>Comandată în data de _____________ / primită în data de _____________</p>
+    <p>Numele consumatorului: _______________________________________________</p>
+    <p>Adresa consumatorului: _______________________________________________</p>
+    <p>Data: _____________</p>
+    <p>Semnătura (doar în cazul în care formularul este transmis pe hârtie): _____________</p>
+  </div>
+
+  <h2>10. Reclamații și soluționarea litigiilor</h2>
+  <p>Sperăm să rezolvăm orice problemă direct, scriindu-ne la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>. Ai însă și următoarele posibilități:</p>
+  <ul>
+    <li>te poți adresa <strong>Autorității Naționale pentru Protecția Consumatorilor</strong>: <a href={AUTHORITIES.anpc} target="_blank" rel="noopener noreferrer">anpc.ro</a>;</li>
+    <li>poți recurge la <strong>Soluționarea Alternativă a Litigiilor (SAL)</strong>: <a href={AUTHORITIES.sal} target="_blank" rel="noopener noreferrer">anpc.ro/ce-este-sal</a>;</li>
+    <li>poți folosi <strong>platforma europeană SOL (ODR)</strong> pentru soluționarea online a litigiilor: <a href={AUTHORITIES.sol} target="_blank" rel="noopener noreferrer">ec.europa.eu/consumers/odr</a>.</li>
+  </ul>
+</LegalLayout>

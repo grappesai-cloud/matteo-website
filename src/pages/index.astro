@@ -153,6 +153,12 @@ const orgJsonLd = {
 
     <footer class="foot mono">
       <span>© {new Date().getFullYear()} Mattman Music</span>
+      <nav class="foot-legal" aria-label="Informații legale">
+        <a href="/retur">Retur</a>
+        <a href="/termeni">Termeni</a>
+        <a href="/confidentialitate">Confidențialitate</a>
+        <a href="/cookies">Cookies</a>
+      </nav>
       <a href="https://grappes.dev" target="_blank" rel="noopener" class="madeby">made by grappes</a>
     </footer>
   </div>
@@ -613,8 +619,10 @@ const orgJsonLd = {
       padding: 6px 6px 0;
       color: var(--dim);
     }
+    .foot { flex-wrap: wrap; }
     .foot a { color: inherit; text-decoration: none; transition: color 0.2s; }
     .foot a:hover { color: var(--gold); }
+    .foot-legal { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 11px; letter-spacing: 0.06em; }
     .madeby { font-size: 11px; letter-spacing: 0.04em; opacity: 0.6; }
     .madeby:hover { opacity: 1; }
 

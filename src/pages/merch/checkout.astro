@@ -109,6 +109,7 @@ const cfg = {
             <span aria-hidden="true">→</span>
           </button>
           <p class="co-error mono" id="co-error" hidden></p>
+          <p class="co-consent mono">Prin plasarea comenzii accepți <a href="/termeni" target="_blank" rel="noopener">Termenii și condițiile</a> și confirmi că ai citit <a href="/retur" target="_blank" rel="noopener">Politica de retur</a>.</p>
           <p class="co-secure mono">Plată securizată prin Stripe · card / Apple Pay / Google Pay</p>
         </aside>
       </div>
@@ -116,6 +117,12 @@ const cfg = {
 
     <footer class="co-foot mono">
       <span>© {new Date().getFullYear()} Mattman Music</span>
+      <nav class="co-foot-legal" aria-label="Informații legale">
+        <a href="/retur">Retur</a>
+        <a href="/termeni">Termeni</a>
+        <a href="/confidentialitate">Confidențialitate</a>
+        <a href="/cookies">Cookies</a>
+      </nav>
     </footer>
   </div>
 
@@ -168,7 +175,13 @@ const cfg = {
     .co-pay:disabled { opacity: 0.45; cursor: not-allowed; }
     .co-error { color: #d9534f; margin: 10px 0 0; line-height: 1.4; font-size: 12px; }
     .co-secure { color: var(--dim, rgba(242,235,224,0.55)); margin: 12px 0 0; text-align: center; font-size: 10px; }
-    .co-foot { display: flex; justify-content: center; padding: 20px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); color: var(--dim, rgba(242,235,224,0.4)); font-size: 11px; }
+    .co-consent { color: var(--dim, rgba(242,235,224,0.6)); margin: 14px 0 0; text-align: center; font-size: 11px; line-height: 1.5; }
+    .co-consent a { color: var(--cream, #f2ebe0); text-decoration: underline; text-underline-offset: 2px; }
+    .co-consent a:hover { color: var(--gold, #c9a24a); }
+    .co-foot { display: flex; flex-wrap: wrap; gap: 10px 20px; justify-content: center; align-items: center; padding: 20px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); color: var(--dim, rgba(242,235,224,0.4)); font-size: 11px; }
+    .co-foot-legal { display: flex; flex-wrap: wrap; gap: 8px 16px; letter-spacing: 0.06em; }
+    .co-foot-legal a { color: inherit; text-decoration: none; transition: color 0.2s; }
+    .co-foot-legal a:hover { color: var(--gold, #c9a24a); }
   </style>
 
   <script>

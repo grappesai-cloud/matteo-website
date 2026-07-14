@@ -1,0 +1,34 @@
+---
+import LegalLayout from '../layouts/LegalLayout.astro';
+import { COMPANY } from '../lib/legal';
+export const prerender = false;
+---
+
+<LegalLayout
+  title="Politica de cookies"
+  description="Ce cookie-uri și tehnologii de stocare folosește mattman.ro și în ce scop."
+>
+  <p>Această pagină explică ce cookie-uri și tehnologii similare de stocare folosim pe <strong>{COMPANY.site}</strong> și în ce scop.</p>
+
+  <h2>1. Ce sunt cookie-urile</h2>
+  <p>Cookie-urile sunt fișiere text de mici dimensiuni salvate de browserul tău atunci când vizitezi un site. Ele permit site-ului să funcționeze corect și să rețină anumite preferințe. Folosim și mecanisme similare (de exemplu <em>localStorage</em>) pentru a reține coșul de cumpărături.</p>
+
+  <h2>2. Ce folosim</h2>
+  <p>Folosim exclusiv <strong>cookie-uri și stocare strict necesare</strong> pentru funcționarea magazinului. <strong>Nu folosim cookie-uri de publicitate, profilare sau tracking</strong> către terți.</p>
+  <table>
+    <thead>
+      <tr><th>Cookie / stocare</th><th>Scop</th></tr>
+    </thead>
+    <tbody>
+      <tr><td>Coșul de cumpărături (<em>localStorage</em>)</td><td>Reține produsele adăugate în coș între pagini și vizite.</td></tr>
+      <tr><td>Sesiune de administrare</td><td>Menține autentificarea în panoul de administrare (doar pentru echipa Mattman).</td></tr>
+      <tr><td>Stripe</td><td>Cookie-uri esențiale pentru procesarea securizată a plăților și prevenirea fraudei, setate în pagina de plată.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>3. Cum controlezi cookie-urile</h2>
+  <p>Poți șterge sau bloca cookie-urile din setările browserului tău. Reține însă că, fără cookie-urile strict necesare, unele funcții ale magazinului (de exemplu coșul sau plata) pot să nu funcționeze corect.</p>
+
+  <h2>4. Contact</h2>
+  <p>Pentru întrebări despre cookie-uri sau despre datele tale, scrie-ne la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>. Vezi și <a href="/confidentialitate">Politica de confidențialitate</a>.</p>
+</LegalLayout>

@@ -113,6 +113,12 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
 
     <footer class="m-foot mono">
       <span>© {new Date().getFullYear()} Mattman Music</span>
+      <nav class="m-foot-legal" aria-label="Informații legale">
+        <a href="/retur">Retur</a>
+        <a href="/termeni">Termeni</a>
+        <a href="/confidentialitate">Confidențialitate</a>
+        <a href="/cookies">Cookies</a>
+      </nav>
       <a href="https://grappes.dev" target="_blank" rel="noopener" style="font-size:11px;letter-spacing:0.04em;opacity:0.6">made by grappes</a>
     </footer>
   </div>
@@ -357,11 +363,12 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
     /* FOOTER */
     .m-foot {
       margin-top: auto;
-      display: flex; justify-content: space-between; align-items: center; gap: 16px;
+      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 12px 16px;
       padding-top: 24px;
       border-top: 1px solid var(--hair, rgba(242,235,224,0.14));
       color: var(--dim, rgba(242,235,224,0.55));
     }
+    .m-foot-legal { display: flex; flex-wrap: wrap; gap: 8px 18px; font-size: 11px; letter-spacing: 0.06em; }
     .m-foot a { color: inherit; transition: color 0.2s; }
     .m-foot a:hover { color: var(--gold, #c9a24a); }
 
