@@ -28,7 +28,7 @@ export const RETURN = {
   // Adresa unde clienții trimit produsele returnate. Apare in emailul automat de
   // instrucțiuni. Default = sediul social; schimb-o dacă retururile merg altundeva.
   returnRecipient: 'S.C. Mattman Music S.R.L.',
-  returnAddress: 'Calea Victoriei nr. 155, bl. D1, sc. 3, et. 1, ap. 75, sector 1, București, cod poștal 010073',
+  returnAddress: 'Str. Brațului nr. 38, sector 2, București',
 
   // Comenzi mai vechi de atâtea zile nu mai pot cere retur automat (trimit la email).
   maxRequestAgeDays: 60,
