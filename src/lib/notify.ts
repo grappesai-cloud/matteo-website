@@ -323,6 +323,32 @@ function buildReturnInstructionsHtml(order: Order): string {
 </body></html>`;
 }
 
+/** Send a TEST return-instructions email to arbitrary addresses. Surfaces the real error. */
+export async function sendTestEmail(to: string[]): Promise<{ ok: boolean; error?: string }> {
+  if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
+  const recipients = to.map((s) => s.trim()).filter(Boolean);
+  if (!recipients.length) return { ok: false, error: 'no recipient' };
+  const sample: Order = {
+    id: 'test', number: 9999, createdAt: Date.now(), status: 'delivered',
+    items: [{ slug: 'menu', name: 'Menu', color: 'natural', colorLabel: 'Natural', size: 'L', qty: 1, unitPrice: 130 }],
+    amountTotal: 155, shippingAmount: 25, currency: 'RON',
+    customer: { name: 'Test', email: recipients[0] }, shipping: {},
+  };
+  try {
+    await deliver({
+      from: fromHeader(),
+      to: recipients,
+      subject: '[TEST] Mattman — verificare email retur',
+      html: buildReturnInstructionsHtml(sample),
+    });
+    return { ok: true };
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error('[notify] test email failed:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
 /** Best-effort: email the CUSTOMER the return address + steps. Never throws. */
 export async function sendReturnInstructions(order: Order): Promise<{ ok: boolean; error?: string }> {
   if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
