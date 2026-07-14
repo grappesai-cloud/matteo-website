@@ -149,3 +149,36 @@ export async function issueInvoice(order: Order): Promise<SmartbillInvoice> {
   }
   return { series: String(data.series || env('SMARTBILL_SERIES')), number: String(data.number) };
 }
+
+/**
+ * Stornează o factură emisă (emite o factură storno care o anulează fiscal).
+ * Endpoint SmartBill: POST /SBORO/api/invoice/reverse cu {companyVatCode, seriesName,
+ * number, issueDate}. Dacă factura originală a fost trimisă în SPV (e-Factura), storno
+ * se trimite automat de SmartBill în SPV conform setărilor contului.
+ *
+ * Aruncă o eroare RO clară la eșec. Returnează seria/numărul stornării dacă API-ul le dă.
+ */
+export async function reverseInvoice(series: string, number: string): Promise<SmartbillInvoice> {
+  const auth = Buffer.from(`${env('SMARTBILL_USER')}:${env('SMARTBILL_TOKEN')}`).toString('base64');
+  const res = await fetch(`${BASE}/invoice/reverse`, {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${auth}`,
+      'Content-Type': 'application/json',
+      Accept: 'application/json',
+    },
+    body: JSON.stringify({
+      companyVatCode: env('SMARTBILL_CIF'),
+      seriesName: series,
+      number: String(number),
+      issueDate: todayISO(),
+    }),
+  });
+
+  const data = await res.json().catch(() => ({} as any));
+  if (!res.ok || data?.errorText) {
+    throw new Error(data?.errorText || data?.message || `Stornare factură SmartBill eșuată (HTTP ${res.status}).`);
+  }
+  // Reverse-ul poate întoarce seria/numărul documentului storno; dacă nu, marcăm doar succesul.
+  return { series: String(data?.series || series), number: String(data?.number || '') };
+}

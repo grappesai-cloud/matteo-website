@@ -513,6 +513,9 @@ const blobReady = canWrite();
           <p class="adm-orow-cust mono">${esc(contact || '—')}</p>
           <p class="adm-orow-addr mono dim">📦 ${esc(addr || 'fără adresă')}</p>
           <ul class="adm-orow-items">${items}</ul>
+          ${o.invoiceNumber || o.refundId
+            ? `<p class="adm-orow-inv mono dim">${o.invoiceNumber ? `🧾 Factură ${esc(o.invoiceSeries || '')}-${esc(o.invoiceNumber)}` : ''}${o.stornoNumber ? ` · storno ${esc(o.stornoSeries || '')}-${esc(o.stornoNumber)}` : ''}${o.refundId ? ` · ↩ rambursat${o.refundAmount ? ' ' + o.refundAmount + ' RON' : ''}` : ''}</p>`
+            : ''}
           <div class="adm-orow-fulfil">
             <select class="adm-input adm-o-status" data-f="status">${opts}</select>
             <input class="adm-input adm-o-awb" data-f="awb" placeholder="AWB / nr. tracking" value="${esc(o.awb || '')}" />
@@ -523,6 +526,9 @@ const blobReady = canWrite();
                  <button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-mail" type="button" title="Trimite clientului emailul cu linkul de urmărire">✉ ${o.shippedEmailAt ? 'retrimite' : 'trimite'} tracking</button>
                  <button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-delawb" type="button" title="Anulează AWB-ul la FAN (doar înainte de ridicare)">🗑 șterge AWB</button>`
               : `<button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-fan" type="button">Generează AWB FAN ⚡</button>`}
+            ${o.refundId
+              ? `<span class="adm-o-refunded mono" title="Rambursat prin Stripe${o.stornoNumber ? ' · factură stornată' : ''}">↩ Rambursat</span>`
+              : `<button class="adm-btn adm-btn-danger adm-btn-sm adm-o-refund" type="button" title="Rambursează plata (Stripe) + stornează factura + marchează Anulată">↩ Retur / Rambursare</button>`}
             <span class="mono dim adm-o-msg"></span>
           </div>
         </article>`;
@@ -642,6 +648,36 @@ const blobReady = canWrite();
           if (idx >= 0 && d.order) orders[idx] = d.order;
           renderReport();
           msg.textContent = '✓ AWB șters';
+          renderOrders();
+        } catch (err: any) {
+          msg.textContent = err?.message || 'Eroare.';
+          (btn as HTMLButtonElement).disabled = false;
+        }
+      });
+
+      // Retur / rambursare: refund Stripe + storno SmartBill + status Anulată
+      ordersListEl?.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.adm-o-refund');
+        if (!btn) return;
+        const row = btn.closest<HTMLElement>('[data-order]')!;
+        const id = row.dataset.order!;
+        const o = orders.find((x) => x.id === id);
+        const msg = row.querySelector('.adm-o-msg') as HTMLElement;
+        const total = o?.amountTotal ?? 0;
+        if (!confirm(`Rambursez integral ${total} RON clientului prin Stripe, stornez factura și marchez comanda „Anulată"?\n\nAcțiunea nu poate fi anulată.`)) return;
+        (btn as HTMLButtonElement).disabled = true; msg.textContent = '… rambursez';
+        try {
+          const res = await fetch('/api/admin/refund', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+          });
+          const d = await res.json();
+          if (!res.ok) throw new Error(d.error || 'Eroare la rambursare.');
+          const idx = orders.findIndex((x) => x.id === id);
+          if (idx >= 0 && d.order) orders[idx] = d.order;
+          renderReport();
+          if (d.stornoError) {
+            alert(`Rambursarea a reușit (${d.refundAmount} RON), dar stornarea facturii a eșuat:\n${d.stornoError}\n\nStornează factura manual în SmartBill.`);
+          }
           renderOrders();
         } catch (err: any) {
           msg.textContent = err?.message || 'Eroare.';
@@ -1584,6 +1620,8 @@ const blobReady = canWrite();
     .adm-o-msg { flex: 0 0 auto; letter-spacing: 0.06em; }
     .adm-o-track { flex: 0 0 auto; color: var(--gold, #c9a24a); letter-spacing: 0.04em; font-size: 12px; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
     .adm-o-track:hover { color: var(--gold-bright, #e8c16c); }
+    .adm-orow-inv { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; }
+    .adm-o-refunded { flex: 0 0 auto; color: #7bb37b; letter-spacing: 0.04em; font-size: 12px; }
 
     @media (max-width: 860px) { .adm-orep { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 560px) {
