@@ -24,6 +24,14 @@ export const COMPANY = {
 export const RETURN = {
   windowDays: 14, // termenul legal minim de retragere
   whoPaysReturn: 'client' as const, // clientul suportă costul returnării
+
+  // Adresa unde clienții trimit produsele returnate. Apare in emailul automat de
+  // instrucțiuni. Default = sediul social; schimb-o dacă retururile merg altundeva.
+  returnRecipient: 'S.C. Mattman Music S.R.L.',
+  returnAddress: 'Calea Victoriei nr. 155, bl. D1, sc. 3, et. 1, ap. 75, sector 1, București, cod poștal 010073',
+
+  // Comenzi mai vechi de atâtea zile nu mai pot cere retur automat (trimit la email).
+  maxRequestAgeDays: 60,
 } as const;
 
 // Autorități / soluționare litigii (obligatoriu de afișat pentru comerț online RO/UE):

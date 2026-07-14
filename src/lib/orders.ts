@@ -57,6 +57,7 @@ export interface Order {
   note?: string;         // internal note
   updatedAt?: number;
   shippedEmailAt?: number; // ms epoch — set once the "comanda a fost expediată" email is sent to the customer
+  returnRequestedAt?: number; // ms epoch — clientul a cerut retur prin formularul online
   refundId?: string;     // Stripe refund id — set when the order is refunded (retur)
   refundedAt?: number;   // ms epoch — when the refund was issued
   refundAmount?: number; // RON actually refunded (may be < amountTotal on partial refund)

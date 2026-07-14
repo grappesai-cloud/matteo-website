@@ -8,6 +8,7 @@ import nodemailer from 'nodemailer';
 import { formatAddress, orderUnits, type Order } from './orders';
 import { fanTrackingUrl } from './fancourier';
 import { updateOrder } from './orders-store';
+import { RETURN, COMPANY } from './legal';
 
 function env(k: string): string {
   return (process.env[k] || (import.meta.env as any)[k] || '').trim();
@@ -258,6 +259,115 @@ function getTransport(): nodemailer.Transporter {
     socketTimeout: 20000,
   });
   return transporter;
+}
+
+function buildReturnInstructionsHtml(order: Order): string {
+  const name = esc(order.customer?.name || order.shipping?.name || 'dragă fan');
+  const recipient = esc(RETURN.returnRecipient);
+  const address = esc(RETURN.returnAddress);
+  const email = esc(COMPANY.email);
+  const days = RETURN.windowDays;
+  return `
+<!DOCTYPE html>
+<html lang="ro"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="color-scheme" content="dark"></head>
+<body style="margin:0;padding:0;background:${INK};-webkit-font-smoothing:antialiased">
+  <div style="display:none;max-height:0;overflow:hidden;opacity:0">Cum returnezi comanda #${order.number}. Adresa și pașii sunt înăuntru.</div>
+  <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${INK}">
+    <tr><td align="center" style="padding:32px 16px">
+      <table role="presentation" width="600" cellpadding="0" cellspacing="0" border="0" style="width:600px;max-width:100%;background:${INK_SOFT};border:1px solid ${HAIR};border-radius:8px;overflow:hidden">
+
+        <tr><td style="padding:30px 36px 0;text-align:center">
+          <span style="font:700 13px/1 ${SANS};letter-spacing:.42em;text-transform:uppercase;color:${GOLD}">MATTMAN&nbsp;MUSIC</span>
+        </td></tr>
+
+        <tr><td style="padding:26px 36px 8px;text-align:center">
+          <span style="display:inline-block;margin:0 0 14px;padding:6px 14px;border:1px solid ${HAIR};border-radius:999px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${CREAM_DIM}">Comanda #${order.number}</span>
+          <h1 style="margin:0;font:400 32px/1.15 ${SERIF};color:${CREAM}">Cerere de retur<br><em style="color:${GOLD_BRIGHT};font-style:italic">înregistrată.</em></h1>
+          <p style="margin:14px 0 0;font:400 15px/1.6 ${SANS};color:${CREAM_DIM}">Am primit cererea ta, ${name}. Iată cum trimiți produsele înapoi.</p>
+        </td></tr>
+
+        <!-- adresa de retur -->
+        <tr><td style="padding:24px 36px 0">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="background:${INK};border:1px solid ${HAIR};border-radius:6px">
+            <tr><td style="padding:18px 20px">
+              <p style="margin:0 0 6px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${GOLD}">Trimite produsele la</p>
+              <p style="margin:0;font:600 15px/1.5 ${SANS};color:${CREAM}">${recipient}</p>
+              <p style="margin:2px 0 0;font:400 14px/1.55 ${SANS};color:${CREAM}">${address}</p>
+            </td></tr>
+          </table>
+        </td></tr>
+
+        <!-- pasi -->
+        <tr><td style="padding:22px 36px 0">
+          <p style="margin:0 0 8px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${GOLD}">Ce trebuie să faci</p>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="font:400 14px/1.6 ${SANS};color:${CREAM}">
+            <tr><td style="padding:5px 0">Trimite produsele in maximum <strong>${days} zile</strong> de la anunțarea retragerii, prin curier cu AWB (răspunderea coletului e a ta până ajunge la noi).</td></tr>
+            <tr><td style="padding:5px 0">Produsele trebuie <strong>nepurtate, nespălate, cu etichete</strong>, in ambalajul original.</td></tr>
+            <tr><td style="padding:5px 0">Costul returnării este suportat de tine; costul livrării inițiale ți-l returnăm noi.</td></tr>
+            <tr><td style="padding:5px 0">După ce primim și verificăm produsele, <strong>îți returnăm banii pe card in maximum ${days} zile</strong>.</td></tr>
+          </table>
+        </td></tr>
+
+        <tr><td style="padding:22px 36px 0">
+          <p style="margin:0;font:400 13px/1.6 ${SANS};color:${CREAM_DIM}">Întrebări? Răspunde la acest email sau scrie-ne la <a href="mailto:${email}" style="color:${GOLD_BRIGHT};text-decoration:none">${email}</a>. Detalii complete pe <a href="https://mattman.ro/retur" style="color:${GOLD_BRIGHT};text-decoration:none">mattman.ro/retur</a>.</p>
+        </td></tr>
+
+        <tr><td style="padding:28px 36px 30px;text-align:center;border-top:1px solid ${HAIR};margin-top:8px">
+          <p style="margin:24px 0 4px;font:700 12px/1 ${SANS};letter-spacing:.3em;text-transform:uppercase;color:${GOLD}">MATTMAN MUSIC</p>
+          <p style="margin:0;font:400 12px/1.5 ${SANS};color:${CREAM_DIM}"><a href="https://mattman.ro" style="color:${CREAM_DIM};text-decoration:none">mattman.ro</a></p>
+        </td></tr>
+
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+}
+
+/** Best-effort: email the CUSTOMER the return address + steps. Never throws. */
+export async function sendReturnInstructions(order: Order): Promise<{ ok: boolean; error?: string }> {
+  if (!notifyConfigured()) return { ok: false, error: 'SMTP not configured' };
+  const to = (order.customer?.email || '').trim();
+  if (!to) return { ok: false, error: 'no recipient' };
+  try {
+    await deliver({
+      from: fromHeader(),
+      to,
+      subject: `Retur comanda #${order.number} — cum trimiți produsele înapoi`,
+      html: buildReturnInstructionsHtml(order),
+    });
+    return { ok: true };
+  } catch (err: any) {
+    const msg = err?.message || String(err);
+    console.error('[notify] return instructions email failed:', msg);
+    return { ok: false, error: msg };
+  }
+}
+
+/** Best-effort: alert the owner that a customer requested a return. Never throws. */
+export async function notifyOwnerReturnRequest(order: Order, origin: string): Promise<void> {
+  if (!notifyConfigured()) return;
+  const to = (env('ORDER_NOTIFY_EMAIL') || env('NOTIFY_FROM') || env('SMTP_USER'))
+    .split(',').map((s) => s.trim()).filter(Boolean);
+  if (!to.length) return;
+  const c = order.customer || {};
+  const adminUrl = `${origin.replace(/\/$/, '')}/admin`;
+  const items = order.items
+    .map((i) => `<li><strong>${i.qty}×</strong> ${esc(i.name)} — ${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</li>`)
+    .join('');
+  const html = `
+  <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
+    <h2 style="margin:0 0 4px">Cerere de retur · Comanda #${order.number}</h2>
+    <p style="margin:0 0 16px;color:#666">${esc(c.name || '—')} · ${esc([c.phone, c.email].filter(Boolean).join(' · ') || '—')}</p>
+    <h3 style="margin:0 0 6px">Produse</h3>
+    <ul style="margin:0 0 16px;padding-left:18px;line-height:1.6">${items}</ul>
+    <p style="margin:0 0 16px;color:#666">Clientul a primit automat adresa de retur și pașii. Când sosește coletul, verifică produsul și apasă „Retur / Rambursare" in dashboard.</p>
+    <p style="margin:0"><a href="${esc(adminUrl)}" style="background:#c9a24a;color:#0a0a0a;padding:10px 18px;border-radius:6px;text-decoration:none;font-weight:bold">Deschide dashboard-ul</a></p>
+  </div>`;
+  try {
+    await deliver({ from: fromHeader(), to, subject: `Cerere de retur #${order.number}`, html });
+  } catch (err: any) {
+    console.error('[notify] owner return-request email failed:', err?.message);
+  }
 }
 
 /** Best-effort: email owner about a new order via SMTP. Never throws. */

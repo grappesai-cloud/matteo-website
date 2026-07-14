@@ -513,6 +513,9 @@ const blobReady = canWrite();
           <p class="adm-orow-cust mono">${esc(contact || '—')}</p>
           <p class="adm-orow-addr mono dim">📦 ${esc(addr || 'fără adresă')}</p>
           <ul class="adm-orow-items">${items}</ul>
+          ${o.returnRequestedAt && !o.refundId
+            ? `<p class="adm-orow-return mono">↩ Retur cerut de client${o.returnRequestedAt ? ' · ' + esc(fmtDate(o.returnRequestedAt)) : ''}</p>`
+            : ''}
           ${o.invoiceNumber || o.refundId
             ? `<p class="adm-orow-inv mono dim">${o.invoiceNumber ? `🧾 Factură ${esc(o.invoiceSeries || '')}-${esc(o.invoiceNumber)}` : ''}${o.stornoNumber ? ` · storno ${esc(o.stornoSeries || '')}-${esc(o.stornoNumber)}` : ''}${o.refundId ? ` · ↩ rambursat${o.refundAmount ? ' ' + o.refundAmount + ' RON' : ''}` : ''}</p>`
             : ''}
@@ -1621,6 +1624,7 @@ const blobReady = canWrite();
     .adm-o-track { flex: 0 0 auto; color: var(--gold, #c9a24a); letter-spacing: 0.04em; font-size: 12px; text-decoration: none; border-bottom: 1px solid currentColor; padding-bottom: 1px; }
     .adm-o-track:hover { color: var(--gold-bright, #e8c16c); }
     .adm-orow-inv { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; }
+    .adm-orow-return { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; color: var(--gold, #c9a24a); }
     .adm-o-refunded { flex: 0 0 auto; color: #7bb37b; letter-spacing: 0.04em; font-size: 12px; }
 
     @media (max-width: 860px) { .adm-orep { grid-template-columns: repeat(3, 1fr); } }

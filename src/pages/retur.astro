@@ -9,8 +9,25 @@ export const prerender = false;
   description="Dreptul de retragere de 14 zile, procedura de returnare, rambursarea și garanția legală de conformitate pentru comenzile din magazinul Mattman Music."
 >
   <div class="lg-note">
-    <p><strong>Pe scurt:</strong> ai dreptul să returnezi produsele în termen de <strong>{RETURN.windowDays} zile</strong> de la primire, fără să ne spui motivul. Ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, îți trimitem adresa și instrucțiunile, ne trimiți produsele înapoi, iar noi îți returnăm banii în maximum 14 zile.</p>
+    <p><strong>Pe scurt:</strong> ai dreptul să returnezi produsele în termen de <strong>{RETURN.windowDays} zile</strong> de la primire, fără să ne spui motivul. Completezi formularul de mai jos sau ne scrii la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a>, îți trimitem adresa și instrucțiunile, ne trimiți produsele înapoi, iar noi îți returnăm banii în maximum 14 zile.</p>
   </div>
+
+  <h2 id="solicita-retur">Solicită retur online</h2>
+  <p>Completează numărul comenzii și emailul folosit la comandă. Îți trimitem imediat pe email adresa de retur și pașii de urmat.</p>
+  <form class="rr-form" id="rr-form" novalidate>
+    <div class="rr-fields">
+      <label class="rr-field">
+        <span>Număr comandă</span>
+        <input id="rr-order" name="order" inputmode="numeric" autocomplete="off" placeholder="ex. 1030" required />
+      </label>
+      <label class="rr-field">
+        <span>Email</span>
+        <input id="rr-email" name="email" type="email" autocomplete="email" placeholder="emailul de la comandă" required />
+      </label>
+    </div>
+    <button type="submit" class="rr-btn" id="rr-btn">Trimite cererea de retur</button>
+    <p class="rr-msg" id="rr-msg" role="status" hidden></p>
+  </form>
 
   <h2>1. Cine suntem</h2>
   <p>Magazinul de pe <strong>{COMPANY.site}</strong> este operat de <strong>{COMPANY.legalName}</strong>, CIF {COMPANY.cif}, {COMPANY.onrc}, cu sediul în {COMPANY.address}. Ne poți contacta oricând la <a href={`mailto:${COMPANY.email}`}>{COMPANY.email}</a> sau la telefon {COMPANY.phone}.</p>
@@ -82,3 +99,80 @@ export const prerender = false;
     <li>poți folosi <strong>platforma europeană SOL (ODR)</strong> pentru soluționarea online a litigiilor: <a href={AUTHORITIES.sol} target="_blank" rel="noopener noreferrer">ec.europa.eu/consumers/odr</a>.</li>
   </ul>
 </LegalLayout>
+
+<style>
+  .rr-form { margin: 4px 0 8px; }
+  .rr-fields { display: flex; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+  .rr-field { flex: 1 1 220px; display: flex; flex-direction: column; gap: 6px; }
+  .rr-field span { font-size: 12px; letter-spacing: 0.04em; color: rgba(10, 10, 10, 0.6); }
+  .rr-field input {
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+    border: 1px solid rgba(10, 10, 10, 0.2);
+    border-radius: 3px;
+    padding: 12px 14px;
+    font-size: 15px;
+    color: var(--ink, #0a0a0a);
+    font-family: inherit;
+  }
+  .rr-field input:focus { outline: none; border-color: var(--gold, #c9a24a); box-shadow: 0 0 0 3px rgba(201, 162, 74, 0.18); }
+  .rr-btn {
+    appearance: none;
+    border: 0;
+    background: var(--ink, #0a0a0a);
+    color: var(--cream, #f2ebe0);
+    padding: 13px 24px;
+    border-radius: 3px;
+    font-family: inherit;
+    font-size: 14px;
+    letter-spacing: 0.02em;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .rr-btn:hover:not(:disabled) { background: var(--burgundy, #6b1a1a); }
+  .rr-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .rr-msg { margin: 14px 0 0; font-size: 14px; line-height: 1.5; }
+  .rr-msg.is-ok { color: #2f7d32; }
+  .rr-msg.is-err { color: var(--burgundy, #6b1a1a); }
+</style>
+
+<script>
+  const form = document.getElementById('rr-form') as HTMLFormElement | null;
+  const btn = document.getElementById('rr-btn') as HTMLButtonElement | null;
+  const msg = document.getElementById('rr-msg') as HTMLElement | null;
+  const orderEl = document.getElementById('rr-order') as HTMLInputElement | null;
+  const emailEl = document.getElementById('rr-email') as HTMLInputElement | null;
+
+  function show(text: string, ok: boolean) {
+    if (!msg) return;
+    msg.textContent = text;
+    msg.hidden = false;
+    msg.classList.toggle('is-ok', ok);
+    msg.classList.toggle('is-err', !ok);
+  }
+
+  form?.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const order = (orderEl?.value || '').trim();
+    const email = (emailEl?.value || '').trim();
+    if (!order || !email) { show('Completează numărul comenzii și emailul.', false); return; }
+    if (btn) { btn.disabled = true; btn.textContent = 'Se trimite…'; }
+    if (msg) msg.hidden = true;
+    try {
+      const res = await fetch('/api/return-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ order, email }),
+      });
+      const d = await res.json();
+      if (!res.ok) throw new Error(d.error || 'A apărut o eroare.');
+      show(d.message || 'Cerere trimisă. Verifică-ți emailul.', true);
+      form.reset();
+    } catch (err: any) {
+      show(err?.message || 'A apărut o eroare. Încearcă din nou.', false);
+    } finally {
+      if (btn) { btn.disabled = false; btn.textContent = 'Trimite cererea de retur'; }
+    }
+  });
+</script>
