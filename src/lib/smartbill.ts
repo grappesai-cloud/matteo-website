@@ -14,17 +14,16 @@
 // client se activează doar după ce configurezi SMTP în SmartBill.
 
 import type { Order } from './orders';
-import { judetFromPostalCode } from './orders';
+import { orderCounty } from './orders';
 import { ADULT_SIZES } from './products';
 
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
 
-// Denumirile EXACTE ale produselor din gestiunea SmartBill. Pentru ca „descărcarea
-// gestiunii" (useStock) să scadă stocul, numele liniei de pe factură trebuie să fie
-// IDENTIC cu numele produsului din gestiune. Ilinca primește de la Ruvix doar 3 SKU-uri
+// Denumiri generice de produs pe factură. Ilinca primește de la Ruvix doar 3 SKU-uri
 // generice — TRICOU ADULTI / TRICOU COPIL / PUNGA — indiferent de model/culoare, deci
-// factura trebuie să folosească aceleași denumiri, iar modelul concret merge în descriere.
-// Configurabile prin env dacă denumirile din gestiune diferă.
+// factura folosește aceleași denumiri, iar modelul concret merge în descriere.
+// NOTĂ: descărcarea de gestiune din SmartBill (useStock) e OPRITĂ — stocul e gestionat
+// în app. useStock:true spărsese facturarea (produsele n-au unitate/stoc în SmartBill).
 function gestiuneName(size: string): string {
   const s = String(size || '').trim();
   const isKid = !!s && !(ADULT_SIZES as readonly string[]).includes(s);
@@ -51,10 +50,6 @@ function todayISO(): string {
 function buildInvoice(order: Order) {
   const s = order.shipping || {};
   const cif = env('SMARTBILL_CIF');
-  // Gestiunea din care se descarcă marfa la emiterea facturii („Descarcă gestiunea").
-  // Trebuie să fie o gestiune de tip „Consum" în contul SmartBill. Numele exact e
-  // configurabil; default „Consum".
-  const warehouse = env('SMARTBILL_WAREHOUSE') || 'Consum';
 
   const products = order.items.map((i) => {
     // Modelul concret + mărime + culoare merg în DESCRIERE (apare sub denumire pe
@@ -73,7 +68,6 @@ function buildInvoice(order: Order) {
       taxPercentage: TVA,
       saveToDb: false,
       isService: false,
-      warehouseName: warehouse, // gestiunea de consum din care se descarcă
     };
   });
 
@@ -91,7 +85,6 @@ function buildInvoice(order: Order) {
       taxPercentage: TVA,
       saveToDb: false,
       isService: true,
-      warehouseName: warehouse, // ignorat pentru servicii, dar păstrează tipul uniform
     });
   }
 
@@ -103,9 +96,10 @@ function buildInvoice(order: Order) {
       isTaxPayer: false,
       address: [s.line1, s.line2].filter(Boolean).join(', '),
       city: s.city || '',
-      // Județul din cod poștal (autoritar). NU folosi orașul ca fallback:
-      // „Vălenii de Munte" nu e județ valid și ANAF respinge e-Factura.
-      county: judetFromPostalCode(s.postalCode) || s.state || '',
+      // Județul ales de client din dropdown-ul FAN (autoritar), adus la forma cu
+      // diacritice cerută de ANAF. Cod poștal doar fallback (comenzi vechi). NU
+      // folosi orașul ca fallback: „Vălenii de Munte" nu e județ valid.
+      county: orderCounty(s),
       country: s.country || 'Romania',
       email: order.customer?.email || '',
       saveToDb: false,
@@ -116,7 +110,7 @@ function buildInvoice(order: Order) {
     dueDate: todayISO(),
     mentions: `Comanda #${order.number}`,
     observations: `Comanda online #${order.number}`,
-    useStock: true, // „Descarcă gestiunea" bifat — scade stocul din gestiunea de consum
+    useStock: false, // gestiunea NU se descarcă din SmartBill (stocul e gestionat în app)
     sendEmail: env('SMARTBILL_SEND_EMAIL') === 'true',
     products,
   };
