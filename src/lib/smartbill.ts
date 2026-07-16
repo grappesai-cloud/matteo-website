@@ -14,7 +14,7 @@
 // client se activează doar după ce configurezi SMTP în SmartBill.
 
 import type { Order } from './orders';
-import { orderCounty } from './orders';
+import { judetFromPostalCode } from './orders';
 import { ADULT_SIZES } from './products';
 
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
@@ -47,9 +47,17 @@ function todayISO(): string {
   return new Date().toISOString().slice(0, 10);
 }
 
-function buildInvoice(order: Order) {
+/** Opțiuni de emitere. Implicit: data de azi, email conform SMARTBILL_SEND_EMAIL. */
+export interface IssueOptions {
+  issueDate?: string; // ISO YYYY-MM-DD; override pentru emitere retroactivă
+  sendEmail?: boolean; // override peste flag-ul din env
+}
+
+function buildInvoice(order: Order, opts: IssueOptions = {}) {
   const s = order.shipping || {};
   const cif = env('SMARTBILL_CIF');
+  const issueDate = opts.issueDate || todayISO();
+  const sendEmail = opts.sendEmail ?? env('SMARTBILL_SEND_EMAIL') === 'true';
 
   const products = order.items.map((i) => {
     // Modelul concret + mărime + culoare merg în DESCRIERE (apare sub denumire pe
@@ -96,22 +104,21 @@ function buildInvoice(order: Order) {
       isTaxPayer: false,
       address: [s.line1, s.line2].filter(Boolean).join(', '),
       city: s.city || '',
-      // Județul ales de client din dropdown-ul FAN (autoritar), adus la forma cu
-      // diacritice cerută de ANAF. Cod poștal doar fallback (comenzi vechi). NU
-      // folosi orașul ca fallback: „Vălenii de Munte" nu e județ valid.
-      county: orderCounty(s),
+      // Județul dedus din codul poștal (autoritar); `state` doar fallback fiindcă
+      // Stripe pune adesea ORAȘUL în `state` la checkout-ul lor hosted.
+      county: judetFromPostalCode(s.postalCode) || s.state || '',
       country: s.country || 'Romania',
       email: order.customer?.email || '',
       saveToDb: false,
     },
-    issueDate: todayISO(),
+    issueDate,
     seriesName: env('SMARTBILL_SERIES'),
     isDraft: false,
-    dueDate: todayISO(),
+    dueDate: issueDate,
     mentions: `Comanda #${order.number}`,
     observations: `Comanda online #${order.number}`,
     useStock: false, // gestiunea NU se descarcă din SmartBill (stocul e gestionat în app)
-    sendEmail: env('SMARTBILL_SEND_EMAIL') === 'true',
+    sendEmail,
     products,
   };
 }
@@ -125,7 +132,7 @@ export interface SmartbillInvoice {
  * Emite o factură pentru o comandă. Aruncă o eroare RO clară la eșec.
  * Răspuns SmartBill: { errorText, message, series, number } — număr gol/eroare ⇒ throw.
  */
-export async function issueInvoice(order: Order): Promise<SmartbillInvoice> {
+export async function issueInvoice(order: Order, opts: IssueOptions = {}): Promise<SmartbillInvoice> {
   const auth = Buffer.from(`${env('SMARTBILL_USER')}:${env('SMARTBILL_TOKEN')}`).toString('base64');
   const res = await fetch(`${BASE}/invoice`, {
     method: 'POST',
@@ -134,7 +141,7 @@ export async function issueInvoice(order: Order): Promise<SmartbillInvoice> {
       'Content-Type': 'application/json',
       Accept: 'application/json',
     },
-    body: JSON.stringify(buildInvoice(order)),
+    body: JSON.stringify(buildInvoice(order, opts)),
   });
 
   const data = await res.json().catch(() => ({} as any));
