@@ -22,8 +22,14 @@ const BASE = 'https://ws.smartbill.ro/SBORO/api';
 // Denumiri generice de produs pe factură. Ilinca primește de la Ruvix doar 3 SKU-uri
 // generice — TRICOU ADULTI / TRICOU COPIL / PUNGA — indiferent de model/culoare, deci
 // factura folosește aceleași denumiri, iar modelul concret merge în descriere.
-// NOTĂ: descărcarea de gestiune din SmartBill (useStock) e OPRITĂ — stocul e gestionat
-// în app. useStock:true spărsese facturarea (produsele n-au unitate/stoc în SmartBill).
+// DESCĂRCARE DE GESTIUNE (useStock): gated pe env. Default OPRIT — stocul e gestionat
+// în app. Se activează setând SMARTBILL_USE_STOCK=true + SMARTBILL_WAREHOUSE=<numele
+// gestiunii>. ⚠ Ca să nu spargă facturarea (cum a făcut prima dată), articolele generice
+// TRICOU ADULTI / TRICOU COPIL / TRANSPORT trebuie să existe în Nomenclatorul SmartBill
+// (unitate „buc") și gestiunea să aibă stoc pe ele; altfel SmartBill respinge factura.
+function useStockEnabled(): boolean {
+  return env('SMARTBILL_USE_STOCK') === 'true' && !!env('SMARTBILL_WAREHOUSE');
+}
 function gestiuneName(size: string): string {
   const s = String(size || '').trim();
   const isKid = !!s && !(ADULT_SIZES as readonly string[]).includes(s);
@@ -117,7 +123,9 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
     dueDate: issueDate,
     mentions: `Comanda #${order.number}`,
     observations: `Comanda online #${order.number}`,
-    useStock: false, // gestiunea NU se descarcă din SmartBill (stocul e gestionat în app)
+    // Descărcare de gestiune: doar dacă SMARTBILL_USE_STOCK=true + gestiune setată.
+    useStock: useStockEnabled(),
+    ...(useStockEnabled() ? { warehouseName: env('SMARTBILL_WAREHOUSE') } : {}),
     sendEmail,
     products,
   };
@@ -146,9 +154,33 @@ export async function issueInvoice(order: Order, opts: IssueOptions = {}): Promi
 
   const data = await res.json().catch(() => ({} as any));
   if (!res.ok || data?.errorText || !data?.number) {
-    throw new Error(data?.errorText || data?.message || `Emitere factură SmartBill eșuată (HTTP ${res.status}).`);
+    // SmartBill întoarce fie `errorText` (format vechi), fie `errors[].message` (nou).
+    const detail = data?.errorText || data?.message || data?.errors?.[0]?.message || `HTTP ${res.status}`;
+    throw new Error(`Emitere factură SmartBill eșuată: ${detail}`);
   }
   return { series: String(data.series || env('SMARTBILL_SERIES')), number: String(data.number) };
+}
+
+/**
+ * Interoghează gestiunile și stocul din SmartBill (endpoint GET /SBORO/api/stocks).
+ * Fără warehouseName întoarce toate gestiunile. Util ca să verificăm ce gestiuni și
+ * ce articole există în cont ÎNAINTE de a activa useStock (denumirile trebuie să fie
+ * identice cu cele trimise pe factură). Returnează răspunsul brut SmartBill.
+ */
+export async function listStocks(warehouseName?: string): Promise<any> {
+  const cif = env('SMARTBILL_CIF');
+  const auth = Buffer.from(`${env('SMARTBILL_USER')}:${env('SMARTBILL_TOKEN')}`).toString('base64');
+  const params = new URLSearchParams({ cif, date: todayISO() });
+  if (warehouseName) params.set('warehouseName', warehouseName);
+  const res = await fetch(`${BASE}/stocks?${params.toString()}`, {
+    headers: { Authorization: `Basic ${auth}`, Accept: 'application/json' },
+  });
+  const data = await res.json().catch(() => ({} as any));
+  if (!res.ok || data?.errorText) {
+    const detail = data?.errorText || data?.message || `HTTP ${res.status}`;
+    throw new Error(`Interogare stoc SmartBill eșuată: ${detail}`);
+  }
+  return data;
 }
 
 /**
