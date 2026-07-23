@@ -198,6 +198,19 @@ const productJsonLd = {
 
   <CartDrawer products={catalog} />
 
+  <div class="pd-modal" id="pd-size-modal" hidden>
+    <div class="pd-modal-backdrop" data-close></div>
+    <div class="pd-modal-box" role="dialog" aria-modal="true" aria-labelledby="pd-modal-title">
+      <p class="pd-modal-eyebrow mono">Înainte de comandă</p>
+      <h3 class="pd-modal-title" id="pd-modal-title">Sigur e măsura potrivită?</h3>
+      <p class="pd-modal-text">Tricourile noastre au croială oversized. Aruncă un ochi pe ghidul de mărimi ca să fii sigur că ai ales bine.</p>
+      <div class="pd-modal-actions">
+        <button type="button" class="pd-modal-btn pd-modal-ghost mono" id="pd-modal-guide">Vezi ghidul de mărimi</button>
+        <button type="button" class="pd-modal-btn pd-modal-primary mono" id="pd-modal-confirm">Da, adaugă în coș</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const root = document.querySelector<HTMLElement>('.pd')!;
     const slug = root.dataset.slug!;
@@ -324,7 +337,12 @@ const productJsonLd = {
       qtyEl.textContent = String(qty);
     });
 
-    // add to cart
+    // add to cart — cu confirmare oversized înainte de adăugare
+    const sizeModal = document.getElementById('pd-size-modal')!;
+    function openSizeModal() { sizeModal.hidden = false; document.body.style.overflow = 'hidden'; }
+    function closeSizeModal() { sizeModal.hidden = true; document.body.style.overflow = ''; }
+    function doAdd() { (window as any).MattmanCart?.add({ slug, color, size, qty }); }
+
     document.getElementById('pd-add')!.addEventListener('click', () => {
       if (!size) {
         hintEl.textContent = 'Alege o mărime mai întâi.';
@@ -336,8 +354,16 @@ const productJsonLd = {
         hintEl.hidden = false;
         return;
       }
-      (window as any).MattmanCart?.add({ slug, color, size, qty });
+      openSizeModal();
     });
+
+    document.getElementById('pd-modal-confirm')!.addEventListener('click', () => { closeSizeModal(); doAdd(); });
+    document.getElementById('pd-modal-guide')!.addEventListener('click', () => {
+      closeSizeModal();
+      document.getElementById('size-guide')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
+    sizeModal.querySelector('[data-close]')!.addEventListener('click', closeSizeModal);
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && !sizeModal.hidden) closeSizeModal(); });
 
     updateSizes();
   </script>
@@ -521,6 +547,68 @@ const productJsonLd = {
       .pd-main { grid-template-columns: 1fr; }
       .pd-gallery { position: static; }
       .pd-stage { max-width: 520px; }
+    }
+
+    /* confirmare oversized la Adaugă în coș */
+    .pd-modal[hidden] { display: none; }
+    .pd-modal {
+      position: fixed; inset: 0; z-index: 1000;
+      display: flex; align-items: center; justify-content: center;
+      padding: 20px;
+    }
+    .pd-modal-backdrop {
+      position: absolute; inset: 0;
+      background: rgba(4, 4, 4, 0.72);
+      backdrop-filter: blur(3px);
+      -webkit-backdrop-filter: blur(3px);
+    }
+    .pd-modal-box {
+      position: relative;
+      width: min(440px, 100%);
+      background: #131313;
+      border: 1px solid rgba(242, 235, 224, 0.14);
+      padding: clamp(24px, 4vw, 36px);
+      color: var(--cream, #f2ebe0);
+      box-shadow: 0 24px 60px rgba(0, 0, 0, 0.55);
+      animation: pd-modal-in 0.22s ease;
+    }
+    @keyframes pd-modal-in {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .pd-modal-eyebrow {
+      color: var(--gold, #c9a24a);
+      font-size: 10.5px; letter-spacing: 0.2em; text-transform: uppercase;
+      margin: 0 0 12px;
+    }
+    .pd-modal-title {
+      font-size: clamp(20px, 3.4vw, 26px);
+      line-height: 1.15; margin: 0 0 12px; font-weight: 600;
+    }
+    .pd-modal-text {
+      font-size: 14px; line-height: 1.55;
+      color: rgba(242, 235, 224, 0.78); margin: 0 0 24px;
+    }
+    .pd-modal-actions { display: flex; flex-direction: column; gap: 10px; }
+    .pd-modal-btn {
+      width: 100%; padding: 13px 18px;
+      font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase;
+      cursor: pointer; border: 1px solid transparent;
+      transition: background 0.18s, color 0.18s, border-color 0.18s;
+    }
+    .pd-modal-primary {
+      background: var(--gold, #c9a24a); color: #0a0a0a;
+      border-color: var(--gold, #c9a24a); font-weight: 600;
+    }
+    .pd-modal-primary:hover { background: #d8b25a; border-color: #d8b25a; }
+    .pd-modal-ghost {
+      background: transparent; color: var(--cream, #f2ebe0);
+      border-color: rgba(242, 235, 224, 0.28);
+    }
+    .pd-modal-ghost:hover { border-color: var(--gold, #c9a24a); color: var(--gold, #c9a24a); }
+    @media (min-width: 480px) {
+      .pd-modal-actions { flex-direction: row; }
+      .pd-modal-btn { flex: 1; }
     }
   </style>
 </Layout>
