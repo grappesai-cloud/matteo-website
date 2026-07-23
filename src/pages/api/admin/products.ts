@@ -35,13 +35,17 @@ function sanitizeColors(input: any): ProductColor[] {
     const front = str(c?.front, 600);
     const back = str(c?.back, 600);
     const macro = str(c?.macro, 600);
-    if (!front || !back) continue; // front + back required; macro optional
+    const detail2 = str(c?.detail2, 600);
+    const sizeGuide = str(c?.sizeGuide, 600);
+    if (!front || !back) continue; // front + back required; rest optional
     let key = slugify(str(c?.key, 40) || label) || 'c';
     while (used.has(key)) key += '-x';
     used.add(key);
     const swatch = /^#[0-9a-fA-F]{3,8}$/.test(str(c?.swatch, 9)) ? str(c?.swatch, 9) : '#111111';
     const color: ProductColor = { key, label, swatch, front, back };
     if (macro) color.macro = macro;
+    if (detail2) color.detail2 = detail2;
+    if (sizeGuide) color.sizeGuide = sizeGuide;
     const stock = sanitizeStock(c?.stock);
     if (stock) color.stock = stock;
     out.push(color);

@@ -373,6 +373,22 @@ const blobReady = canWrite();
           </span>
           <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
         </label>
+        <label class="adm-upload" data-side="detail2">
+          <input type="hidden" class="adm-img-url" />
+          <span class="adm-upload-inner">
+            <img class="adm-upload-preview" hidden />
+            <span class="adm-upload-cta mono">Detaliu 2 ↑</span>
+          </span>
+          <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
+        </label>
+        <label class="adm-upload" data-side="sizeGuide">
+          <input type="hidden" class="adm-img-url" />
+          <span class="adm-upload-inner">
+            <img class="adm-upload-preview" hidden />
+            <span class="adm-upload-cta mono">Ghid mărimi ↑</span>
+          </span>
+          <input type="file" class="adm-file" accept="image/png,image/jpeg,image/webp,image/avif" hidden />
+        </label>
       </div>
       <div class="adm-color-stock" hidden>
         <span class="adm-label mono">Stoc pe mărime</span>
@@ -974,9 +990,9 @@ const blobReady = canWrite();
         const node = tpl.content.firstElementChild!.cloneNode(true) as HTMLElement;
         (node.querySelector('.adm-color-label') as HTMLInputElement).value = c?.label || '';
         (node.querySelector('.adm-color-swatch') as HTMLInputElement).value = c?.swatch || '#111111';
-        const SIDE_LABEL: Record<string, string> = { front: 'Față', back: 'Spate', macro: 'Detaliu' };
+        const SIDE_LABEL: Record<string, string> = { front: 'Față', back: 'Spate', macro: 'Detaliu', detail2: 'Detaliu 2', sizeGuide: 'Ghid mărimi' };
         node.querySelectorAll<HTMLElement>('.adm-upload').forEach((up) => {
-          const side = up.dataset.side as 'front' | 'back' | 'macro';
+          const side = up.dataset.side as 'front' | 'back' | 'macro' | 'detail2' | 'sizeGuide';
           const label = SIDE_LABEL[side] || side;
           const url = c?.[side] || '';
           const urlInput = up.querySelector('.adm-img-url') as HTMLInputElement;
@@ -1128,6 +1144,8 @@ const blobReady = canWrite();
             front: get(0),
             back: get(1),
             macro: get(2),
+            detail2: get(3),
+            sizeGuide: get(4),
             stock,
           };
         });

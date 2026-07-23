@@ -79,6 +79,12 @@ const productJsonLd = {
           <button class="pd-thumb" type="button" data-view="macro" id="pd-thumb-macro-btn" hidden={!first.macro}>
             <img src={first.macro || first.front} alt="Detaliu" id="pd-thumb-macro" loading="lazy" decoding="async" />
           </button>
+          <button class="pd-thumb" type="button" data-view="detail2" id="pd-thumb-detail2-btn" hidden={!first.detail2}>
+            <img src={first.detail2 || first.front} alt="Detaliu 2" id="pd-thumb-detail2" loading="lazy" decoding="async" />
+          </button>
+          <button class="pd-thumb" type="button" data-view="sizeGuide" id="pd-thumb-sizeguide-btn" hidden={!first.sizeGuide}>
+            <img src={first.sizeGuide || first.front} alt="Ghid de mărimi" id="pd-thumb-sizeguide" loading="lazy" decoding="async" />
+          </button>
         </div>
       </section>
 
@@ -107,6 +113,8 @@ const productJsonLd = {
                   data-front={c.front}
                   data-back={c.back}
                   data-macro={c.macro || ''}
+                  data-detail2={c.detail2 || ''}
+                  data-sizeguide={c.sizeGuide || ''}
                   data-label={c.label}
                   data-stock={JSON.stringify(c.stock || {})}
                   style={`--c:${c.swatch}`}
@@ -211,6 +219,8 @@ const productJsonLd = {
     </div>
   </div>
 
+  <div class="pd-cursor-tip mono" id="pd-cursor-tip" hidden aria-hidden="true">Mărimile sunt Oversized.<br>Verificați ghidul de mărimi.</div>
+
   <script>
     const root = document.querySelector<HTMLElement>('.pd')!;
     const slug = root.dataset.slug!;
@@ -222,6 +232,10 @@ const productJsonLd = {
     const thumbBack = document.getElementById('pd-thumb-back') as HTMLImageElement;
     const thumbMacro = document.getElementById('pd-thumb-macro') as HTMLImageElement;
     const thumbMacroBtn = document.getElementById('pd-thumb-macro-btn') as HTMLButtonElement;
+    const thumbDetail2 = document.getElementById('pd-thumb-detail2') as HTMLImageElement;
+    const thumbDetail2Btn = document.getElementById('pd-thumb-detail2-btn') as HTMLButtonElement;
+    const thumbSizeguide = document.getElementById('pd-thumb-sizeguide') as HTMLImageElement;
+    const thumbSizeguideBtn = document.getElementById('pd-thumb-sizeguide-btn') as HTMLButtonElement;
     const thumbBtns = Array.from(document.querySelectorAll<HTMLElement>('.pd-thumb'));
     const stockLine = document.getElementById('pd-stockline') as HTMLElement;
 
@@ -230,13 +244,15 @@ const productJsonLd = {
     let color = (document.querySelector('.pd-color.is-active') as HTMLElement)?.dataset.color
       || firstColorBtn?.dataset.color
       || 'black';
-    let view: 'front' | 'back' | 'macro' = 'front';
+    let view: 'front' | 'back' | 'macro' | 'detail2' | 'sizeGuide' = 'front';
     let size = '';
     let qty = 1;
 
     let frontSrc = thumbFront.src;
     let backSrc = thumbBack.src;
-    let macroSrc = firstColorBtn?.dataset.macro || '';
+    let macroSrc = firstColorBtn?.dataset.macro || (thumbMacroBtn.hidden ? '' : thumbMacro.src);
+    let detail2Src = firstColorBtn?.dataset.detail2 || (thumbDetail2Btn.hidden ? '' : thumbDetail2.src);
+    let sizeGuideSrc = firstColorBtn?.dataset.sizeguide || (thumbSizeguideBtn.hidden ? '' : thumbSizeguide.src);
 
     const trackStock = root.dataset.trackStock === '1';
     const hintEl = document.getElementById('pd-hint')!;
@@ -281,10 +297,11 @@ const productJsonLd = {
       updateStockLine();
     }
 
-    function setView(v: 'front' | 'back' | 'macro') {
-      if (v === 'macro' && !macroSrc) v = 'front';
+    function setView(v: 'front' | 'back' | 'macro' | 'detail2' | 'sizeGuide') {
+      const srcMap = { front: frontSrc, back: backSrc, macro: macroSrc, detail2: detail2Src, sizeGuide: sizeGuideSrc };
+      if (!srcMap[v]) v = 'front';
       view = v;
-      mainImg.src = v === 'front' ? frontSrc : v === 'back' ? backSrc : macroSrc;
+      mainImg.src = srcMap[v];
       thumbBtns.forEach((b) => b.classList.toggle('is-active', b.dataset.view === v));
     }
 
@@ -296,12 +313,18 @@ const productJsonLd = {
       frontSrc = btn.dataset.front!;
       backSrc = btn.dataset.back!;
       macroSrc = btn.dataset.macro || '';
+      detail2Src = btn.dataset.detail2 || '';
+      sizeGuideSrc = btn.dataset.sizeguide || '';
       thumbFront.src = frontSrc;
       thumbBack.src = backSrc;
       thumbMacroBtn.hidden = !macroSrc;
       if (macroSrc) thumbMacro.src = macroSrc;
+      thumbDetail2Btn.hidden = !detail2Src;
+      if (detail2Src) thumbDetail2.src = detail2Src;
+      thumbSizeguideBtn.hidden = !sizeGuideSrc;
+      if (sizeGuideSrc) thumbSizeguide.src = sizeGuideSrc;
       // if the current view is no longer available for this color, fall back to front
-      setView(view === 'macro' && !macroSrc ? 'front' : view);
+      setView(view);
       document.querySelectorAll('.pd-color').forEach((c) => c.classList.toggle('is-active', c === btn));
       const lbl = document.getElementById('pd-color-label');
       if (lbl) lbl.textContent = btn.dataset.label!;
@@ -309,7 +332,7 @@ const productJsonLd = {
     });
 
     // thumbnail view toggle
-    thumbBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'front' | 'back' | 'macro')));
+    thumbBtns.forEach((b) => b.addEventListener('click', () => setView(b.dataset.view as 'front' | 'back' | 'macro' | 'detail2' | 'sizeGuide')));
 
     // size
     document.getElementById('pd-sizes')!.addEventListener('click', (e) => {
@@ -323,6 +346,18 @@ const productJsonLd = {
       qtyEl.textContent = String(qty);
       updateStockLine();
     });
+
+    // tooltip „oversized" care urmărește cursorul peste zona de mărimi (doar pe dispozitive cu hover fin)
+    const cursorTip = document.getElementById('pd-cursor-tip')!;
+    const sizesEl = document.getElementById('pd-sizes')!;
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+      sizesEl.addEventListener('pointermove', (e) => {
+        cursorTip.hidden = false;
+        cursorTip.style.left = (e as PointerEvent).clientX + 'px';
+        cursorTip.style.top = (e as PointerEvent).clientY + 'px';
+      });
+      sizesEl.addEventListener('pointerleave', () => { cursorTip.hidden = true; });
+    }
 
     // qty
     document.getElementById('pd-dec')!.addEventListener('click', () => { qty = Math.max(1, qty - 1); qtyEl.textContent = String(qty); });
@@ -610,5 +645,18 @@ const productJsonLd = {
       .pd-modal-actions { flex-direction: row; }
       .pd-modal-btn { flex: 1; }
     }
+
+    /* tooltip oversized care urmărește cursorul peste mărimi */
+    .pd-cursor-tip {
+      position: fixed; z-index: 1100; pointer-events: none;
+      padding: 9px 12px;
+      background: var(--gold, #c9a24a); color: #0a0a0a;
+      font-size: 11px; line-height: 1.4; letter-spacing: 0.02em;
+      font-weight: 600; text-align: center; white-space: nowrap;
+      box-shadow: 0 8px 22px rgba(0, 0, 0, 0.42);
+      transform: translate(-50%, calc(-100% - 14px));
+    }
+    .pd-cursor-tip[hidden] { display: none; }
+    .pd-sizes { cursor: help; }
   </style>
 </Layout>

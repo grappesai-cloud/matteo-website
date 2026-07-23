@@ -55,6 +55,8 @@ export interface ProductColor {
   front: string;   // image url (local /images or Blob https url)
   back: string;    // image url
   macro?: string;  // optional close-up / detail shot (third gallery image)
+  detail2?: string;   // optional fourth gallery image (extra detail shot)
+  sizeGuide?: string; // optional fifth gallery image (size-guide photo)
   stock?: Partial<Record<SizeKey, number>>; // per-size units (only when trackStock)
 }
 
