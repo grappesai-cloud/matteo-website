@@ -27,7 +27,7 @@ const absImg = (u: string | undefined) =>
 // the product itself rather than leaving the tag off.
 const metaDescription =
   product.description?.trim() ||
-  `${product.name} — tricou oversized ${artistName} din colecția oficială Mattman Music. Print pe față și pe spate, ediție limitată. ${formatPrice(effectivePrice(product))}.`;
+  `${product.name} — tricou oversized din colecția ${artistName}, merch oficial Mattman Music. Print pe față și pe spate, ediție limitată. ${formatPrice(effectivePrice(product))}.`;
 
 // Google surfaces return window and shipping cost directly in product results,
 // and both are already settled business facts here (legal.ts / products.ts).
