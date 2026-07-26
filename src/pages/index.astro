@@ -15,7 +15,16 @@ if (reqHost.toLowerCase().startsWith('shop.')) {
   return Astro.rewrite('/merch');
 }
 
-const { roster, tiles, headerSub } = await readLanding();
+const { roster, tiles: rawTiles, headerSub } = await readLanding();
+
+// The shop tile had been pointed at https://shop.mattman.ro from /admin. That
+// host only rewrites to /merch, so the homepage carried no same-origin link to
+// the shop and Search Console reported "no referring page" for every product
+// page — all 8 sat Discovered, never crawled. Keep the internal path whatever
+// the stored value says; the subdomain still works for people who type it.
+const tiles = rawTiles.map((t) =>
+  /^https?:\/\/shop\.mattman\.ro\/?$/i.test(t.href) ? { ...t, href: '/merch' } : t
+);
 
 const orgJsonLd = {
   '@context': 'https://schema.org',
@@ -37,6 +46,7 @@ const orgJsonLd = {
 
 <Layout title="Mattman Music · Independent label" jsonLd={orgJsonLd}>
   <div class="stage" id="stage">
+    <h1 class="sr-only">Mattman Music · label muzical independent din România</h1>
     <header class="header">
       <a href="/" class="brand">
         <img src="/images/mattman/logo-head.webp" alt="Mattman Music" class="brand-logo" width="320" height="291" decoding="async" />

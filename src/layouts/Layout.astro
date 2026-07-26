@@ -24,6 +24,16 @@ const {
 const canonical = new URL(Astro.url.pathname, SITE).href.replace(/\/$/, '') || SITE;
 const ogImage = image.startsWith('http') ? image : new URL(image, SITE).href;
 
+// Google renders roughly 155 characters of the description; product copy here
+// runs well past that and gets cut mid-word. Trim to the last whole word so the
+// snippet reads as a finished sentence. og:/twitter: keep the full text, their
+// limits are far higher.
+const META_DESC_MAX = 155;
+const metaDescription =
+  description.length <= META_DESC_MAX
+    ? description
+    : description.slice(0, description.lastIndexOf(' ', META_DESC_MAX)).replace(/[\s,;:.…-]+$/, '') + '…';
+
 // Default site-wide structured data. Pages may pass their own `jsonLd`
 // (e.g. the homepage MusicGroup with members, or a product Product schema),
 // in which case that overrides this default so there is no duplicate.
@@ -54,7 +64,7 @@ const jsonLdList = jsonLd
     <meta name="generator" content={Astro.generator} />
     <meta name="google-site-verification" content="7Q2wb2sJmfTtNsTIF8DScNapS17zFUBVzDghlmWCMm4" />
     <meta name="google-site-verification" content="U5EoWBciOJiL8fKcVFvHcylATHnr_6lxg3bPMNmi0-I" />
-    <meta name="description" content={description} />
+    <meta name="description" content={metaDescription} />
     <meta name="theme-color" content="#F2EBE0" />
     {noindex
       ? <meta name="robots" content="noindex, nofollow" />

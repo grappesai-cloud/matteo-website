@@ -1,8 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut, ADULT_SIZE_GUIDE, KIDS_SIZE_GUIDE } from '../../lib/products';
+import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut, ADULT_SIZE_GUIDE, KIDS_SIZE_GUIDE, SHIPPING_FLAT, CURRENCY_LABEL } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
+import { RETURN } from '../../lib/legal';
 
 export const prerender = false;
 
@@ -21,34 +22,78 @@ const kidsGuide = product.sizes.filter((s) => KIDS_SIZE_GUIDE[s]);
 const SITE = 'https://mattman.ro';
 const absImg = (u: string | undefined) =>
   !u ? `${SITE}/images/mattman/og-image.png` : u.startsWith('http') ? u : `${SITE}${u}`;
+// Two products ship with an empty description in the catalog, which left them
+// with no meta description at all. Fall back to something factual built from
+// the product itself rather than leaving the tag off.
+const metaDescription =
+  product.description?.trim() ||
+  `${product.name} — tricou oversized ${artistName} din colecția oficială Mattman Music. Print pe față și pe spate, ediție limitată. ${formatPrice(effectivePrice(product))}.`;
+
+// Google surfaces return window and shipping cost directly in product results,
+// and both are already settled business facts here (legal.ts / products.ts).
+const priceValidUntil = new Date(Date.now() + 365 * 24 * 60 * 60 * 1000)
+  .toISOString()
+  .slice(0, 10);
+
 const productJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Product',
   name: product.name,
-  description: product.description,
+  description: metaDescription,
+  sku: product.slug,
   image: product.colors.map((c) => absImg(c.front)),
   brand: { '@type': 'Brand', name: 'Mattman Music' },
   category: 'Merch / Îmbrăcăminte',
   url: `${SITE}/merch/${product.slug}`,
   offers: {
     '@type': 'Offer',
-    priceCurrency: 'RON',
+    priceCurrency: CURRENCY_LABEL,
     price: effectivePrice(product),
+    priceValidUntil,
+    itemCondition: 'https://schema.org/NewCondition',
     availability: isSoldOut(product)
       ? 'https://schema.org/OutOfStock'
       : 'https://schema.org/InStock',
     url: `${SITE}/merch/${product.slug}`,
     seller: { '@type': 'Organization', name: 'Mattman Music' },
+    shippingDetails: {
+      '@type': 'OfferShippingDetails',
+      shippingRate: {
+        '@type': 'MonetaryAmount',
+        value: SHIPPING_FLAT,
+        currency: CURRENCY_LABEL,
+      },
+      shippingDestination: { '@type': 'DefinedRegion', addressCountry: 'RO' },
+    },
+    hasMerchantReturnPolicy: {
+      '@type': 'MerchantReturnPolicy',
+      applicableCountry: 'RO',
+      returnPolicyCategory: 'https://schema.org/MerchantReturnFiniteReturnWindow',
+      merchantReturnDays: RETURN.windowDays,
+      returnMethod: 'https://schema.org/ReturnByMail',
+      returnFees: 'https://schema.org/ReturnShippingFees',
+      returnPolicySeeAlsoUrl: `${SITE}/retur`,
+    },
   },
+};
+
+const breadcrumbJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'BreadcrumbList',
+  itemListElement: [
+    { '@type': 'ListItem', position: 1, name: 'Mattman Music', item: SITE },
+    { '@type': 'ListItem', position: 2, name: 'Shop', item: `${SITE}/merch` },
+    { '@type': 'ListItem', position: 3, name: product.name, item: `${SITE}/merch/${product.slug}` },
+  ],
 };
 ---
 
 <Layout
   title={`${product.name} · Mattman Shop`}
-  description={product.description}
+  description={metaDescription}
   type="product"
   image={absImg(first?.front)}
-  jsonLd={productJsonLd}
+  jsonLd={[productJsonLd, breadcrumbJsonLd]}
 >
   <div class="pd" data-slug={product.slug} data-track-stock={product.trackStock ? '1' : ''} data-stock={JSON.stringify(first.stock || {})}>
     <header class="m-header">

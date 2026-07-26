@@ -310,3 +310,17 @@ section { position: relative; padding-inline: var(--pad-x); }
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Readable by screen readers and crawlers, invisible on screen. Used for the
+   page H1 where the design carries the brand as a logo image instead. */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
