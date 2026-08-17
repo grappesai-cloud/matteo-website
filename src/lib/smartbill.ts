@@ -85,6 +85,26 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
     };
   });
 
+  // Cartolina inclusă în fiecare colet: linie de produs cu valoare 0, ca ieșirea
+  // din stoc să aibă document fiscal și să se poată scădea pe consum la contabilitate.
+  // Oprire rapidă (fără deploy de cod) cu SMARTBILL_CARTOLINA=false; denumirea
+  // trebuie să rămână identică cu articolul din Nomenclator dacă se activează useStock.
+  if (env('SMARTBILL_CARTOLINA') !== 'false') {
+    products.push({
+      name: env('SMARTBILL_NAME_CARTOLINA') || 'CARTOLINA',
+      productDescription: 'Cadou inclus în colet',
+      measuringUnitName: 'buc',
+      currency: order.currency || 'RON',
+      quantity: 1,
+      price: 0,
+      isTaxIncluded: true,
+      taxName: 'Normala',
+      taxPercentage: TVA,
+      saveToDb: false,
+      isService: false,
+    });
+  }
+
   // Transportul ca linie de serviciu (dacă a fost taxat).
   if (Number(order.shippingAmount) > 0) {
     products.push({
