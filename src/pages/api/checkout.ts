@@ -5,7 +5,7 @@ import { CURRENCY, SIZES, effectivePrice, isVariantAvailable, type SizeKey } fro
 import { readCatalog } from '../../lib/catalog-store';
 import { quoteShipping } from './shipping-quote';
 import { savePendingCheckout, type PendingCart } from '../../lib/checkout-store';
-import type { OrderAddress } from '../../lib/orders';
+import { judetFromPostalCode, canonicalCounty, type OrderAddress } from '../../lib/orders';
 
 // On-demand (serverless) route — the rest of the site stays static.
 export const prerender = false;
@@ -57,6 +57,17 @@ export const POST: APIRoute = async ({ request }) => {
   };
   const missing = (['name', 'phone', 'county', 'locality', 'street', 'zip'] as const).filter((k) => !addr[k]);
   if (missing.length) return json({ error: 'Completează adresa de livrare (nume, telefon, județ, localitate, stradă, cod poștal).' }, 400);
+
+  // Codul poștal e tastabil manual — dacă prefixul lui indică alt județ decât cel
+  // selectat, oprim aici. Altfel AWB-ul ar pleca în județul din cod (ex. „40xxx" →
+  // Cluj) deși clientul a ales altceva. Verificăm doar când putem deduce județul.
+  const zipJudet = judetFromPostalCode(addr.zip);
+  if (zipJudet && canonicalCounty(zipJudet) !== canonicalCounty(addr.county)) {
+    return json(
+      { error: `Codul poștal ${addr.zip} pare din județul ${zipJudet}, dar ai ales ${addr.county}. Verifică codul poștal sau județul selectat.` },
+      400,
+    );
+  }
 
   const origin = new URL(request.url).origin;
   const catalog = await readCatalog();

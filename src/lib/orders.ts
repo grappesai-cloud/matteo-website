@@ -101,6 +101,37 @@ export function judetFromPostalCode(postalCode?: string): string {
   return JUDET_BY_ZIP2[digits.slice(0, 2)] || '';
 }
 
+// Numele canonice ale județelor (cu diacritice) — ce așteaptă ANAF/SmartBill.
+const CANONICAL_JUDETE = Array.from(new Set(Object.values(JUDET_BY_ZIP2)));
+const stripDiacritics = (x: string) =>
+  String(x || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase().trim();
+
+/**
+ * Aduce un nume de județ la forma canonică cu diacritice ("Brasov" → "Brașov").
+ * Necesar fiindcă dropdown-ul FAN livrează județele FĂRĂ diacritice, dar ANAF le
+ * cere cu diacritice. Dacă nu recunoaște numele, îl întoarce curățat ca atare.
+ */
+export function canonicalCounty(name?: string): string {
+  const n = stripDiacritics(name || '');
+  if (!n) return '';
+  return CANONICAL_JUDETE.find((c) => stripDiacritics(c) === n) || String(name).trim();
+}
+
+/**
+ * Județul AUTORITAR al unei comenzi pentru AWB + factură.
+ *
+ * Sursa principală e `state` = județul ales EXPLICIT de client din dropdown-ul FAN
+ * (obligatoriu la checkout). Codul poștal e doar fallback pentru comenzi vechi fără
+ * `state`. NU inversa ordinea: codul poștal e tastabil manual și, când e greșit,
+ * ruta silențios coletul în alt județ (ex. cod „40xxx" → Cluj deși clientul a ales
+ * Brașov). Alegerea din dropdown câștigă întotdeauna.
+ */
+export function orderCounty(s?: OrderAddress): string {
+  const picked = (s?.state || '').trim();
+  if (picked) return canonicalCounty(picked);
+  return judetFromPostalCode(s?.postalCode);
+}
+
 /** A one-line address string for display. */
 export function formatAddress(a: OrderAddress): string {
   return [a.line1, a.line2, a.city, a.postalCode, a.state, a.country]

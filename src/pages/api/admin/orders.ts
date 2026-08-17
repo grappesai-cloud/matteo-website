@@ -1,7 +1,7 @@
 import type { APIRoute } from 'astro';
 import { sessionRole } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
-import { ORDER_STATUSES, judetFromPostalCode, type OrderStatus } from '../../../lib/orders';
+import { ORDER_STATUSES, orderCounty, type OrderStatus } from '../../../lib/orders';
 import { maybeNotifyShipped } from '../../../lib/notify';
 
 export const prerender = false;
@@ -16,9 +16,9 @@ export const GET: APIRoute = async ({ cookies }) => {
   if (!sessionRole(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const orders = (await readOrders())
     .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0))
-    // `county` = județul autoritar dedus din codul poștal. Stripe umple adesea câmpul
-    // `state` cu ORAȘUL (formularul lor hosted), deci nu ne bazăm pe el la afișare.
-    .map((o) => ({ ...o, county: judetFromPostalCode(o.shipping?.postalCode) || o.shipping?.state || '' }));
+    // `county` = județul autoritar (ales de client din dropdown-ul FAN, cod poștal
+    // doar fallback) — aceeași sursă folosită la AWB și factură, ca să nu difere.
+    .map((o) => ({ ...o, county: orderCounty(o.shipping) }));
   return json({ orders });
 };
 
