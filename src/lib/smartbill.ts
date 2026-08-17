@@ -92,7 +92,7 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
   if (env('SMARTBILL_CARTOLINA') !== 'false') {
     products.push({
       name: env('SMARTBILL_NAME_CARTOLINA') || 'CARTOLINA',
-      productDescription: 'Cadou inclus în colet',
+      productDescription: '',
       measuringUnitName: 'buc',
       currency: order.currency || 'RON',
       quantity: 1,
