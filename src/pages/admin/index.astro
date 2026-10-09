@@ -115,6 +115,10 @@ const blobReady = canWrite();
                 <span class="adm-label mono">Expiră</span>
                 <input type="date" id="c-exp" class="adm-input" />
               </label>
+              <label class="adm-field">
+                <span class="adm-label mono">Activ de la</span>
+                <input type="datetime-local" id="c-start" class="adm-input" title="Gol = pornește acum. Cu oră = codul stă oprit și pornește singur la ora aleasă." />
+              </label>
               <button class="adm-btn adm-btn-gold" id="code-save" type="submit">Creează cod</button>
             </div>
             <p class="adm-modal-err mono" id="code-err" hidden></p>
@@ -1197,26 +1201,36 @@ const blobReady = canWrite();
         codesList.innerHTML = data.codes
           .map((c: any) => {
             const val = c.kind === 'percent' ? `−${c.value}%` : `−${c.value} RON`;
-            const exp = c.expiresAt ? new Date(c.expiresAt * 1000).toLocaleDateString('ro-RO') : '—';
+            const fmtDate = (ts: number) => new Date(ts * 1000).toLocaleString('ro-RO', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+            const exp = c.expiresAt ? fmtDate(c.expiresAt) : '—';
             const uses = c.maxRedemptions ? `${c.timesRedeemed}/${c.maxRedemptions}` : `${c.timesRedeemed}`;
-            return `<article class="adm-row${c.active ? '' : ' is-off'}">
+            const state = c.active ? 'Activ' : c.scheduled ? `Programat · pornește ${fmtDate(c.startsAt)}` : 'Dezactivat';
+            const actions = c.active
+              ? `<button class="adm-btn adm-btn-danger adm-btn-sm" data-deact="${esc(c.id)}">Dezactivează</button>`
+              : c.scheduled
+                ? `<button class="adm-btn adm-btn-gold adm-btn-sm" data-act="${esc(c.id)}">Activează acum</button>
+                   <button class="adm-btn adm-btn-ghost adm-btn-sm" data-deact="${esc(c.id)}">Anulează</button>`
+                : '';
+            return `<article class="adm-row${c.active || c.scheduled ? '' : ' is-off'}">
               <div class="adm-code-badge">${esc(val)}</div>
               <div class="adm-row-info">
                 <h3 class="adm-row-name">${esc(c.code)}</h3>
-                <p class="adm-row-meta mono dim">${c.active ? 'Activ' : 'Dezactivat'} · folosit ${uses} · expiră ${exp}</p>
+                <p class="adm-row-meta mono dim">${state} · folosit ${uses} · expiră ${exp}</p>
               </div>
-              <div class="adm-row-actions">${c.active ? `<button class="adm-btn adm-btn-danger adm-btn-sm" data-deact="${esc(c.id)}">Dezactivează</button>` : ''}</div>
+              <div class="adm-row-actions">${actions}</div>
             </article>`;
           })
           .join('');
       }
 
       codesList.addEventListener('click', async (e) => {
-        const id = (e.target as HTMLElement).dataset?.deact;
+        const ds = (e.target as HTMLElement).dataset || {};
+        const id = ds.deact || ds.act;
         if (!id) return;
-        if (!confirm('Dezactivezi codul? Nu mai poate fi folosit la checkout.')) return;
+        const activate = !!ds.act;
+        if (!activate && !confirm('Dezactivezi codul? Nu mai poate fi folosit la checkout.')) return;
         const res = await fetch('/api/admin/codes', {
-          method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+          method: activate ? 'PATCH' : 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
         });
         if (res.ok) loadCodes();
         else alert((await res.json()).error || 'Eroare');
@@ -1225,12 +1239,15 @@ const blobReady = canWrite();
       codeForm.addEventListener('submit', async (e) => {
         e.preventDefault();
         codeErr.hidden = true;
+        const startLocal = (document.getElementById('c-start') as HTMLInputElement).value;
         const payload = {
           code: (document.getElementById('c-code') as HTMLInputElement).value,
           kind: (document.getElementById('c-kind') as HTMLSelectElement).value,
           value: Number((document.getElementById('c-value') as HTMLInputElement).value),
           maxRedemptions: (document.getElementById('c-max') as HTMLInputElement).value || undefined,
           expiresAt: (document.getElementById('c-exp') as HTMLInputElement).value || undefined,
+          // datetime-local e în ora browserului; trimitem momentul absolut (ISO/UTC).
+          startsAt: startLocal ? new Date(startLocal).toISOString() : undefined,
         };
         const btn = document.getElementById('code-save') as HTMLButtonElement;
         btn.disabled = true;
@@ -1510,7 +1527,7 @@ const blobReady = canWrite();
 
     /* CODES */
     .adm-code-form { margin-bottom: 18px; padding: 16px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; background: #0e0e0e; }
-    .adm-code-row { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.9fr 1fr auto; gap: 12px; align-items: end; }
+    .adm-code-row { display: grid; grid-template-columns: 1.2fr 1fr 0.8fr 0.9fr 1fr 1.3fr auto; gap: 12px; align-items: end; }
     .adm-code-row .adm-btn { height: 44px; white-space: nowrap; }
     .adm-code-badge { display: grid; place-items: center; min-width: 64px; padding: 0 12px; height: 44px; border-radius: 8px; background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); font-family: var(--serif, 'Fraunces', serif); font-size: 18px; }
     @media (max-width: 760px) { .adm-code-row { grid-template-columns: 1fr 1fr; } }

@@ -6,6 +6,7 @@ import { readCatalog } from '../../lib/catalog-store';
 import { quoteShipping } from './shipping-quote';
 import { savePendingCheckout, type PendingCart } from '../../lib/checkout-store';
 import { judetFromPostalCode, canonicalCounty, type OrderAddress } from '../../lib/orders';
+import { activateDueCodes } from '../../lib/promo-codes';
 
 // On-demand (serverless) route — the rest of the site stays static.
 export const prerender = false;
@@ -170,6 +171,9 @@ export const POST: APIRoute = async ({ request }) => {
 
   try {
     const stripe = new Stripe(SECRET);
+    // Pornește codurile de reducere programate a căror oră a venit (lib/promo-codes.ts),
+    // ca să fie valide în fereastra Stripe pe care o deschidem acum.
+    try { await activateDueCodes(stripe); } catch (err: any) { console.error('[checkout] activare coduri programate:', err?.message); }
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       locale: 'ro',

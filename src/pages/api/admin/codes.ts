@@ -2,6 +2,7 @@ import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { isAdmin } from '../../../lib/admin-auth';
 import { CURRENCY } from '../../../lib/products';
+import { STARTS_AT_KEY, activateDueCodes, startsAtOf } from '../../../lib/promo-codes';
 
 export const prerender = false;
 
@@ -19,19 +20,38 @@ function stripeOrError(): Stripe | Response {
 
 const str = (v: unknown, max = 80) => String(v ?? '').trim().slice(0, max);
 
-// LIST promotion codes
+/**
+ * Moment din formular → secunde unix. O dată fără oră („2026-10-31") înseamnă
+ * sfârșitul acelei zile în România; folosim +02:00 fix, deci vara expiră cu o
+ * oră mai târziu decât miezul nopții, niciodată mai devreme.
+ */
+function parseWhen(v: unknown): number | undefined {
+  const raw = str(v, 40);
+  if (!raw) return undefined;
+  const iso = /^\d{4}-\d{2}-\d{2}$/.test(raw) ? `${raw}T23:59:59+02:00` : raw;
+  const t = Math.floor(new Date(iso).getTime() / 1000);
+  return Number.isFinite(t) ? t : undefined;
+}
+
+// LIST promotion codes (pornește mai întâi codurile programate scadente)
 export const GET: APIRoute = async ({ cookies }) => {
   if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const stripe = stripeOrError();
   if (stripe instanceof Response) return stripe;
 
+  try { await activateDueCodes(stripe, true); } catch (err: any) { console.error('[codes] activare programată:', err?.message); }
+
+  const now = Math.floor(Date.now() / 1000);
   const list = await stripe.promotionCodes.list({ limit: 100, expand: ['data.coupon'] });
   const codes = list.data.map((pc) => {
     const c = pc.coupon;
+    const startsAt = startsAtOf(pc);
     return {
       id: pc.id,
       code: pc.code,
       active: pc.active,
+      scheduled: !pc.active && startsAt != null && startsAt > now,
+      startsAt,
       timesRedeemed: pc.times_redeemed,
       maxRedemptions: pc.max_redemptions ?? null,
       expiresAt: pc.expires_at ?? null,
@@ -42,7 +62,7 @@ export const GET: APIRoute = async ({ cookies }) => {
   return json({ codes });
 };
 
-// CREATE coupon + promotion code
+// CREATE coupon + promotion code (opțional programat: `startsAt` în viitor → creat inactiv)
 export const POST: APIRoute = async ({ request, cookies }) => {
   if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const stripe = stripeOrError();
@@ -60,10 +80,16 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   if (kind === 'percent' && value > 100) return json({ error: 'Procentul nu poate depăși 100.' }, 400);
 
   const maxRedemptions = Number(body?.maxRedemptions) > 0 ? Math.floor(Number(body.maxRedemptions)) : undefined;
-  let expiresAt: number | undefined;
-  if (body?.expiresAt) {
-    const t = Math.floor(new Date(body.expiresAt).getTime() / 1000);
-    if (Number.isFinite(t) && t > Date.now() / 1000) expiresAt = t;
+
+  const now = Math.floor(Date.now() / 1000);
+  const expiresAt = parseWhen(body?.expiresAt);
+  if (expiresAt !== undefined && expiresAt <= now) return json({ error: 'Data de expirare e în trecut.' }, 400);
+
+  // Start în viitor (cu o marjă de 30 s) = cod programat; altfel pornește acum.
+  const startsAtRaw = parseWhen(body?.startsAt);
+  const startsAt = startsAtRaw !== undefined && startsAtRaw > now + 30 ? startsAtRaw : undefined;
+  if (startsAt && expiresAt && startsAt >= expiresAt) {
+    return json({ error: 'Ora de start trebuie să fie înaintea expirării.' }, 400);
   }
 
   try {
@@ -77,14 +103,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       code,
       ...(maxRedemptions ? { max_redemptions: maxRedemptions } : {}),
       ...(expiresAt ? { expires_at: expiresAt } : {}),
+      ...(startsAt ? { active: false, metadata: { [STARTS_AT_KEY]: String(startsAt) } } : {}),
     });
-    return json({ ok: true, id: promo.id, code: promo.code });
+    return json({ ok: true, id: promo.id, code: promo.code, active: promo.active, startsAt: startsAt ?? null, expiresAt: expiresAt ?? null });
   } catch (err: any) {
     return json({ error: err?.message || 'Nu am putut crea codul.' }, 500);
   }
 };
 
-// DEACTIVATE a promotion code
+// ACTIVATE NOW a scheduled (or deactivated) promotion code
+export const PATCH: APIRoute = async ({ request, cookies }) => {
+  if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
+  const stripe = stripeOrError();
+  if (stripe instanceof Response) return stripe;
+
+  let body: any;
+  try { body = await request.json(); } catch { return json({ error: 'Cerere invalidă.' }, 400); }
+  const id = str(body?.id, 60);
+  if (!id) return json({ error: 'Lipsește id-ul.' }, 400);
+  try {
+    const promo = await stripe.promotionCodes.update(id, { active: true, metadata: { [STARTS_AT_KEY]: '' } });
+    return json({ ok: true, active: promo.active });
+  } catch (err: any) {
+    return json({ error: err?.message || 'Nu am putut activa codul.' }, 500);
+  }
+};
+
+// DEACTIVATE a promotion code (și anulează programarea, ca să nu repornească singur)
 export const DELETE: APIRoute = async ({ request, cookies }) => {
   if (!isAdmin(cookies)) return json({ error: 'Neautorizat.' }, 401);
   const stripe = stripeOrError();
@@ -95,7 +140,7 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   const id = str(body?.id, 60);
   if (!id) return json({ error: 'Lipsește id-ul.' }, 400);
   try {
-    await stripe.promotionCodes.update(id, { active: false });
+    await stripe.promotionCodes.update(id, { active: false, metadata: { [STARTS_AT_KEY]: '' } });
     return json({ ok: true });
   } catch (err: any) {
     return json({ error: err?.message || 'Nu am putut dezactiva codul.' }, 500);
