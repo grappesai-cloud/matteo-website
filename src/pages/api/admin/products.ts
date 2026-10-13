@@ -1,6 +1,6 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '../../../lib/admin-auth';
-import { readCatalog, writeCatalog } from '../../../lib/catalog-store';
+import { readCatalog, mutateCatalog } from '../../../lib/catalog-store';
 import { readArtistMeta } from '../../../lib/artists-store';
 import {
   ARTISTS, SIZES, slugify, sortProducts, clampPct, catalogArtists,
@@ -26,7 +26,15 @@ function sanitizeStock(input: any): Partial<Record<SizeKey, number>> | undefined
   return Object.keys(out).length ? out : undefined;
 }
 
-function sanitizeColors(input: any): ProductColor[] {
+/**
+ * Stocul cu care a fost deschis editorul, pe culoare (cheie) — trimis de admin ca
+ * `stockBase`. La salvare, o celulă pe care adminul N-a modificat-o ia valoarea
+ * LIVE din catalog (poate a scăzut un webhook între timp), nu valoarea veche din
+ * formular. Fără asta, o salvare din admin în timpul unei comenzi ștergea scăderea.
+ */
+type StockBase = Partial<Record<SizeKey, number>>;
+
+function sanitizeColors(input: any, bases?: Map<string, StockBase>): ProductColor[] {
   const arr = Array.isArray(input) ? input : [];
   const used = new Set<string>();
   const out: ProductColor[] = [];
@@ -48,12 +56,30 @@ function sanitizeColors(input: any): ProductColor[] {
     if (sizeGuide) color.sizeGuide = sizeGuide;
     const stock = sanitizeStock(c?.stock);
     if (stock) color.stock = stock;
+    const base = sanitizeStock(c?.stockBase);
+    if (base && bases) bases.set(key, base);
     out.push(color);
   }
   return out;
 }
 
-function sanitize(input: any, existing?: Product): Product | { error: string } {
+/** Celulele de stoc neatinse de admin păstrează valoarea LIVE (vezi StockBase). */
+function keepLiveStock(next: Product, live: Product, bases: Map<string, StockBase>): void {
+  for (const color of next.colors) {
+    const base = bases.get(color.key);
+    const liveColor = live.colors.find((c) => c.key === color.key);
+    if (!base || !liveColor?.stock) continue;
+    color.stock = color.stock || {};
+    for (const s of SIZES) {
+      const typed = color.stock[s];
+      const was = base[s];
+      const now = liveColor.stock[s];
+      if (typed === was && now !== undefined && now !== typed) color.stock[s] = now;
+    }
+  }
+}
+
+function sanitize(input: any, existing?: Product, bases?: Map<string, StockBase>): Product | { error: string } {
   const name = str(input?.name, 80);
   if (!name) return { error: 'Numele produsului e obligatoriu.' };
 
@@ -67,7 +93,7 @@ function sanitize(input: any, existing?: Product): Product | { error: string } {
   const price = Math.round(Number(input?.price));
   if (!Number.isFinite(price) || price <= 0) return { error: 'Preț invalid.' };
 
-  const colors = sanitizeColors(input?.colors);
+  const colors = sanitizeColors(input?.colors, bases);
   if (colors.length === 0) return { error: 'Adaugă cel puțin o culoare cu poză față și spate.' };
 
   const sizes = (Array.isArray(input?.sizes) ? input.sizes : SIZES)
@@ -98,6 +124,8 @@ function sanitize(input: any, existing?: Product): Product | { error: string } {
     sort: Number.isFinite(Number(input?.sort)) ? Number(input.sort) : existing?.sort ?? 999,
     discountPercent: clampPct(input?.discountPercent),
     trackStock: !!input?.trackStock,
+    // Registrul rezervărilor de stoc NU vine din formular: se păstrează ca atare.
+    ...(existing?.holds ? { holds: existing.holds } : {}),
   };
 }
 
@@ -125,28 +153,33 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   let body: any;
   try { body = await request.json(); } catch { return json({ error: 'Cerere invalidă.' }, 400); }
 
-  const all = await readCatalog();
-  const existing = body?.id ? all.find((p) => p.id === body.id) : undefined;
-
-  const result = sanitize(body, existing);
-  if ('error' in result) return json(result, 400);
-
-  result.slug = uniqueSlug(body?.slug || result.name, result.id, all);
-
-  let next: Product[];
-  if (existing) {
-    next = all.map((p) => (p.id === result.id ? result : p));
-  } else {
-    if (result.sort === 999) result.sort = all.length + 1;
-    next = [...all, result];
-  }
-
+  // Totul în interiorul unei scrieri condiționate: citim catalogul PROASPĂT,
+  // aplicăm produsul, scriem doar dacă nimeni n-a scris între timp (altfel se
+  // reia pe starea nouă). Așa o salvare nu mai șterge o scădere de stoc făcută
+  // de o comandă în același moment.
   try {
-    await writeCatalog(next);
+    const outcome = await mutateCatalog((all, replace): { product: Product } | { error: string } => {
+      const existing = body?.id ? all.find((p) => p.id === body.id) : undefined;
+      const bases = new Map<string, StockBase>();
+      const result = sanitize(body, existing, bases);
+      if ('error' in result) return result;
+
+      result.slug = uniqueSlug(body?.slug || result.name, result.id, all);
+      if (existing) keepLiveStock(result, existing, bases);
+
+      if (existing) {
+        replace(all.map((p) => (p.id === result.id ? result : p)));
+      } else {
+        if (result.sort === 999) result.sort = all.length + 1;
+        replace([...all, result]);
+      }
+      return { product: result };
+    });
+    if ('error' in outcome) return json(outcome, 400);
+    return json({ ok: true, product: outcome.product });
   } catch (err: any) {
     return json({ error: err?.message || 'Salvarea a eșuat.' }, 500);
   }
-  return json({ ok: true, product: result });
 };
 
 // REORDER { ids } — ids is the new order of a subset of products (one artist
@@ -162,25 +195,27 @@ export const PATCH: APIRoute = async ({ request, cookies }) => {
   const ids: string[] = Array.isArray(body?.ids) ? body.ids.map((x: any) => str(x, 60)).filter(Boolean) : [];
   if (!ids.length) return json({ error: 'Listă de ordine goală.' }, 400);
 
-  const all = await readCatalog();
-  const byId = new Map(all.map((p) => [p.id, p]));
-  const subset = ids.filter((id) => byId.has(id));
-  if (!subset.length) return json({ error: 'Niciun produs valid în ordine.' }, 400);
-
-  const subsetSet = new Set(subset);
-  const ordered = sortProducts(all);            // current global order
-  const queue = [...subset];                    // desired order for the subset
-  const next = ordered.map((p) =>
-    subsetSet.has(p.id) ? byId.get(queue.shift()!)! : p,
-  );
-  next.forEach((p, i) => { p.sort = i + 1; });   // renumber so order persists
-
   try {
-    await writeCatalog(next);
+    const outcome = await mutateCatalog((all, replace): { products: Product[] } | { error: string } => {
+      const byId = new Map(all.map((p) => [p.id, p]));
+      const subset = ids.filter((id) => byId.has(id));
+      if (!subset.length) return { error: 'Niciun produs valid în ordine.' };
+
+      const subsetSet = new Set(subset);
+      const ordered = sortProducts(all);            // current global order
+      const queue = [...subset];                    // desired order for the subset
+      const next = ordered.map((p) =>
+        subsetSet.has(p.id) ? byId.get(queue.shift()!)! : p,
+      );
+      next.forEach((p, i) => { p.sort = i + 1; });   // renumber so order persists
+      replace(next);
+      return { products: sortProducts(next) };
+    });
+    if ('error' in outcome) return json(outcome, 400);
+    return json({ ok: true, products: outcome.products });
   } catch (err: any) {
     return json({ error: err?.message || 'Reordonarea a eșuat.' }, 500);
   }
-  return json({ ok: true, products: sortProducts(next) });
 };
 
 // DELETE { id }
@@ -190,11 +225,14 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   let body: any;
   try { body = await request.json(); } catch { return json({ error: 'Cerere invalidă.' }, 400); }
   const id = str(body?.id, 60);
-  const all = await readCatalog();
-  const next = all.filter((p) => p.id !== id);
-  if (next.length === all.length) return json({ error: 'Produs inexistent.' }, 404);
   try {
-    await writeCatalog(next);
+    const removed = await mutateCatalog((all, replace) => {
+      const next = all.filter((p) => p.id !== id);
+      const removed = next.length !== all.length;
+      if (removed) replace(next);
+      return removed;
+    });
+    if (!removed) return json({ error: 'Produs inexistent.' }, 404);
   } catch (err: any) {
     return json({ error: err?.message || 'Ștergerea a eșuat.' }, 500);
   }

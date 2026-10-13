@@ -3,15 +3,23 @@
 // as individual objects. Fallbacks:
 //   • local dev without R2 → a gitignored .data/catalog.json (full CRUD works)
 //   • production without R2 → read-only seed (writes throw a clear error)
+//
+// Orice modificare trece prin `mutateCatalog` = citire cu ETag → modificare →
+// scriere condiționată (If-Match) → reîncercare la conflict (aceeași schemă ca
+// mutateOrders din orders-store.ts). Fără asta, două plăți simultane pierdeau
+// scăderi, iar o salvare din admin putea șterge o scădere făcută de webhook
+// între timp (ambele reproduse pe 12-10-2026). Formatul stocat rămâne lista de
+// produse (rezervările de stoc stau pe produs, vezi lib/stock-ledger.ts).
 
 import { promises as fs } from 'node:fs';
 import path from 'node:path';
 import { seedProducts, type Product } from './products';
-import { r2Configured, r2GetJson, r2PutJson, r2PutObject } from './r2';
+import { r2Configured, r2GetJsonMeta, r2PutJson, r2PutJsonConditional, r2PutObject, R2PreconditionFailed } from './r2';
 
 const CATALOG_KEY = 'catalog/products.json';
 const DEV = import.meta.env.DEV;
 const LOCAL_FILE = path.join(process.cwd(), '.data', 'catalog.json');
+const MAX_RETRIES = 8;
 
 export function hasStore(): boolean {
   return r2Configured();
@@ -40,9 +48,9 @@ async function writeLocal(products: Product[]): Promise<void> {
 export async function readCatalog(): Promise<Product[]> {
   if (r2Configured()) {
     try {
-      const data = await r2GetJson<Product[]>(CATALOG_KEY);
-      if (!data) { await writeCatalog(seedProducts); return seedProducts; }
-      return Array.isArray(data) && data.length ? data : seedProducts;
+      const { value } = await r2GetJsonMeta<Product[]>(CATALOG_KEY);
+      if (!value) { await r2PutJson(CATALOG_KEY, seedProducts); return seedProducts; }
+      return Array.isArray(value) && value.length ? value : seedProducts;
     } catch (err) {
       console.error('[catalog] R2 read failed, using seed:', (err as Error)?.message);
       return seedProducts;
@@ -57,11 +65,54 @@ export async function readCatalog(): Promise<Product[]> {
   return seedProducts;
 }
 
-/** Overwrite the catalog. Throws if no writable backend. */
+/**
+ * Citire-modificare-scriere ATOMICĂ pe tot catalogul. `mutate` primește lista
+ * curentă (o modifică în loc, sau întoarce prin `replace` o listă nouă) și dă
+ * înapoi un rezultat pentru apelant. Dacă obiectul s-a schimbat între citire și
+ * scriere, recitim și reaplicăm `mutate` pe starea nouă, de cel mult MAX_RETRIES ori.
+ */
+export async function mutateCatalog<R>(
+  mutate: (products: Product[], replace: (next: Product[]) => void) => R,
+): Promise<R> {
+  const run = (products: Product[]) => {
+    let next = products;
+    const result = mutate(products, (n) => { next = n; });
+    return { next, result };
+  };
+  if (!r2Configured()) {
+    if (!DEV) throw new Error('R2 nu e configurat — stocarea nu e disponibilă.');
+    const { next, result } = run((await readLocal()) ?? structuredClone(seedProducts));
+    await writeLocal(next);
+    return result;
+  }
+  let lastErr: unknown;
+  for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+    const { value, etag } = await r2GetJsonMeta<Product[]>(CATALOG_KEY);
+    const current = Array.isArray(value) && value.length ? value : structuredClone(seedProducts);
+    const { next, result } = run(current);
+    try {
+      await r2PutJsonConditional(CATALOG_KEY, next, etag);
+      return result;
+    } catch (err) {
+      if (err instanceof R2PreconditionFailed) {
+        lastErr = err;
+        await new Promise((r) => setTimeout(r, 40 + attempt * 40));
+        continue;
+      }
+      throw err;
+    }
+  }
+  throw new Error(
+    `Salvarea catalogului a eșuat după ${MAX_RETRIES} încercări (scrieri concurente). ${(lastErr as Error)?.message || ''}`,
+  );
+}
+
+/**
+ * Înlocuiește toată lista de produse. Folosit doar acolo unde chiar vrem să
+ * suprascriem tot; scăderile de stoc trec prin mutateCatalog + stock-ledger.
+ */
 export async function writeCatalog(products: Product[]): Promise<void> {
-  if (r2Configured()) { await r2PutJson(CATALOG_KEY, products); return; }
-  if (DEV) { await writeLocal(products); return; }
-  throw new Error('R2 nu e configurat — stocarea nu e disponibilă.');
+  await mutateCatalog((_cur, replace) => { replace(products); });
 }
 
 /** Upload a product image, return its public URL. */

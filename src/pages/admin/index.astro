@@ -491,13 +491,15 @@ const blobReady = canWrite();
         const active = orders.filter((o) => o.status !== 'cancelled');
         const sum = active.reduce((n, o) => n + (Number(o.amountTotal) || 0), 0);
         const by = (s: string) => orders.filter((o) => o.status === s).length;
+        const toCheck = orders.filter((o) => invoiceProblem(o)).length;
         const cards: [string, string | number][] = [
           ['Comenzi', active.length],
-          ['Încasat', `${sum} RON`],
+          ['Încasat', ron(sum)],
           ['Noi', by('new')],
           ['În producție', by('printing')],
           ['Trimise', by('shipped')],
           ['Livrate', by('delivered')],
+          ...(toCheck ? [['Facturi de verificat', toCheck] as [string, number]] : []),
         ];
         ordersReportEl.innerHTML = cards
           .map(([l, v]) => `<div class="adm-ocard"><span class="adm-ocard-v">${esc(String(v))}</span><span class="adm-ocard-l mono dim">${esc(l)}</span></div>`)
@@ -517,6 +519,31 @@ const blobReady = canWrite();
         ordersListEl.innerHTML = items.map(orderCard).join('');
       }
 
+      // „103 RON” sau „125,50 RON”
+      const ron = (n: unknown) => {
+        const v = Math.round((Number(n) || 0) * 100) / 100;
+        return `${Number.isInteger(v) ? v : v.toFixed(2).replace('.', ',')} RON`;
+      };
+      // Factura (emisă sau care s-ar emite) = produse − reducere + transport. Dacă
+      // diferă de ce a plătit clientul, ceva e greșit: de obicei un cod de reducere
+      // pe care factura l-a ignorat (comenzile de dinainte de 13-10-2026).
+      function invoiceDiff(o: any): number {
+        const items = (o.items || []).reduce((n: number, i: any) => n + (Number(i.unitPrice) || 0) * (Number(i.qty) || 0), 0);
+        const inv = items - (Number(o.discountAmount) || 0) + (Number(o.shippingAmount) || 0);
+        return Math.round((inv - (Number(o.amountTotal) || 0)) * 100) / 100;
+      }
+      function invoiceProblem(o: any): string {
+        if (o.refundId) return '';
+        if (o.invoiceError) return o.invoiceError;
+        const d = invoiceDiff(o);
+        if (Math.abs(d) >= 0.5) {
+          return o.invoiceNumber
+            ? `Factura ${o.invoiceSeries || ''}-${o.invoiceNumber} e cu ${ron(Math.abs(d))} ${d > 0 ? 'mai mare' : 'mai mică'} decât plata (${ron(o.amountTotal)}): de stornat și refăcut cu contabilul.`
+            : `Suma de facturat diferă de plată cu ${ron(Math.abs(d))}.`;
+        }
+        return '';
+      }
+
       function orderCard(o: any): string {
         // `o.county` = județul dedus din codul poștal (Stripe pune adesea orașul în `state`).
         const addr = oneLine([o.shipping?.line1, o.shipping?.line2, o.shipping?.city, o.shipping?.postalCode, o.county || o.shipping?.state, o.shipping?.country]);
@@ -528,11 +555,18 @@ const blobReady = canWrite();
         return `<article class="adm-orow" data-order="${esc(o.id)}">
           <div class="adm-orow-head">
             <div class="adm-orow-id"><span class="adm-orow-num">#${o.number}</span> <span class="adm-ostatus adm-ostatus-${esc(o.status)}">${esc(ORDER_STATUS[o.status] || o.status)}</span></div>
-            <div class="adm-orow-total mono">${o.amountTotal} RON <span class="dim">· ${esc(fmtDate(o.createdAt))}</span></div>
+            <div class="adm-orow-total mono">${ron(o.amountTotal)} <span class="dim">· ${esc(fmtDate(o.createdAt))}</span></div>
           </div>
           <p class="adm-orow-cust mono">${esc(contact || '—')}</p>
           <p class="adm-orow-addr mono dim">📦 ${esc(addr || 'fără adresă')}</p>
           <ul class="adm-orow-items">${items}</ul>
+          ${Number(o.discountAmount) > 0
+            ? `<p class="adm-orow-disc mono">🏷 Reducere${o.discountCode ? ' ' + esc(o.discountCode) : ''}: −${ron(o.discountAmount)}${Number(o.shippingAmount) > 0 ? ` · transport ${ron(o.shippingAmount)}` : ''}</p>`
+            : ''}
+          ${invoiceProblem(o)
+            ? `<p class="adm-orow-warn mono">⚠ ${esc(invoiceProblem(o))}</p>`
+            : ''}
+          ${o.restockedAt ? `<p class="adm-orow-inv mono dim">↻ bucățile repuse în stoc · ${esc(fmtDate(o.restockedAt))}</p>` : ''}
           ${o.returnRequestedAt && !o.refundId
             ? `<p class="adm-orow-return mono">↩ Retur cerut de client${o.returnRequestedAt ? ' · ' + esc(fmtDate(o.returnRequestedAt)) : ''}</p>`
             : ''}
@@ -552,6 +586,9 @@ const blobReady = canWrite();
             ${o.refundId
               ? `<span class="adm-o-refunded mono" title="Rambursat prin Stripe${o.stornoNumber ? ' · factură stornată' : ''}">↩ Rambursat</span>`
               : `<button class="adm-btn adm-btn-danger adm-btn-sm adm-o-refund" type="button" title="Rambursează plata (Stripe) + stornează factura + marchează Anulată">↩ Retur / Rambursare</button>`}
+            ${!isRuvix && !o.invoiceNumber && !o.refundId && o.status !== 'cancelled'
+              ? `<button class="adm-btn adm-btn-ghost adm-btn-sm adm-o-invoice" type="button" title="Emite factura SmartBill pentru această comandă (totalul trebuie să bată cu plata)">🧾 Emite factura</button>`
+              : ''}
             <span class="mono dim adm-o-msg"></span>
           </div>
         </article>`;
@@ -687,11 +724,17 @@ const blobReady = canWrite();
         const o = orders.find((x) => x.id === id);
         const msg = row.querySelector('.adm-o-msg') as HTMLElement;
         const total = o?.amountTotal ?? 0;
-        if (!confirm(`Rambursez integral ${total} RON clientului prin Stripe, stornez factura și marchez comanda „Anulată"?\n\nAcțiunea nu poate fi anulată.`)) return;
+        if (!confirm(`Rambursez integral ${ron(total)} clientului prin Stripe, stornez factura și marchez comanda „Anulată"?\n\nAcțiunea nu poate fi anulată.`)) return;
+        // Repunem bucățile în stoc? Da dacă coletul n-a plecat; dacă a plecat, abia după ce vine returul.
+        const restock = confirm(
+          o?.awb
+            ? 'Coletul A PLECAT (are AWB).\n\nRepun bucățile în stoc acum? Apasă OK doar dacă ai primit deja returul și e în regulă.\n\nOK = repun în stoc · Anulează = NU repun (poți repune manual din produs)'
+            : 'Coletul NU a plecat (fără AWB).\n\nRepun bucățile în stoc?\n\nOK = repun în stoc · Anulează = NU repun',
+        );
         (btn as HTMLButtonElement).disabled = true; msg.textContent = '… rambursez';
         try {
           const res = await fetch('/api/admin/refund', {
-            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id, restock }),
           });
           const d = await res.json();
           if (!res.ok) throw new Error(d.error || 'Eroare la rambursare.');
@@ -699,12 +742,42 @@ const blobReady = canWrite();
           if (idx >= 0 && d.order) orders[idx] = d.order;
           renderReport();
           if (d.stornoError) {
-            alert(`Rambursarea a reușit (${d.refundAmount} RON), dar stornarea facturii a eșuat:\n${d.stornoError}\n\nStornează factura manual în SmartBill.`);
+            alert(`Rambursarea a reușit (${ron(d.refundAmount)}), dar stornarea facturii a eșuat:\n${d.stornoError}\n\nStornează factura manual în SmartBill.`);
+          }
+          if (d.restockError) {
+            alert(`Rambursarea a reușit, dar repunerea în stoc a eșuat:\n${d.restockError}\n\nCorectează stocul manual din produs.`);
           }
           renderOrders();
         } catch (err: any) {
           msg.textContent = err?.message || 'Eroare.';
           (btn as HTMLButtonElement).disabled = false;
+        }
+      });
+
+      // Emite factura SmartBill (comenzi rămase fără factură: webhook picat / total greșit)
+      ordersListEl?.addEventListener('click', async (e) => {
+        const btn = (e.target as HTMLElement).closest<HTMLElement>('.adm-o-invoice');
+        if (!btn) return;
+        const row = btn.closest<HTMLElement>('[data-order]')!;
+        const id = row.dataset.order!;
+        const o = orders.find((x) => x.id === id);
+        const msg = row.querySelector('.adm-o-msg') as HTMLElement;
+        if (!confirm(`Emit factura SmartBill pentru comanda #${o?.number} (${ron(o?.amountTotal)})?\n\nFactura pleacă și în SPV (e-Factura).`)) return;
+        (btn as HTMLButtonElement).disabled = true; msg.textContent = '… emit factura';
+        try {
+          const res = await fetch('/api/admin/invoice', {
+            method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ id }),
+          });
+          const d = await res.json();
+          const idx = orders.findIndex((x) => x.id === id);
+          if (idx >= 0 && d.order) orders[idx] = d.order;
+          if (!res.ok) throw new Error(d.error || 'Eroare la emiterea facturii.');
+          renderReport();
+          renderOrders();
+        } catch (err: any) {
+          msg.textContent = err?.message || 'Eroare.';
+          (btn as HTMLButtonElement).disabled = false;
+          renderReport();
         }
       });
 
@@ -1030,6 +1103,9 @@ const blobReady = canWrite();
           const sz = inp.dataset.size!;
           inp.value = String((c?.stock && c.stock[sz]) ?? 0);
         });
+        // Stocul cu care s-a deschis editorul: serverul păstrează valoarea LIVE pe
+        // celulele neatinse (o comandă poate scădea stocul cât timp editezi).
+        node.dataset.stockBase = JSON.stringify(c?.stock || {});
         node.querySelector('.adm-color-del')!.addEventListener('click', () => {
           if (colorsWrap.children.length > 1) node.remove();
         });
@@ -1115,6 +1191,13 @@ const blobReady = canWrite();
         if (!colors.length || !colors.every((c) => c.front && c.back))
           return showErr('Fiecare culoare are nevoie de poză față și spate.');
 
+        // Cifre de stoc completate, dar bifa oprită = site-ul le ignoră și vinde nelimitat.
+        const hasStockNumbers = colors.some((c) => Object.values(c.stock || {}).some((n) => Number(n) > 0));
+        if (!payload.trackStock && hasStockNumbers) {
+          const go = confirm('Ai completat cifre de stoc, dar „Urmărește stocul” e OPRIT.\n\nAșa, site-ul ignoră cifrele și vinde orice mărime, în orice cantitate.\n\nOK = salvez așa (fără urmărire)\nAnulează = mă întorc să pornesc bifa');
+          if (!go) return;
+        }
+
         const saveBtn = document.getElementById('save-btn') as HTMLButtonElement;
         saveBtn.disabled = true; saveBtn.textContent = 'Se salvează…';
         try {
@@ -1142,7 +1225,10 @@ const blobReady = canWrite();
           row.querySelectorAll<HTMLInputElement>('.adm-stock-input').forEach((inp) => {
             stock[inp.dataset.size!] = Number(inp.value) || 0;
           });
+          let stockBase: Record<string, number> | undefined;
+          try { stockBase = JSON.parse((row as HTMLElement).dataset.stockBase || '{}'); } catch {}
           return {
+            stockBase,
             label: (row.querySelector('.adm-color-label') as HTMLInputElement).value.trim() || 'Culoare',
             swatch: (row.querySelector('.adm-color-swatch') as HTMLInputElement).value,
             front: get(0),
@@ -1594,6 +1680,10 @@ const blobReady = canWrite();
     .adm-upload-cta { position: relative; z-index: 1; color: var(--cream, #f2ebe0); background: rgba(10,10,10,0.6); padding: 5px 10px; border-radius: 999px; letter-spacing: 0.08em; }
 
     .adm-color-stock { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+    /* `display:flex` de mai sus bătea atributul `hidden` pus de applyStockVisibility():
+       grila de stoc rămânea pe ecran și cu „Urmărește stocul” OPRIT, iar cine completa
+       cifre credea că stocul e urmărit (12-10-2026, „Nunta” XXL cu 0 vândut nelimitat). */
+    .adm-color-stock[hidden] { display: none; }
     .adm-stock-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
     .adm-stock-cell { display: flex; flex-direction: column; gap: 4px; align-items: center; }
     .adm-stock-cell[hidden] { display: none; }
@@ -1660,6 +1750,8 @@ const blobReady = canWrite();
     .adm-o-track:hover { color: var(--gold-bright, #e8c16c); }
     .adm-orow-inv { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; }
     .adm-orow-return { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; color: var(--gold, #c9a24a); }
+    .adm-orow-disc { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; color: #7bb37b; }
+    .adm-orow-warn { margin: 6px 0 0; padding: 8px 10px; font-size: 12px; line-height: 1.45; letter-spacing: 0.02em; color: #f0b8b6; background: rgba(217,83,79,0.12); border: 1px solid rgba(217,83,79,0.45); border-radius: 6px; }
     .adm-o-refunded { flex: 0 0 auto; color: #7bb37b; letter-spacing: 0.04em; font-size: 12px; }
 
     @media (max-width: 860px) { .adm-orep { grid-template-columns: repeat(3, 1fr); } }

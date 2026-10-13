@@ -77,6 +77,8 @@ export interface Product {
   sort?: number;         // ascending display order
   discountPercent?: number; // 0–90, applied to price
   trackStock?: boolean;     // when true, per-variant stock is enforced
+  /** Registrul rezervărilor de stoc pentru acest produs (lib/stock-ledger.ts). Intern, nu se afișează. */
+  holds?: Record<string, import('./stock-ledger').StockHold>;
 }
 
 export interface ArtistTab {

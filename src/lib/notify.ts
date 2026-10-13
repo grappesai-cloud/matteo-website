@@ -64,15 +64,24 @@ function esc(s: unknown): string {
     ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' } as any)[c]);
 }
 
+/** „103 RON” sau „125,50 RON” (reducerile procentuale aduc bani). */
+function ron(n: unknown, currency?: string): string {
+  const v = Math.round((Number(n) || 0) * 100) / 100;
+  return `${Number.isInteger(v) ? v : v.toFixed(2).replace('.', ',')} ${esc(currency || 'RON')}`;
+}
+
 function buildHtml(order: Order, adminUrl: string): string {
   const items = order.items
     .map((i) => `<li><strong>${i.qty}×</strong> ${esc(i.name)} — ${esc(String(i.size))}${i.colorLabel ? ' · ' + esc(i.colorLabel) : ''}</li>`)
     .join('');
   const c = order.customer || {};
+  const discountNote = Number(order.discountAmount) > 0
+    ? ` · reducere${order.discountCode ? ' ' + esc(order.discountCode) : ''} −${ron(order.discountAmount, order.currency)}`
+    : '';
   return `
   <div style="font-family:Arial,Helvetica,sans-serif;max-width:560px;margin:0 auto;color:#111">
     <h2 style="margin:0 0 4px">Comandă nouă #${order.number}</h2>
-    <p style="margin:0 0 16px;color:#666">${orderUnits(order)} produs(e) · ${order.amountTotal} ${esc(order.currency)}</p>
+    <p style="margin:0 0 16px;color:#666">${orderUnits(order)} produs(e) · ${ron(order.amountTotal, order.currency)}${discountNote}</p>
     <h3 style="margin:0 0 6px">Produse</h3>
     <ul style="margin:0 0 16px;padding-left:18px;line-height:1.6">${items}</ul>
     <h3 style="margin:0 0 6px">Livrare</h3>
@@ -170,7 +179,7 @@ function buildCustomerShippedHtml(order: Order): string {
           <p style="margin:0 0 4px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${GOLD}">Produse</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}
             <tr><td style="padding:14px 0 0;font:600 12px/1.4 ${SANS};letter-spacing:.04em;color:${CREAM_DIM}">Total</td>
-                <td style="padding:14px 0 0;font:700 15px/1.4 ${SANS};color:${CREAM};text-align:right">${esc(order.amountTotal)} ${esc(order.currency)}</td></tr>
+                <td style="padding:14px 0 0;font:700 15px/1.4 ${SANS};color:${CREAM};text-align:right">${ron(order.amountTotal, order.currency)}</td></tr>
           </table>
         </td></tr>
 
@@ -335,6 +344,10 @@ function buildCustomerConfirmationHtml(order: Order): string {
         <td style="padding:10px 0;border-bottom:1px solid ${HAIR};font:600 14px/1.4 ${SANS};color:${GOLD};text-align:right;white-space:nowrap;vertical-align:top">×${esc(i.qty)}</td>
       </tr>`)
     .join('');
+  const discountRow = Number(order.discountAmount) > 0
+    ? `<tr><td style="padding:8px 0 0;font:400 13px/1.4 ${SANS};color:${CREAM_DIM}">Reducere${order.discountCode ? ' ' + esc(order.discountCode) : ''}</td>
+        <td style="padding:8px 0 0;font:400 13px/1.4 ${SANS};color:${GOLD_BRIGHT};text-align:right">−${ron(order.discountAmount, order.currency)}</td></tr>`
+    : '';
   const shippingRow = Number(order.shippingAmount) > 0
     ? `<tr><td style="padding:8px 0 0;font:400 13px/1.4 ${SANS};color:${CREAM_DIM}">Transport</td>
         <td style="padding:8px 0 0;font:400 13px/1.4 ${SANS};color:${CREAM_DIM};text-align:right">${esc(order.shippingAmount)} ${esc(order.currency)}</td></tr>`
@@ -365,9 +378,10 @@ function buildCustomerConfirmationHtml(order: Order): string {
         <tr><td style="padding:22px 36px 0">
           <p style="margin:0 0 4px;font:600 11px/1 ${SANS};letter-spacing:.16em;text-transform:uppercase;color:${GOLD}">Produse</p>
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">${items}
+            ${discountRow}
             ${shippingRow}
             <tr><td style="padding:14px 0 0;font:600 12px/1.4 ${SANS};letter-spacing:.04em;color:${CREAM_DIM}">Total</td>
-                <td style="padding:14px 0 0;font:700 15px/1.4 ${SANS};color:${CREAM};text-align:right">${esc(order.amountTotal)} ${esc(order.currency)}</td></tr>
+                <td style="padding:14px 0 0;font:700 15px/1.4 ${SANS};color:${CREAM};text-align:right">${ron(order.amountTotal, order.currency)}</td></tr>
           </table>
         </td></tr>
 

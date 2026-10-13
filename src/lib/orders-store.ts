@@ -134,6 +134,11 @@ export async function updateOrder(
     refundAmount?: number;
     stornoSeries?: string;
     stornoNumber?: string;
+    stockDecremented?: boolean;
+    restockedAt?: number;
+    invoiceError?: string;
+    discountAmount?: number;
+    discountCode?: string;
   }
 ): Promise<Order | null> {
   return mutateOrders<Order | null>((all) => {
@@ -156,6 +161,11 @@ export async function updateOrder(
         ...(patch.refundAmount !== undefined ? { refundAmount: patch.refundAmount } : {}),
         ...(patch.stornoSeries !== undefined ? { stornoSeries: patch.stornoSeries } : {}),
         ...(patch.stornoNumber !== undefined ? { stornoNumber: patch.stornoNumber } : {}),
+        ...(patch.stockDecremented !== undefined ? { stockDecremented: patch.stockDecremented } : {}),
+        ...(patch.restockedAt !== undefined ? { restockedAt: patch.restockedAt } : {}),
+        ...(patch.invoiceError !== undefined ? { invoiceError: patch.invoiceError } : {}),
+        ...(patch.discountAmount !== undefined ? { discountAmount: patch.discountAmount } : {}),
+        ...(patch.discountCode !== undefined ? { discountCode: patch.discountCode } : {}),
         updatedAt: Date.now(),
       };
       return updated;

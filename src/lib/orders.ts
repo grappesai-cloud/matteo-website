@@ -64,11 +64,46 @@ export interface Order {
   refundAmount?: number; // RON actually refunded (may be < amountTotal on partial refund)
   stornoSeries?: string; // SmartBill storno (credit-note) series
   stornoNumber?: string; // SmartBill storno (credit-note) number
+  discountAmount?: number; // RON (cu bani) — reducerea din codul promoțional, cât a scăzut Stripe din produse
+  discountCode?: string;   // codul folosit (ex. NUNTA25), pentru factură / admin / email
+  stockDecremented?: boolean; // stocul a fost scăzut o dată pentru comanda asta (lib/stock-ledger.ts)
+  restockedAt?: number;    // ms epoch — bucățile au fost repuse în stoc la rambursare
+  invoiceError?: string;   // de ce NU s-a emis factura (vizibil în admin; gol după emitere)
 }
 
 /** Total units across all line items. */
 export function orderUnits(o: Order): number {
   return o.items.reduce((n, i) => n + (Number(i.qty) || 0), 0);
+}
+
+/** Rotunjire la ban (2 zecimale) fără artefacte binare. */
+export function round2(n: number): number {
+  return Math.round((Number(n) || 0) * 100) / 100;
+}
+
+/** „103 RON” sau „125,50 RON” — zecimale doar când există. */
+export function fmtMoney(n: number, currency = 'RON'): string {
+  const v = round2(n);
+  const s = Number.isInteger(v) ? String(v) : v.toFixed(2).replace('.', ',');
+  return `${s} ${currency}`;
+}
+
+/** Valoarea produselor la prețul din catalog (fără reducere, fără transport). */
+export function orderItemsTotal(o: Order): number {
+  return round2(o.items.reduce((n, i) => n + (Number(i.unitPrice) || 0) * (Number(i.qty) || 0), 0));
+}
+
+/**
+ * Ce ar ieși pe factură: produse − reducere + transport. Trebuie să fie EGAL cu
+ * `amountTotal` (ce a plătit clientul pe Stripe); altfel factura nu se emite.
+ */
+export function invoiceTotal(o: Order): number {
+  return round2(orderItemsTotal(o) - (Number(o.discountAmount) || 0) + (Number(o.shippingAmount) || 0));
+}
+
+/** Factura (emisă sau care s-ar emite) diferă de plată cu cel puțin un leu? */
+export function invoiceMismatch(o: Order): number {
+  return round2(invoiceTotal(o) - (Number(o.amountTotal) || 0));
 }
 
 // Prefixul de 2 cifre al codului poștal RO identifică județul (01–06 = sectoarele
@@ -152,6 +187,28 @@ function readCart(meta: Record<string, string> | null | undefined): CartEntry[] 
   }
 }
 
+/**
+ * Codul promoțional din sesiune, dacă Stripe l-a trimis EXPANDAT (obiect). Când e
+ * doar un id (`promo_…`), apelantul îl rezolvă cu stripe.promotionCodes.retrieve
+ * și îl dă prin `override.discountCode`. Fără cod, numele cuponului.
+ */
+export function promoCodeFromSession(session: any): string {
+  const d = Array.isArray(session?.discounts) ? session.discounts[0] : null;
+  if (!d) return '';
+  const pc = d.promotion_code;
+  if (pc && typeof pc === 'object' && pc.code) return String(pc.code);
+  const c = d.coupon;
+  if (c && typeof c === 'object' && c.name) return String(c.name);
+  return '';
+}
+
+/** Id-ul codului promoțional (string `promo_…`) când nu e expandat, altfel ''. */
+export function promoCodeIdFromSession(session: any): string {
+  const d = Array.isArray(session?.discounts) ? session.discounts[0] : null;
+  const pc = d?.promotion_code;
+  return typeof pc === 'string' ? pc : '';
+}
+
 function pickAddress(session: any): OrderAddress {
   // Stripe has moved shipping between fields across API versions — read defensively.
   const ship =
@@ -186,6 +243,7 @@ export function orderFromStripeSession(
     address?: OrderAddress;
     customer?: { name?: string; email?: string; phone?: string };
     shippingAmount?: number;
+    discountCode?: string;
   },
 ): Order {
   const cart = readCart(session?.metadata);
@@ -205,10 +263,15 @@ export function orderFromStripeSession(
     });
   }
 
-  const amountTotal = Math.round((Number(session?.amount_total) || 0) / 100);
+  // Exact ce a plătit clientul, cu bani: un cod de 25% pe 130 RON dă 97,50, iar
+  // factura trebuie să bată la ban cu Stripe. (Înainte se rotunjea la leu.)
+  const amountTotal = round2((Number(session?.amount_total) || 0) / 100);
   const shippingAmount = override?.shippingAmount !== undefined
     ? Math.round(Number(override.shippingAmount) || 0)
     : Math.round((Number(session?.total_details?.amount_shipping) || 0) / 100);
+  // Reducerea din codul promoțional (Stripe o scade doar din produse, nu din transport).
+  const discountAmount = round2((Number(session?.total_details?.amount_discount) || 0) / 100);
+  const discountCode = String(override?.discountCode || promoCodeFromSession(session) || '').trim();
 
   return {
     id: String(session?.id || `order_${Date.now()}`),
@@ -219,6 +282,8 @@ export function orderFromStripeSession(
     items,
     amountTotal,
     shippingAmount,
+    ...(discountAmount > 0 ? { discountAmount } : {}),
+    ...(discountAmount > 0 && discountCode ? { discountCode } : {}),
     currency: String(session?.currency || 'ron').toUpperCase(),
     customer: {
       // Name/phone come from our form; email from Stripe (it collects the receipt email).

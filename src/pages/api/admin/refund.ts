@@ -3,6 +3,8 @@ import Stripe from 'stripe';
 import { sessionRole } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
 import { reverseInvoice, smartbillConfigured } from '../../../lib/smartbill';
+import { mutateCatalog } from '../../../lib/catalog-store';
+import { restockOrder } from '../../../lib/stock-ledger';
 
 export const prerender = false;
 
@@ -14,7 +16,10 @@ const json = (b: unknown, s = 200) =>
 // Retur / rambursare într-un singur pas:
 //   1. rambursează plata prin Stripe (integral, sau parțial dacă se trimite `amount` în RON),
 //   2. stornează factura SmartBill (best-effort — dacă eșuează, rambursarea rămâne făcută),
-//   3. marchează comanda „Anulată" + salvează refundId / storno.
+//   3. marchează comanda „Anulată" + salvează refundId / storno,
+//   4. (opțional, `restock: true`) repune bucățile în stoc — doar produsele cu stoc
+//      urmărit, o singură dată pe comandă (lib/stock-ledger.ts). Adminul alege:
+//      da dacă coletul n-a plecat, nu până nu s-a verificat returul.
 //
 // Ordinea e intenționată: banii clientului sunt pasul critic, deci se fac primii. Storno
 // e document fiscal și se emite după; dacă pică, se raportează clar și se poate storna manual.
@@ -83,7 +88,7 @@ export const POST: APIRoute = async ({ request, cookies }) => {
 
   // 3) Persistă starea comenzii.
   try {
-    const updated = await updateOrder(id, {
+    let updated = await updateOrder(id, {
       status: 'cancelled',
       refundId,
       refundedAt: Date.now(),
@@ -91,7 +96,21 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       ...(stornoSeries !== undefined ? { stornoSeries } : {}),
       ...(stornoNumber !== undefined ? { stornoNumber } : {}),
     });
-    return json({ ok: true, refundId, refundAmount, storno: stornoNumber ? { series: stornoSeries, number: stornoNumber } : null, stornoError, order: updated || order });
+
+    // 4) Repune în stoc (dacă s-a cerut). Idempotent pe comandă.
+    let restocked = false;
+    let restockError: string | undefined;
+    if (body?.restock === true && !order.restockedAt) {
+      try {
+        restocked = await mutateCatalog((products) => restockOrder(products, order.id, order.items));
+        const stamped = await updateOrder(id, { restockedAt: Date.now() });
+        if (stamped) updated = stamped;
+      } catch (err: any) {
+        restockError = err?.message || 'Repunerea în stoc a eșuat.';
+      }
+    }
+
+    return json({ ok: true, refundId, refundAmount, storno: stornoNumber ? { series: stornoSeries, number: stornoNumber } : null, stornoError, restocked, restockError, order: updated || order });
   } catch (err: any) {
     // Banii sunt rambursați dar salvarea a eșuat — expune refundId ca să nu se piardă.
     return json({ error: `Rambursare făcută (${refundId}) dar salvarea comenzii a eșuat: ${err?.message || ''}`, refundId, stornoError }, 500);

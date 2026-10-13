@@ -1,8 +1,8 @@
 import type { APIRoute } from 'astro';
 import { isAdmin } from '../../../lib/admin-auth';
-import { readCatalog, writeCatalog } from '../../../lib/catalog-store';
+import { readCatalog, mutateCatalog } from '../../../lib/catalog-store';
 import { readArtistMeta, writeArtistMeta } from '../../../lib/artists-store';
-import { catalogArtists } from '../../../lib/products';
+import { catalogArtists, type Product } from '../../../lib/products';
 
 export const prerender = false;
 
@@ -55,16 +55,20 @@ export const DELETE: APIRoute = async ({ request, cookies }) => {
   const slug = str(body?.slug);
   if (!slug) return json({ error: 'Artist lipsă.' }, 400);
 
-  const all = await readCatalog();
-  const next = all.filter((p) => p.artist !== slug);
-  const removed = all.length - next.length;
-
   const meta = await readArtistMeta();
   meta.hidden = [...new Set([...meta.hidden, slug])];
   meta.order = meta.order.filter((s) => s !== slug);
 
+  let removed = 0;
+  let next: Product[] = [];
   try {
-    if (removed > 0) await writeCatalog(next);
+    // Scriere condiționată pe catalog: nu suprascriem o scădere de stoc făcută între timp.
+    ({ removed, next } = await mutateCatalog((all, replace) => {
+      const kept = all.filter((p) => p.artist !== slug);
+      const removed = all.length - kept.length;
+      if (removed > 0) replace(kept);
+      return { removed, next: kept };
+    }));
     await writeArtistMeta(meta);
   } catch (err: any) {
     return json({ error: err?.message || 'Ștergerea a eșuat.' }, 500);

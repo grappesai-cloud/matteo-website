@@ -14,8 +14,29 @@
 // client se activează doar după ce configurezi SMTP în SmartBill.
 
 import type { Order } from './orders';
-import { judetFromPostalCode } from './orders';
+import { judetFromPostalCode, invoiceTotal, round2 } from './orders';
 import { ADULT_SIZES } from './products';
+
+/** O linie din `products` pe factura SmartBill (produs, serviciu sau discount). */
+interface SbLine {
+  name: string;
+  productDescription?: string;
+  measuringUnitName: string;
+  currency: string;
+  quantity?: number;
+  price?: number;
+  isTaxIncluded: boolean;
+  taxName: string;
+  taxPercentage: number;
+  saveToDb?: boolean;
+  isService?: boolean;
+  // Linie de DISCOUNT (SmartBill): se aplică pe `numberOfItems` linii de DEASUPRA ei.
+  isDiscount?: boolean;
+  numberOfItems?: number;
+  discountType?: 1 | 2;      // 1 = valoric, 2 = procentual
+  discountValue?: number;    // RON, NEGATIV (cerut de SmartBill), la discountType 1
+  discountPercentage?: number;
+}
 
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
 
@@ -65,7 +86,7 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
   const issueDate = opts.issueDate || todayISO();
   const sendEmail = opts.sendEmail ?? env('SMARTBILL_SEND_EMAIL') === 'true';
 
-  const products = order.items.map((i) => {
+  const products: SbLine[] = order.items.map((i) => {
     // Modelul concret + mărime + culoare merg în DESCRIERE (apare sub denumire pe
     // factură ca „opțiune"), iar denumirea rămâne generică ca să se potrivească cu
     // gestiunea și să se facă scăderea automată.
@@ -84,6 +105,26 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
       isService: false,
     };
   });
+
+  // Reducerea din codul promoțional (ex. NUNTA25): linie de discount VALORIC pe
+  // toate liniile de produs de deasupra, cu exact suma scăzută de Stripe. Înainte
+  // (până pe 12-10-2026) factura ieșea la prețul întreg deși clientul plătise mai
+  // puțin: 25 RON diferență pe fiecare comandă cu cod.
+  const discount = round2(Number(order.discountAmount) || 0);
+  if (discount > 0 && products.length) {
+    products.push({
+      name: order.discountCode ? `Reducere ${order.discountCode}` : 'Reducere',
+      isDiscount: true,
+      numberOfItems: products.length,
+      discountType: 1,
+      discountValue: -discount,
+      measuringUnitName: 'buc',
+      currency: order.currency || 'RON',
+      isTaxIncluded: true,
+      taxName: 'Normala',
+      taxPercentage: TVA,
+    });
+  }
 
   // Cartolina inclusă în fiecare colet: linie de produs cu valoare 0, ca ieșirea
   // din stoc să aibă document fiscal și să se poată scădea pe consum la contabilitate.
@@ -156,11 +197,31 @@ export interface SmartbillInvoice {
   number: string;
 }
 
+/** Doar pentru teste: ce trimitem la SmartBill pentru o comandă. */
+export function previewInvoice(order: Order, opts: IssueOptions = {}) {
+  return buildInvoice(order, opts);
+}
+
+/**
+ * Totalul facturii trebuie să fie EXACT ce a plătit clientul pe Stripe. Dacă nu
+ * bate (preț schimbat în catalog între timp, reducere necitită, rotunjire), nu
+ * emitem nimic: o factură greșită ajunge la ANAF și se repară doar cu storno.
+ * Întoarce mesajul de eroare (RO) sau '' când e în regulă.
+ */
+export function invoiceTotalProblem(order: Order): string {
+  const paid = round2(Number(order.amountTotal) || 0);
+  const inv = invoiceTotal(order);
+  if (Math.abs(inv - paid) < 0.005) return '';
+  return `Totalul facturii (${inv.toFixed(2)} ${order.currency || 'RON'}) diferă de plata Stripe (${paid.toFixed(2)} ${order.currency || 'RON'}); factura NU a fost emisă.`;
+}
+
 /**
  * Emite o factură pentru o comandă. Aruncă o eroare RO clară la eșec.
  * Răspuns SmartBill: { errorText, message, series, number } — număr gol/eroare ⇒ throw.
  */
 export async function issueInvoice(order: Order, opts: IssueOptions = {}): Promise<SmartbillInvoice> {
+  const problem = invoiceTotalProblem(order);
+  if (problem) throw new Error(problem);
   const auth = Buffer.from(`${env('SMARTBILL_USER')}:${env('SMARTBILL_TOKEN')}`).toString('base64');
   const res = await fetch(`${BASE}/invoice`, {
     method: 'POST',

@@ -97,7 +97,19 @@ const cfg = {
         <aside class="co-summary">
           <p class="co-sec mono">Comanda ta</p>
           <ul class="co-items" id="co-items"></ul>
+          <div class="co-promo" id="co-promo">
+            <label for="f-promo" class="co-promo-label mono dim">Cod de reducere</label>
+            <div class="co-promo-row">
+              <input id="f-promo" placeholder="ex. NUNTA25" autocomplete="off" autocapitalize="characters" spellcheck="false" maxlength="40" />
+              <button type="button" class="co-promo-btn mono" id="co-promo-apply">Aplică</button>
+            </div>
+            <p class="co-promo-msg mono" id="co-promo-msg" hidden></p>
+          </div>
           <div class="co-row"><span class="mono dim">Subtotal</span><span id="co-subtotal">0 RON</span></div>
+          <div class="co-row co-row-discount" id="co-discount-row" hidden>
+            <span class="mono dim">Reducere <span id="co-discount-code"></span> · <button type="button" class="co-promo-remove mono" id="co-promo-remove">scoate</button></span>
+            <span id="co-discount">−0 RON</span>
+          </div>
           <div class="co-row">
             <span class="mono dim">Transport</span>
             <span id="co-shipping">—</span>
@@ -165,6 +177,25 @@ const cfg = {
     .co-ship-note { color: var(--dim, rgba(242,235,224,0.55)); font-size: 11px; margin: 2px 0 0; line-height: 1.4; }
     .co-row-total { padding-top: 12px; margin-top: 8px; border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); font-size: 16px; }
     .co-row-total span:last-child { font-family: var(--serif, 'Fraunces', serif); font-size: 24px; }
+    .co-promo { margin: 4px 0 12px; padding: 12px 0 14px; border-bottom: 1px solid var(--hair, rgba(242,235,224,0.1)); }
+    .co-promo-label { display: block; font-size: 11px; letter-spacing: 0.06em; text-transform: uppercase; margin-bottom: 6px; }
+    .co-promo-row { display: flex; gap: 8px; }
+    .co-promo-row input {
+      flex: 1 1 auto; min-width: 0; background: #111; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px;
+      color: var(--cream, #f2ebe0); padding: 10px 12px; font-size: 14px; font-family: var(--mono, monospace); letter-spacing: 0.08em; text-transform: uppercase;
+    }
+    .co-promo-row input:focus { outline: none; border-color: var(--gold, #c9a24a); }
+    .co-promo-btn {
+      flex: 0 0 auto; padding: 0 16px; border-radius: 6px; border: 1px solid var(--gold, #c9a24a); background: transparent; color: var(--gold, #c9a24a);
+      text-transform: uppercase; letter-spacing: 0.12em; font-size: 11px; cursor: pointer; transition: background 0.2s, color 0.2s;
+    }
+    .co-promo-btn:hover:not(:disabled) { background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a); }
+    .co-promo-btn:disabled { opacity: 0.5; cursor: wait; }
+    .co-promo-msg { margin: 8px 0 0; font-size: 11px; line-height: 1.4; color: #d9534f; }
+    .co-promo-msg.is-ok { color: #7bb37b; }
+    .co-row-discount span:last-child { color: #7bb37b; }
+    .co-promo-remove { background: none; border: 0; padding: 0; color: var(--dim, rgba(242,235,224,0.55)); font-size: 11px; text-decoration: underline; cursor: pointer; }
+    .co-promo-remove:hover { color: var(--gold, #c9a24a); }
     .co-pay {
       width: 100%; margin-top: 18px; padding: 16px; background: var(--gold, #c9a24a); color: var(--ink, #0a0a0a);
       border: 0; border-radius: 999px; font-family: var(--mono, monospace); text-transform: uppercase;
@@ -195,7 +226,11 @@ const cfg = {
     const catalog: CatProduct[] = JSON.parse(document.getElementById('co-catalog')?.textContent || '[]');
     const config = JSON.parse(document.getElementById('co-config')?.textContent || '{}');
     const find = (slug: string) => catalog.find((p) => p.slug === slug);
-    const money = (n: number) => `${n} ${config.currency || 'RON'}`;
+    // „103 RON” sau „97,50 RON”: cu un cod procentual apar și bani.
+    const money = (n: number) => {
+      const v = Math.round(n * 100) / 100;
+      return `${Number.isInteger(v) ? v : v.toFixed(2).replace('.', ',')} ${config.currency || 'RON'}`;
+    };
 
     function readCart(): Cart[] {
       try {
@@ -236,13 +271,35 @@ const cfg = {
 
     let shipping: number | null = null;
 
+    // --- cod de reducere (verificat pe server, în Stripe; aici doar afișăm) ---
+    type Promo = { id: string; code: string; kind: 'percent' | 'amount'; value: number; minSubtotal?: number };
+    const PROMO_KEY = 'mattman_promo';
+    const promoInput = $<HTMLInputElement>('f-promo');
+    const promoApply = $<HTMLButtonElement>('co-promo-apply');
+    const promoMsg = $('co-promo-msg');
+    const promoRemove = $('co-promo-remove');
+    const discountRow = $('co-discount-row');
+    const discountCodeEl = $('co-discount-code');
+    const discountEl = $('co-discount');
+    let promo: Promo | null = null;
+    let discount = 0;
+
+    function setPromo(p: Promo | null, d: number) {
+      promo = p; discount = p ? d : 0;
+      try { if (p) sessionStorage.setItem(PROMO_KEY, p.code); else sessionStorage.removeItem(PROMO_KEY); } catch {}
+      discountRow.hidden = !p;
+      if (p) { discountCodeEl.textContent = p.code; discountEl.textContent = `−${money(discount)}`; promoInput.value = p.code; }
+      renderTotals();
+    }
+
     function renderTotals() {
+      const afterDiscount = Math.max(0, subtotal - discount);
       if (shipping === null) {
         shippingEl.textContent = 'alege localitatea';
-        totalEl.textContent = money(subtotal) + ' + transport';
+        totalEl.textContent = money(afterDiscount) + ' + transport';
       } else {
         shippingEl.textContent = shipping === 0 ? 'Gratuit' : money(shipping);
-        totalEl.textContent = money(subtotal + shipping);
+        totalEl.textContent = money(afterDiscount + shipping);
       }
       updatePayState();
     }
@@ -328,6 +385,38 @@ const cfg = {
     streetEl.addEventListener('blur', fillZip);
     form.addEventListener('input', updatePayState);
 
+    // --- aplicarea codului ---
+    async function applyPromo() {
+      const code = promoInput.value.trim().toUpperCase().replace(/[^A-Z0-9]/g, '');
+      promoMsg.hidden = true; promoMsg.classList.remove('is-ok');
+      if (!code) { promoMsg.textContent = 'Scrie codul de reducere.'; promoMsg.hidden = false; return; }
+      promoApply.disabled = true;
+      try {
+        const r = await fetch('/api/promo-check', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ code, items: cart }),
+        });
+        const d = await r.json();
+        if (!r.ok || !d.ok) throw new Error(d.error || 'Codul nu a putut fi verificat.');
+        setPromo(d.promo, Number(d.discount) || 0);
+        const what = d.promo.kind === 'percent' ? `−${d.promo.value}% la produse` : `−${money(d.promo.value)}`;
+        promoMsg.textContent = `Cod aplicat: ${d.promo.code} (${what}). Transportul nu intră în reducere.`;
+        promoMsg.classList.add('is-ok'); promoMsg.hidden = false;
+      } catch (err: any) {
+        setPromo(null, 0);
+        promoMsg.textContent = err?.message || 'Codul nu a putut fi verificat.';
+        promoMsg.hidden = false;
+      } finally {
+        promoApply.disabled = false;
+      }
+    }
+    promoApply.addEventListener('click', applyPromo);
+    promoInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); applyPromo(); } });
+    promoInput.addEventListener('input', () => { if (promo && promoInput.value.trim().toUpperCase() !== promo.code) setPromo(null, 0); });
+    promoRemove.addEventListener('click', () => { setPromo(null, 0); promoInput.value = ''; promoMsg.hidden = true; });
+    // Codul rămâne aplicat dacă pagina se reîncarcă (ex. „înapoi” de pe Stripe).
+    try { const saved = sessionStorage.getItem(PROMO_KEY); if (saved) { promoInput.value = saved; applyPromo(); } } catch {}
+
     // --- submit ---
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -341,9 +430,10 @@ const cfg = {
       try {
         const r = await fetch('/api/checkout', {
           method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ items: cart, address }),
+          body: JSON.stringify({ items: cart, address, ...(promo ? { promoCode: promo.code } : {}) }),
         });
         const d = await r.json();
+        if (d?.promoInvalid) { setPromo(null, 0); promoMsg.textContent = d.error || 'Codul nu mai e valid.'; promoMsg.classList.remove('is-ok'); promoMsg.hidden = false; }
         if (!r.ok || !d.url) throw new Error(d.error || 'Checkout indisponibil. Încearcă din nou.');
         window.location.href = d.url;
       } catch (err: any) {

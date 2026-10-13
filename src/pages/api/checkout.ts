@@ -2,11 +2,16 @@ import type { APIRoute } from 'astro';
 import Stripe from 'stripe';
 import { randomUUID } from 'node:crypto';
 import { CURRENCY, SIZES, effectivePrice, isVariantAvailable, type SizeKey } from '../../lib/products';
-import { readCatalog } from '../../lib/catalog-store';
+import { readCatalog, mutateCatalog } from '../../lib/catalog-store';
 import { quoteShipping } from './shipping-quote';
 import { savePendingCheckout, type PendingCart } from '../../lib/checkout-store';
 import { judetFromPostalCode, canonicalCounty, type OrderAddress } from '../../lib/orders';
+import { lookupPromo, normalizeCode, type PromoInfo } from '../../lib/promo';
 import { activateDueCodes } from '../../lib/promo-codes';
+import { releaseStock, reserveStock, sweepHolds } from '../../lib/stock-ledger';
+
+/** Cât stă deschisă pagina Stripe. Minimul Stripe e 30 min; după, bucățile rezervate revin în stoc. */
+const SESSION_MINUTES = 35;
 
 // On-demand (serverless) route — the rest of the site stays static.
 export const prerender = false;
@@ -37,7 +42,7 @@ export const POST: APIRoute = async ({ request }) => {
     );
   }
 
-  let payload: { items?: IncomingItem[]; address?: IncomingAddress };
+  let payload: { items?: IncomingItem[]; address?: IncomingAddress; promoCode?: string };
   try {
     payload = await request.json();
   } catch {
@@ -136,6 +141,24 @@ export const POST: APIRoute = async ({ request }) => {
     },
   };
 
+  // Codul de reducere scris pe site: îl verificăm în Stripe ACUM, ca sesiunea să
+  // pornească cu reducerea aplicată (clientul a văzut deja totalul redus).
+  const stripe = new Stripe(SECRET);
+  let promo: PromoInfo | null = null;
+  if (normalizeCode(payload?.promoCode)) {
+    try {
+      const found = await lookupPromo(stripe, payload?.promoCode);
+      if (!found.ok) return json({ error: found.error, promoInvalid: true }, 422);
+      if (found.promo.minSubtotal && subtotal < found.promo.minSubtotal) {
+        return json({ error: `Codul se aplică de la ${found.promo.minSubtotal} RON.`, promoInvalid: true }, 422);
+      }
+      promo = found.promo;
+    } catch (err: any) {
+      console.error('[checkout] verificare cod:', err?.message);
+      return json({ error: 'Nu am putut verifica codul de reducere. Încearcă din nou.', promoInvalid: true }, 500);
+    }
+  }
+
   // Stash the authoritative address + quoted shipping under a token; only the token
   // rides in Stripe metadata. The webhook rebuilds the order from this (correct
   // county + postal code), not from Stripe's hosted-form address.
@@ -169,16 +192,33 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Nu am putut salva comanda. Încearcă din nou.' }, 500);
   }
 
+  // REZERVARE: bucățile cu stoc urmărit se scad ACUM, atomic (scriere condiționată
+  // pe catalog), cât timp clientul e pe pagina Stripe. Așa „ultima bucată” nu mai
+  // poate fi plătită de doi clienți. La plată rezervarea devine definitivă; la
+  // expirarea sesiunii (sau după 50 min) bucățile revin în stoc.
   try {
-    const stripe = new Stripe(SECRET);
-    // Pornește codurile de reducere programate a căror oră a venit (lib/promo-codes.ts),
-    // ca să fie valide în fereastra Stripe pe care o deschidem acum.
-    try { await activateDueCodes(stripe); } catch (err: any) { console.error('[checkout] activare coduri programate:', err?.message); }
+    const reserved = await mutateCatalog((products) => {
+      sweepHolds(products);
+      return reserveStock(products, token, cart);
+    });
+    if (!reserved.ok) return json({ error: reserved.error }, 409);
+  } catch (err: any) {
+    console.error('[checkout] rezervare stoc:', err?.message);
+    return json({ error: 'Nu am putut rezerva produsele. Încearcă din nou.' }, 500);
+  }
+
+  try {
+    // Fără cod de pe site: pornește codurile programate a căror oră a venit
+    // (lib/promo-codes.ts), ca să fie valide în câmpul de cod de pe pagina Stripe.
+    if (!promo) { try { await activateDueCodes(stripe); } catch (err: any) { console.error('[checkout] activare coduri programate:', err?.message); } }
     const session = await stripe.checkout.sessions.create({
       mode: 'payment',
       locale: 'ro',
       line_items: lineItems,
-      allow_promotion_codes: true,
+      // Stripe nu acceptă `discounts` și `allow_promotion_codes` în aceeași sesiune:
+      // cu cod de pe site îl aplicăm noi, fără cod lăsăm câmpul Stripe.
+      ...(promo ? { discounts: [{ promotion_code: promo.id }] } : { allow_promotion_codes: true }),
+      expires_at: Math.floor(Date.now() / 1000) + SESSION_MINUTES * 60,
       // Address is collected on our side — don't re-collect on Stripe (that's what
       // let the county/postal drift and the shipping under-charge happen).
       shipping_options: [shippingOption],
@@ -189,12 +229,21 @@ export const POST: APIRoute = async ({ request }) => {
       metadata: {
         pc: token,
         cart: JSON.stringify(cart.map((i) => ({ s: i.slug, c: i.color, z: i.size, q: i.qty }))).slice(0, 480),
+        ...(promo ? { promo: promo.code } : {}),
       },
     });
 
     return json({ url: session.url });
   } catch (err: any) {
     console.error('[checkout] Stripe error:', err?.message || err);
-    return json({ error: 'Nu am putut iniția plata. Încearcă din nou.' }, 500);
+    // Sesiunea nu s-a deschis: eliberăm rezervarea imediat, nu peste 50 de minute.
+    try { await mutateCatalog((products) => releaseStock(products, token)); } catch (e: any) { console.error('[checkout] eliberare rezervare:', e?.message); }
+    const promoProblem = promo && /promotion|coupon|discount/i.test(String(err?.message || ''));
+    return json(
+      promoProblem
+        ? { error: 'Codul de reducere nu a putut fi aplicat. Scoate-l și încearcă din nou.', promoInvalid: true }
+        : { error: 'Nu am putut iniția plata. Încearcă din nou.' },
+      promoProblem ? 422 : 500,
+    );
   }
 };
