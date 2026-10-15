@@ -12,11 +12,16 @@ export const SHIPPING_FLAT = 20;
 
 export type SizeKey =
   | 'XS' | 'S' | 'M' | 'L' | 'XL' | 'XXL'
-  | '18-24m' | '24-36m' | '3-4y' | '5-6y' | '7-8y' | '9-11y' | '12-14y';
+  | '18-24m' | '24-36m' | '3-4y' | '5-6y' | '7-8y' | '9-11y' | '12-14y'
+  | 'ONE SIZE';
 export const SIZES: SizeKey[] = [
   'XS', 'S', 'M', 'L', 'XL', 'XXL',
   '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y', '12-14y',
+  'ONE SIZE',
 ];
+/** Mărime unică (șapcă, sacoșă, accesorii). Are stoc propriu ca orice mărime,
+ *  dar nu se combină cu celelalte și nu are ghid de mărimi. */
+export const ONE_SIZE: SizeKey = 'ONE SIZE';
 /** Adult sizes only — used as the default for the seed/adult tees. */
 export const ADULT_SIZES: SizeKey[] = ['XS', 'S', 'M', 'L', 'XL', 'XXL'];
 
@@ -238,6 +243,11 @@ export function compareAtPrice(p: Product): number | null {
 export function clampPct(v: unknown): number {
   const n = Math.round(Number(v) || 0);
   return Math.min(90, Math.max(0, n));
+}
+
+/** True când produsul se vinde doar în mărime unică. */
+export function isOneSizeOnly(p: Pick<Product, 'sizes'>): boolean {
+  return p.sizes.length === 1 && p.sizes[0] === ONE_SIZE;
 }
 
 /** Units available for a variant. null = not tracked (treat as unlimited). */

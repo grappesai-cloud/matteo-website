@@ -3,7 +3,7 @@ import { isAdmin } from '../../../lib/admin-auth';
 import { readCatalog, mutateCatalog } from '../../../lib/catalog-store';
 import { readArtistMeta } from '../../../lib/artists-store';
 import {
-  ARTISTS, SIZES, slugify, sortProducts, clampPct, catalogArtists,
+  ARTISTS, SIZES, ONE_SIZE, slugify, sortProducts, clampPct, catalogArtists,
   type Product, type ProductColor, type SizeKey,
 } from '../../../lib/products';
 
@@ -100,6 +100,7 @@ function sanitize(input: any, existing?: Product, bases?: Map<string, StockBase>
     .map((s: any) => str(s, 8) as SizeKey)
     .filter((s: SizeKey) => SIZES.includes(s));
   if (sizes.length === 0) return { error: 'Selectează cel puțin o mărime.' };
+  if (sizes.includes(ONE_SIZE) && sizes.length > 1) return { error: 'ONE SIZE nu se combină cu alte mărimi.' };
 
   const details = (Array.isArray(input?.details) ? input.details : [])
     .map((d: any) => str(d, 120))

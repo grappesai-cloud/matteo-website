@@ -15,7 +15,7 @@
 
 import type { Order } from './orders';
 import { judetFromPostalCode, invoiceTotal, round2 } from './orders';
-import { ADULT_SIZES } from './products';
+import { ADULT_SIZES, ONE_SIZE } from './products';
 
 /** O linie din `products` pe factura SmartBill (produs, serviciu sau discount). */
 interface SbLine {
@@ -53,6 +53,8 @@ function useStockEnabled(): boolean {
 }
 function gestiuneName(size: string): string {
   const s = String(size || '').trim();
+  // Mărimea unică nu e tricou de copil: ia denumirea ei, dacă e setată, altfel cea de adult.
+  if (s === ONE_SIZE) return env('SMARTBILL_NAME_ONESIZE') || env('SMARTBILL_NAME_ADULT') || 'TRICOU ADULTI';
   const isKid = !!s && !(ADULT_SIZES as readonly string[]).includes(s);
   return isKid
     ? (env('SMARTBILL_NAME_KID') || 'TRICOU COPIL')

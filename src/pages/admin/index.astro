@@ -1,6 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { ARTISTS, SIZES } from '../../lib/products';
+import { ARTISTS, SIZES, ONE_SIZE } from '../../lib/products';
 import { isConfigured, sessionRole } from '../../lib/admin-auth';
 import { canWrite } from '../../lib/catalog-store';
 
@@ -297,12 +297,13 @@ const blobReady = canWrite();
               <span class="adm-label mono">Mărimi disponibile</span>
               <div class="adm-sizes" id="f-sizes">
                 {SIZES.map((s) => (
-                  <label class="adm-size">
-                    <input type="checkbox" value={s} checked />
+                  <label class:list={['adm-size', { 'adm-size-one': s === ONE_SIZE }]}>
+                    <input type="checkbox" value={s} checked={s !== ONE_SIZE} />
                     <span>{s}</span>
                   </label>
                 ))}
               </div>
+              <span class="adm-size-note mono">ONE SIZE = mărime unică. Nu se combină cu celelalte mărimi; cu „Urmărește stocul” pornit are stocul ei.</span>
             </div>
 
             <label class="adm-field adm-field-inline">
@@ -784,7 +785,8 @@ const blobReady = canWrite();
       if (isRuvix) loadOrders();
 
       if (!isRuvix) {
-      const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y', '12-14y'];
+      const SIZES = ['XS', 'S', 'M', 'L', 'XL', 'XXL', '18-24m', '24-36m', '3-4y', '5-6y', '7-8y', '9-11y', '12-14y', 'ONE SIZE'];
+      const ONE_SIZE = 'ONE SIZE';
       const slugify = (s: string) =>
         String(s || '').toLowerCase().normalize('NFD').replace(/[̀-ͯ]/g, '')
           .replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '').slice(0, 60);
@@ -1044,7 +1046,7 @@ const blobReady = canWrite();
         ($('f-sort') as HTMLInputElement).value = p?.sort != null ? String(p.sort) : '';
         ($('f-active') as HTMLInputElement).checked = p?.active !== false;
         document.querySelectorAll<HTMLInputElement>('#f-sizes input').forEach((cb) => {
-          cb.checked = p ? (p.sizes || []).includes(cb.value) : true;
+          cb.checked = p ? (p.sizes || []).includes(cb.value) : cb.value !== ONE_SIZE;
         });
         colorsWrap.innerHTML = '';
         const colors = p?.colors?.length ? p.colors : [{ label: '', swatch: '#111111', front: '', back: '' }];
@@ -1133,7 +1135,16 @@ const blobReady = canWrite();
         if (on) syncStockCells();
       }
       $('f-track').addEventListener('change', applyStockVisibility);
-      document.getElementById('f-sizes')?.addEventListener('change', () => { if (($('f-track') as HTMLInputElement).checked) syncStockCells(); });
+      document.getElementById('f-sizes')?.addEventListener('change', (e) => {
+        // ONE SIZE exclude celelalte mărimi și invers.
+        const changed = e.target as HTMLInputElement;
+        if (changed?.checked) {
+          document.querySelectorAll<HTMLInputElement>('#f-sizes input').forEach((cb) => {
+            if (cb !== changed && (changed.value === ONE_SIZE || cb.value === ONE_SIZE)) cb.checked = false;
+          });
+        }
+        if (($('f-track') as HTMLInputElement).checked) syncStockCells();
+      });
 
       // show the "new artist name" field only when "Artist nou…" is picked
       function applyArtistVisibility() {
@@ -1188,6 +1199,7 @@ const blobReady = canWrite();
         if (!payload.name) return showErr('Pune un nume.');
         if (!payload.artist) return showErr('Alege un artist sau scrie numele unuia nou.');
         if (!payload.sizes.length) return showErr('Bifează cel puțin o mărime.');
+        if (payload.sizes.includes(ONE_SIZE) && payload.sizes.length > 1) return showErr('ONE SIZE nu se combină cu alte mărimi.');
         if (!colors.length || !colors.every((c) => c.front && c.back))
           return showErr('Fiecare culoare are nevoie de poză față și spate.');
 
@@ -1663,6 +1675,8 @@ const blobReady = canWrite();
     .adm-sizes { display: flex; flex-wrap: wrap; gap: 8px; }
     .adm-size { display: inline-flex; align-items: center; gap: 6px; padding: 8px 12px; border: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); border-radius: 6px; cursor: pointer; font-family: var(--mono, monospace); font-size: 12px; }
     .adm-size input { accent-color: var(--gold, #c9a24a); }
+    .adm-size-one { border-style: dashed; }
+    .adm-size-note { display: block; margin-top: 8px; font-size: 11px; line-height: 1.45; color: var(--dim, rgba(242,235,224,0.55)); }
 
     .adm-colors-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 4px; }
     .adm-colors { display: flex; flex-direction: column; gap: 12px; }

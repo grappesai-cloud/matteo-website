@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut, ADULT_SIZE_GUIDE, KIDS_SIZE_GUIDE, SHIPPING_FLAT, CURRENCY_LABEL } from '../../lib/products';
+import { formatPrice, artistLabel, activeProducts, effectivePrice, compareAtPrice, isSoldOut, isOneSizeOnly, ADULT_SIZE_GUIDE, KIDS_SIZE_GUIDE, SHIPPING_FLAT, CURRENCY_LABEL } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
 import { RETURN } from '../../lib/legal';
 
@@ -18,6 +18,9 @@ const first = product.colors[0];
 // Size guide rows, filtered to the sizes this product actually offers.
 const adultGuide = product.sizes.filter((s) => ADULT_SIZE_GUIDE[s]);
 const kidsGuide = product.sizes.filter((s) => KIDS_SIZE_GUIDE[s]);
+const hasGuide = adultGuide.length > 0 || kidsGuide.length > 0;
+// Mărime unică: o singură alegere, deja selectată, fără ghid și fără întrebarea despre croială.
+const oneSize = isOneSizeOnly(product);
 
 const SITE = 'https://mattman.ro';
 const absImg = (u: string | undefined) =>
@@ -95,7 +98,7 @@ const breadcrumbJsonLd = {
   image={absImg(first?.front)}
   jsonLd={[productJsonLd, breadcrumbJsonLd]}
 >
-  <div class="pd" data-slug={product.slug} data-track-stock={product.trackStock ? '1' : ''} data-stock={JSON.stringify(first.stock || {})}>
+  <div class="pd" data-slug={product.slug} data-one-size={oneSize ? '1' : ''} data-track-stock={product.trackStock ? '1' : ''} data-stock={JSON.stringify(first.stock || {})}>
     <header class="m-header">
       <a href="/merch" class="m-brand">
         <img src="/images/mattman/logo-head.webp" alt="Mattman Music" class="m-brand-logo" width="320" height="291" decoding="async" />
@@ -174,14 +177,14 @@ const breadcrumbJsonLd = {
           <span class="pd-field-label mono dim">Mărime</span>
           <div class="pd-sizes" id="pd-sizes" role="group">
             {product.sizes.map((s) => (
-              <button class="pd-size" type="button" data-size={s}>
+              <button class:list={['pd-size', { 'is-active': product.sizes.length === 1 }]} type="button" data-size={s}>
                 <span class="pd-size-lbl">{s}</span>
                 <span class="pd-size-stock mono" hidden></span>
               </button>
             ))}
           </div>
           <p class="pd-stockline mono" id="pd-stockline" hidden></p>
-          <a class="pd-sizeguide mono" href="#size-guide">Ghid de mărimi ↓</a>
+          {hasGuide && <a class="pd-sizeguide mono" href="#size-guide">Ghid de mărimi ↓</a>}
         </div>
 
         <div class="pd-buy">
@@ -206,7 +209,7 @@ const breadcrumbJsonLd = {
           <span>Livrare 2–5 zile lucrătoare</span>
         </div>
 
-        <div class="pd-sizeguide-block" id="size-guide">
+        <div class="pd-sizeguide-block" id="size-guide" hidden={!hasGuide}>
           <span class="pd-field-label mono dim">Ghid de mărimi</span>
           {adultGuide.length > 0 && (
             <>
@@ -290,8 +293,10 @@ const breadcrumbJsonLd = {
       || firstColorBtn?.dataset.color
       || 'black';
     let view: 'front' | 'back' | 'macro' | 'detail2' | 'sizeGuide' = 'front';
-    let size = '';
+    // Un produs cu o singură mărime (ex. ONE SIZE) o are deja aleasă.
+    let size = (document.querySelector('.pd-size.is-active') as HTMLElement | null)?.dataset.size || '';
     let qty = 1;
+    const oneSize = root.dataset.oneSize === '1';
 
     let frontSrc = thumbFront.src;
     let backSrc = thumbBack.src;
@@ -395,7 +400,7 @@ const breadcrumbJsonLd = {
     // tooltip „oversized" care urmărește cursorul peste zona de mărimi (doar pe dispozitive cu hover fin)
     const cursorTip = document.getElementById('pd-cursor-tip')!;
     const sizesEl = document.getElementById('pd-sizes')!;
-    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
+    if (!oneSize && window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
       sizesEl.addEventListener('pointermove', (e) => {
         cursorTip.hidden = false;
         cursorTip.style.left = (e as PointerEvent).clientX + 'px';
@@ -425,7 +430,7 @@ const breadcrumbJsonLd = {
 
     document.getElementById('pd-add')!.addEventListener('click', () => {
       if (!size) {
-        hintEl.textContent = 'Alege o mărime mai întâi.';
+        hintEl.textContent = oneSize ? 'Stoc epuizat.' : 'Alege o mărime mai întâi.';
         hintEl.hidden = false;
         return;
       }
@@ -434,6 +439,7 @@ const breadcrumbJsonLd = {
         hintEl.hidden = false;
         return;
       }
+      if (oneSize) { doAdd(); return; }
       openSizeModal();
     });
 
@@ -703,5 +709,7 @@ const breadcrumbJsonLd = {
     }
     .pd-cursor-tip[hidden] { display: none; }
     .pd-sizes { cursor: help; }
+    .pd[data-one-size='1'] .pd-sizes { cursor: default; }
+    .pd-sizeguide-block[hidden] { display: none; }
   </style>
 </Layout>

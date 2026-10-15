@@ -1,7 +1,7 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import CartDrawer from '../../components/CartDrawer.astro';
-import { catalogArtists, SIZES, formatPrice, activeProducts, effectivePrice, compareAtPrice, isSoldOut, isLowStock } from '../../lib/products';
+import { catalogArtists, SIZES, ONE_SIZE, formatPrice, activeProducts, effectivePrice, compareAtPrice, isSoldOut, isLowStock } from '../../lib/products';
 import { readCatalog } from '../../lib/catalog-store';
 import { readArtistMeta } from '../../lib/artists-store';
 
@@ -60,7 +60,7 @@ const artistsWithCounts = catalogArtists(products, artistMeta).map((a) => ({
         <span class="m-filter-label mono dim">Mărime</span>
         <div class="m-chips" id="size-chips" role="group">
           <button class="m-chip m-chip-sm is-active" data-size="all" type="button">Toate</button>
-          {SIZES.map((s) => (
+          {SIZES.filter((s) => s !== ONE_SIZE || products.some((p) => p.sizes.includes(ONE_SIZE))).map((s) => (
             <button class="m-chip m-chip-sm" data-size={s} type="button">{s}</button>
           ))}
         </div>
