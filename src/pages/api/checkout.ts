@@ -5,7 +5,7 @@ import { CURRENCY, SIZES, effectivePrice, isVariantAvailable, type SizeKey } fro
 import { readCatalog, mutateCatalog } from '../../lib/catalog-store';
 import { quoteShipping } from './shipping-quote';
 import { savePendingCheckout, type PendingCart } from '../../lib/checkout-store';
-import { judetFromPostalCode, canonicalCounty, type OrderAddress } from '../../lib/orders';
+import { bucharestSector, judetFromPostalCode, canonicalCounty, type OrderAddress } from '../../lib/orders';
 import { lookupPromo, normalizeCode, type PromoInfo } from '../../lib/promo';
 import { activateDueCodes } from '../../lib/promo-codes';
 import { releaseStock, reserveStock, sweepHolds } from '../../lib/stock-ledger';
@@ -71,6 +71,14 @@ export const POST: APIRoute = async ({ request }) => {
   if (zipJudet && canonicalCounty(zipJudet) !== canonicalCounty(addr.county)) {
     return json(
       { error: `Codul poștal ${addr.zip} pare din județul ${zipJudet}, dar ai ales ${addr.county}. Verifică codul poștal sau județul selectat.` },
+      400,
+    );
+  }
+  // București: FAN are o singură localitate, iar sectorul cerut de ANAF pe factură
+  // se citește din codul poștal (0N xxxx = sectorul N). Fără el, e-Factura e respinsă.
+  if (canonicalCounty(addr.county) === 'București' && !bucharestSector({ line1: addr.street, postalCode: addr.zip })) {
+    return json(
+      { error: `Verifică codul poștal ${addr.zip}. În București codul are 6 cifre și începe cu 0 urmat de sector (ex. 030167 pentru sectorul 3).` },
       400,
     );
   }

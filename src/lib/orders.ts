@@ -167,6 +167,23 @@ export function orderCounty(s?: OrderAddress): string {
   return judetFromPostalCode(s?.postalCode);
 }
 
+/**
+ * Sectorul (1–6) unei adrese din București, sau 0 când nu se poate afla.
+ * ANAF cere la e-Factura, pentru județul București, SECTORUL în câmpul localitate
+ * (BR-RO-100): cu „Bucuresti" factura pleacă din SmartBill, dar e respinsă în SPV.
+ * FAN are o singură localitate „Bucuresti", deci sectorul vine din „sector N" scris
+ * de client în adresă (are prioritate) sau din codul poștal (0N xxxx = sectorul N).
+ * Apelantul decide dacă adresa e în București; aici doar citim sectorul.
+ */
+export function bucharestSector(s?: OrderAddress): number {
+  const text = [s?.line1, s?.line2, s?.city].filter(Boolean).join(' ');
+  const m = text.match(/\bsect(?:or(?:ul)?)?\.?\s*([1-6])\b/i);
+  if (m) return Number(m[1]);
+  const zip = (s?.postalCode || '').replace(/\D/g, '');
+  const z = zip.match(/^0([1-6])\d{4}$/);
+  return z ? Number(z[1]) : 0;
+}
+
 /** A one-line address string for display. */
 export function formatAddress(a: OrderAddress): string {
   return [a.line1, a.line2, a.city, a.postalCode, a.state, a.country]

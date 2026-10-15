@@ -14,7 +14,7 @@
 // client se activează doar după ce configurezi SMTP în SmartBill.
 
 import type { Order } from './orders';
-import { judetFromPostalCode, invoiceTotal, round2 } from './orders';
+import { bucharestSector, canonicalCounty, judetFromPostalCode, invoiceTotal, round2 } from './orders';
 import { ADULT_SIZES, ONE_SIZE } from './products';
 
 /** O linie din `products` pe factura SmartBill (produs, serviciu sau discount). */
@@ -165,6 +165,13 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
     });
   }
 
+  // Județul dedus din codul poștal (autoritar); `state` doar fallback fiindcă
+  // Stripe pune adesea ORAȘUL în `state` la checkout-ul lor hosted.
+  const county = judetFromPostalCode(s.postalCode) || canonicalCounty(s.state);
+  // București: localitatea trebuie să fie sectorul („Sector 3"), altfel ANAF respinge
+  // e-Factura (BR-RO-100) și contabila o corectează de mână în SmartBill.
+  const sector = canonicalCounty(county) === 'București' ? bucharestSector(s) : 0;
+
   return {
     companyVatCode: cif,
     client: {
@@ -172,10 +179,8 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
       vatCode: '',
       isTaxPayer: false,
       address: [s.line1, s.line2].filter(Boolean).join(', '),
-      city: s.city || '',
-      // Județul dedus din codul poștal (autoritar); `state` doar fallback fiindcă
-      // Stripe pune adesea ORAȘUL în `state` la checkout-ul lor hosted.
-      county: judetFromPostalCode(s.postalCode) || s.state || '',
+      city: sector ? `Sector ${sector}` : (s.city || ''),
+      county,
       country: s.country || 'Romania',
       email: order.customer?.email || '',
       saveToDb: false,
