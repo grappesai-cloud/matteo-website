@@ -10,6 +10,7 @@ import { issueInvoice, smartbillConfigured } from '../../lib/smartbill';
 import { readPendingCheckout } from '../../lib/checkout-store';
 import { promoLabelForSession } from '../../lib/promo';
 import { consumeStock, releaseStock, sweepHolds } from '../../lib/stock-ledger';
+import { stampPayment } from '../../lib/stripe-report';
 
 export const prerender = false;
 
@@ -152,14 +153,23 @@ export const POST: APIRoute = async ({ request }) => {
     // 4) Auto-issue the SmartBill fiscal invoice on first insert — LIVE only
     //    (a test order must NOT create a real fiscal document). Best-effort, dar
     //    motivul unui eșec se salvează pe comandă (admin: „factura nu s-a emis”).
+    let invoiced: { invoiceSeries: string; invoiceNumber: string } | null = null;
     if (isLive && recorded?.created && smartbillConfigured() && !recorded.order.invoiceNumber) {
       try {
         const { series, number } = await issueInvoice(recorded.order);
         await updateOrder(recorded.order.id, { invoiceSeries: series, invoiceNumber: number, invoiceError: '' });
+        invoiced = { invoiceSeries: series, invoiceNumber: number };
       } catch (err: any) {
         console.error('[webhook] SmartBill invoice failed:', err?.message);
         try { await updateOrder(recorded.order.id, { invoiceError: String(err?.message || 'Emiterea facturii a eșuat.') }); } catch {}
       }
+    }
+
+    // 5) Pe plata din Stripe: numărul comenzii + factura, pentru raportul lunar al
+    //    contabilei (lib/stripe-report.ts). Doar plățile din modul cheii noastre.
+    if (recorded && touchStock) {
+      try { await stampPayment(stripe, session, { ...recorded.order, ...invoiced }); }
+      catch (err: any) { console.error('[webhook] comanda pe plata Stripe:', err?.message); }
     }
   }
 
@@ -178,6 +188,12 @@ export const POST: APIRoute = async ({ request }) => {
       if (released) console.log(`[webhook] rezervare eliberată: ${key}`);
     } catch (err: any) {
       console.error('[webhook] stock release failed:', err?.message);
+    }
+    // Clientul Stripe creat la checkout pentru sesiunea asta n-a mai plătit: îl ștergem,
+    // să nu se adune clienți fără plăți în Stripe.
+    const cust = typeof session.customer === 'string' ? session.customer : session.customer?.id;
+    if (cust && session.metadata?.cust === '1') {
+      try { await stripe.customers.del(cust); } catch (err: any) { console.error('[webhook] ștergere client Stripe:', err?.message); }
     }
   }
 

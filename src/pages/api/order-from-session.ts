@@ -7,6 +7,7 @@ import { notifyRuvixNewOrder, maybeNotifyConfirmation } from '../../lib/notify';
 import { readPendingCheckout } from '../../lib/checkout-store';
 import { promoLabelForSession } from '../../lib/promo';
 import { consumeStock, sweepHolds } from '../../lib/stock-ledger';
+import { stampPayment } from '../../lib/stripe-report';
 
 // Idempotent fallback: the success page pings this so an order is recorded even
 // if the Stripe webhook is delayed or not configured. Safe because we verify the
@@ -80,6 +81,10 @@ export const GET: APIRoute = async ({ url }) => {
       } catch (err: any) {
         console.error('[order-from-session] stock consume failed:', err?.message);
       }
+    }
+
+    if (created && touchStock) {
+      try { await stampPayment(stripe, session, order); } catch (err: any) { console.error('[order-from-session] comanda pe plata Stripe:', err?.message); }
     }
 
     if (created) {

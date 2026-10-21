@@ -5,6 +5,7 @@ import { readOrders, updateOrder } from '../../../lib/orders-store';
 import { reverseInvoice, smartbillConfigured } from '../../../lib/smartbill';
 import { mutateCatalog } from '../../../lib/catalog-store';
 import { restockOrder } from '../../../lib/stock-ledger';
+import { paymentStamp } from '../../../lib/stripe-report';
 
 export const prerender = false;
 
@@ -59,6 +60,8 @@ export const POST: APIRoute = async ({ request, cookies }) => {
       {
         payment_intent: pi,
         ...(partial ? { amount: amountRon * 100 } : {}),
+        // Comanda + factura și pe rambursare (refund_metadata în raportul lunar).
+        metadata: paymentStamp(order),
       },
       { idempotencyKey: `refund_${id}` },
     );

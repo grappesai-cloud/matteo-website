@@ -9,6 +9,7 @@ import { bucharestSector, judetFromPostalCode, canonicalCounty, type OrderAddres
 import { lookupPromo, normalizeCode, type PromoInfo } from '../../lib/promo';
 import { activateDueCodes } from '../../lib/promo-codes';
 import { releaseStock, reserveStock, sweepHolds } from '../../lib/stock-ledger';
+import { createCheckoutCustomer } from '../../lib/stripe-report';
 
 /** Cât stă deschisă pagina Stripe. Minimul Stripe e 30 min; după, bucățile rezervate revin în stoc. */
 const SESSION_MINUTES = 35;
@@ -215,6 +216,16 @@ export const POST: APIRoute = async ({ request }) => {
     return json({ error: 'Nu am putut rezerva produsele. Încearcă din nou.' }, 500);
   }
 
+  // Clientul Stripe al comenzii: numele lui ajunge pe plată și în raportul lunar
+  // pentru contabilitate (lib/stripe-report.ts). Dacă Stripe refuză crearea,
+  // plata merge ca înainte, doar cu emailul.
+  let customerId = '';
+  try {
+    customerId = await createCheckoutCustomer(stripe, addr, shippingAddress, token);
+  } catch (err: any) {
+    console.error('[checkout] client Stripe:', err?.message);
+  }
+
   try {
     // Fără cod de pe site: pornește codurile programate a căror oră a venit
     // (lib/promo-codes.ts), ca să fie valide în câmpul de cod de pe pagina Stripe.
@@ -231,13 +242,19 @@ export const POST: APIRoute = async ({ request }) => {
       // let the county/postal drift and the shipping under-charge happen).
       shipping_options: [shippingOption],
       billing_address_collection: 'auto',
-      ...(addr.email ? { customer_email: addr.email } : {}),
+      // Stripe nu acceptă `customer` și `customer_email` împreună; emailul e deja pe client.
+      ...(customerId ? { customer: customerId } : addr.email ? { customer_email: addr.email } : {}),
+      payment_intent_data: {
+        description: `Comanda mattman.ro · ${addr.name}`,
+        metadata: { client: addr.name, telefon: addr.phone, pc: token },
+      },
       success_url: `${origin}/merch/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/merch/checkout`,
       metadata: {
         pc: token,
         cart: JSON.stringify(cart.map((i) => ({ s: i.slug, c: i.color, z: i.size, q: i.qty }))).slice(0, 480),
         ...(promo ? { promo: promo.code } : {}),
+        ...(customerId ? { cust: '1' } : {}),
       },
     });
 
@@ -246,6 +263,7 @@ export const POST: APIRoute = async ({ request }) => {
     console.error('[checkout] Stripe error:', err?.message || err);
     // Sesiunea nu s-a deschis: eliberăm rezervarea imediat, nu peste 50 de minute.
     try { await mutateCatalog((products) => releaseStock(products, token)); } catch (e: any) { console.error('[checkout] eliberare rezervare:', e?.message); }
+    if (customerId) { try { await stripe.customers.del(customerId); } catch {} }
     const promoProblem = promo && /promotion|coupon|discount/i.test(String(err?.message || ''));
     return json(
       promoProblem

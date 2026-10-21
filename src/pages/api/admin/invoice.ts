@@ -1,9 +1,13 @@
 import type { APIRoute } from 'astro';
+import Stripe from 'stripe';
 import { isAdmin } from '../../../lib/admin-auth';
 import { readOrders, updateOrder } from '../../../lib/orders-store';
 import { issueInvoice, smartbillConfigured } from '../../../lib/smartbill';
+import { stampPayment } from '../../../lib/stripe-report';
 
 export const prerender = false;
+
+const SECRET = import.meta.env.STRIPE_SECRET_KEY || process.env.STRIPE_SECRET_KEY || '';
 
 const json = (b: unknown, s = 200) =>
   new Response(JSON.stringify(b), { status: s, headers: { 'Content-Type': 'application/json' } });
@@ -29,6 +33,11 @@ export const POST: APIRoute = async ({ request, cookies }) => {
   try {
     const { series, number } = await issueInvoice(order);
     const updated = await updateOrder(id, { invoiceSeries: series, invoiceNumber: number, invoiceError: '' });
+    // Factura și pe plata din Stripe (raportul lunar al contabilei).
+    if (SECRET) {
+      try { await stampPayment(new Stripe(SECRET), id, { ...order, invoiceSeries: series, invoiceNumber: number }); }
+      catch (err: any) { console.error('[admin/invoice] factura pe plata Stripe:', err?.message); }
+    }
     return json({ ok: true, series, number, order: updated || order });
   } catch (err: any) {
     const message = err?.message || 'Emiterea facturii a eșuat.';
