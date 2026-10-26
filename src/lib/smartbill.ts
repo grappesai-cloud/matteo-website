@@ -14,7 +14,7 @@
 // client se activează doar după ce configurezi SMTP în SmartBill.
 
 import type { Order } from './orders';
-import { bucharestSector, canonicalCounty, judetFromPostalCode, invoiceTotal, round2 } from './orders';
+import { bucharestSector, canonicalCounty, judetFromPostalCode, invoiceTotal, orderUnits, round2 } from './orders';
 import { ADULT_SIZES, ONE_SIZE } from './products';
 
 /** O linie din `products` pe factura SmartBill (produs, serviciu sau discount). */
@@ -30,6 +30,7 @@ interface SbLine {
   taxPercentage: number;
   saveToDb?: boolean;
   isService?: boolean;
+  warehouseName?: string;    // gestiunea liniei; SmartBill o citește doar cu useStock:true
   // Linie de DISCOUNT (SmartBill): se aplică pe `numberOfItems` linii de DEASUPRA ei.
   isDiscount?: boolean;
   numberOfItems?: number;
@@ -48,8 +49,20 @@ const BASE = 'https://ws.smartbill.ro/SBORO/api';
 // gestiunii>. ⚠ Ca să nu spargă facturarea (cum a făcut prima dată), articolele generice
 // TRICOU ADULTI / TRICOU COPIL / TRANSPORT trebuie să existe în Nomenclatorul SmartBill
 // (unitate „buc") și gestiunea să aibă stoc pe ele; altfel SmartBill respinge factura.
+// Gestiunea se trimite PE FIECARE LINIE (`products[].warehouseName`, nu pe factură):
+// produsele vândute din SMARTBILL_WAREHOUSE (VANZARE), cartolina oferită gratuit din
+// SMARTBILL_WAREHOUSE_CARTOLINA (implicit CONSUM), cerința contabilei din 23-10-2026.
 function useStockEnabled(): boolean {
   return env('SMARTBILL_USE_STOCK') === 'true' && !!env('SMARTBILL_WAREHOUSE');
+}
+
+/** Gestiunea unei linii, doar când descărcarea e pornită (altfel câmpul lipsește). */
+function warehouse(kind: 'sale' | 'cartolina'): { warehouseName?: string } {
+  if (!useStockEnabled()) return {};
+  const name = kind === 'cartolina'
+    ? (env('SMARTBILL_WAREHOUSE_CARTOLINA') || 'CONSUM')
+    : env('SMARTBILL_WAREHOUSE');
+  return { warehouseName: name };
 }
 function gestiuneName(size: string): string {
   const s = String(size || '').trim();
@@ -105,6 +118,7 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
       taxPercentage: TVA,
       saveToDb: false,
       isService: false,
+      ...warehouse('sale'),
     };
   });
 
@@ -128,8 +142,9 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
     });
   }
 
-  // Cartolina inclusă în fiecare colet: linie de produs cu valoare 0, ca ieșirea
-  // din stoc să aibă document fiscal și să se poată scădea pe consum la contabilitate.
+  // Cartolina: una la fiecare bucată din coș (tricou / hanorac), linie de produs cu
+  // valoare 0, ca ieșirea din stoc să aibă document fiscal și să se poată scădea pe
+  // consum la contabilitate. Până pe 26-10-2026 era mereu 1 pe factură.
   // Oprire rapidă (fără deploy de cod) cu SMARTBILL_CARTOLINA=false; denumirea
   // trebuie să rămână identică cu articolul din Nomenclator dacă se activează useStock.
   if (env('SMARTBILL_CARTOLINA') !== 'false') {
@@ -138,13 +153,14 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
       productDescription: '',
       measuringUnitName: 'buc',
       currency: order.currency || 'RON',
-      quantity: 1,
+      quantity: Math.max(1, orderUnits(order)),
       price: 0,
       isTaxIncluded: true,
       taxName: 'Normala',
       taxPercentage: TVA,
       saveToDb: false,
       isService: false,
+      ...warehouse('cartolina'),
     });
   }
 
@@ -191,9 +207,9 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
     dueDate: issueDate,
     mentions: `Comanda #${order.number}`,
     observations: `Comanda online #${order.number}`,
-    // Descărcare de gestiune: doar dacă SMARTBILL_USE_STOCK=true + gestiune setată.
+    // Descărcare de gestiune: doar dacă SMARTBILL_USE_STOCK=true + gestiune setată;
+    // gestiunea stă pe fiecare linie de produs (vezi warehouse()).
     useStock: useStockEnabled(),
-    ...(useStockEnabled() ? { warehouseName: env('SMARTBILL_WAREHOUSE') } : {}),
     sendEmail,
     products,
   };
