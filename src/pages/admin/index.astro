@@ -171,6 +171,7 @@ const blobReady = canWrite();
 
         <div id="orders-view" hidden={!isRuvix}>
           {!isRuvix && <section class="adm-orep" id="orders-report" aria-live="polite"></section>}
+          {!isRuvix && <section class="adm-ounits" id="orders-units" aria-live="polite"></section>}
           <div class="adm-ofilters" id="orders-filters">
             <button class="adm-ofilter is-active" data-filter="todo" type="button">De procesat</button>
             <button class="adm-ofilter" data-filter="new" type="button">Noi</button>
@@ -410,6 +411,9 @@ const blobReady = canWrite();
   </template>
 
   <script>
+    import { SIZES as SIZE_ORDER } from '../../lib/products';
+    import { PRODUCT_KINDS, KIND_LABEL, productKind } from '../../lib/product-kind';
+
     // ===== LOGIN =====
     const loginForm = document.getElementById('login-form') as HTMLFormElement | null;
     if (loginForm) {
@@ -459,6 +463,8 @@ const blobReady = canWrite();
       let orderFilter = isRuvix ? 'todo' : 'all';
       const ordersListEl = document.getElementById('orders-list');
       const ordersReportEl = document.getElementById('orders-report');
+      const ordersUnitsEl = document.getElementById('orders-units');
+      let unitsMonth = ''; // '' = toate lunile, altfel 'AAAA-LL'
       const ordersFiltersEl = document.getElementById('orders-filters');
 
       const fmtDate = (ms: number) => {
@@ -505,7 +511,89 @@ const blobReady = canWrite();
         ordersReportEl.innerHTML = cards
           .map(([l, v]) => `<div class="adm-ocard"><span class="adm-ocard-v">${esc(String(v))}</span><span class="adm-ocard-l mono dim">${esc(l)}</span></div>`)
           .join('');
+        renderUnits();
       }
+
+      // ===== BUCĂȚI VÂNDUTE pe tip de produs (tricou adult / copil / hanorac / tote bag / termos) =====
+      // Vândute = comenzile plătite care nu sunt anulate sau rambursate. „Livrată” nu se
+      // bifează nicăieri automat (Ruvix se oprește la „Trimisă”), deci împărțirea e pe
+      // expediate (Trimisă + Livrată) și de expediat (Nouă + În producție).
+      const monthKey = (ms: number) => {
+        const d = new Date(Number(ms) || 0);
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+      };
+      const monthLabel = (k: string) =>
+        new Date(Number(k.slice(0, 4)), Number(k.slice(5, 7)) - 1, 1).toLocaleDateString('ro-RO', { month: 'long', year: 'numeric' });
+      const sizeRank = (z: string) => {
+        const i = (SIZE_ORDER as string[]).indexOf(z);
+        return i < 0 ? 99 : i;
+      };
+
+      function renderUnits() {
+        if (!ordersUnitsEl) return;
+        const sold = orders.filter((o) => o.status !== 'cancelled' && !o.refundId);
+        const months = [...new Set(sold.map((o) => monthKey(o.createdAt)))].sort().reverse();
+        if (unitsMonth && !months.includes(unitsMonth)) unitsMonth = '';
+        const inPeriod = sold.filter((o) => !unitsMonth || monthKey(o.createdAt) === unitsMonth);
+
+        type KindRow = { total: number; sent: number; models: Map<string, Map<string, number>> };
+        const rows = new Map(PRODUCT_KINDS.map((k) => [k, { total: 0, sent: 0, models: new Map() } as KindRow]));
+        for (const o of inPeriod) {
+          const sent = o.status === 'shipped' || o.status === 'delivered';
+          for (const i of o.items || []) {
+            const q = Number(i.qty) || 0;
+            const r = rows.get(productKind(i))!;
+            r.total += q;
+            if (sent) r.sent += q;
+            const name = String(i.name || i.slug || '—');
+            const sizes = r.models.get(name) || new Map<string, number>();
+            sizes.set(String(i.size || '—'), (sizes.get(String(i.size || '—')) || 0) + q);
+            r.models.set(name, sizes);
+          }
+        }
+
+        const grand = [...rows.values()].reduce((n, r) => n + r.total, 0);
+        const opts = ['<option value="">Toate lunile</option>']
+          .concat(months.map((m) => `<option value="${m}"${m === unitsMonth ? ' selected' : ''}>${esc(monthLabel(m))}</option>`))
+          .join('');
+        const body = PRODUCT_KINDS.map((k) => {
+          const r = rows.get(k)!;
+          const models = [...r.models.entries()]
+            .map(([name, sizes]) => ({ name, n: [...sizes.values()].reduce((a, b) => a + b, 0), sizes }))
+            .sort((a, b) => b.n - a.n)
+            .map((m) => {
+              const bySize = [...m.sizes.entries()]
+                .sort((a, b) => sizeRank(a[0]) - sizeRank(b[0]))
+                .map(([z, n]) => `${esc(z)} ${n}`)
+                .join(' · ');
+              return `<li><span>${esc(m.name)}</span> <span class="adm-ounit-n">${m.n} buc</span><span class="dim">${bySize}</span></li>`;
+            })
+            .join('');
+          return `<details class="adm-ounit"${r.total ? '' : ' data-empty'}>
+            <summary>
+              <span class="adm-ounit-l">${esc(KIND_LABEL[k])}<span class="adm-ounit-sub mono dim">${r.sent} expediate · ${r.total - r.sent} de expediat</span></span>
+              <span class="adm-ounit-v">${r.total}</span>
+            </summary>
+            ${models ? `<ul class="adm-ounit-models mono">${models}</ul>` : ''}
+          </details>`;
+        }).join('');
+
+        ordersUnitsEl.innerHTML = `
+          <div class="adm-ounits-head">
+            <h2 class="adm-ounits-title">Bucăți vândute</h2>
+            <select class="adm-input adm-ounits-month" aria-label="Perioada">${opts}</select>
+          </div>
+          ${body}
+          <div class="adm-ounits-total"><span class="mono">Total bucăți</span><span class="adm-ounit-v">${grand}</span></div>
+          <p class="adm-ounits-note mono dim">Fără comenzile anulate sau rambursate. Apasă pe un rând pentru modele și mărimi.</p>`;
+      }
+
+      ordersUnitsEl?.addEventListener('change', (e) => {
+        const sel = (e.target as HTMLElement).closest<HTMLSelectElement>('.adm-ounits-month');
+        if (!sel) return;
+        unitsMonth = sel.value;
+        renderUnits();
+      });
 
       const matchFilter = (o: any) => {
         if (orderFilter === 'all') return true;
@@ -1767,6 +1855,24 @@ const blobReady = canWrite();
     .adm-orow-disc { margin: 2px 0 0; font-size: 12px; letter-spacing: 0.02em; color: #7bb37b; }
     .adm-orow-warn { margin: 6px 0 0; padding: 8px 10px; font-size: 12px; line-height: 1.45; letter-spacing: 0.02em; color: #f0b8b6; background: rgba(217,83,79,0.12); border: 1px solid rgba(217,83,79,0.45); border-radius: 6px; }
     .adm-o-refunded { flex: 0 0 auto; color: #7bb37b; letter-spacing: 0.04em; font-size: 12px; }
+
+    .adm-ounits { margin: 0 0 22px; padding: 6px 16px 14px; border: 1px solid var(--hair, rgba(242,235,224,0.14)); border-radius: 10px; background: #0e0e0e; }
+    .adm-ounits:empty { display: none; }
+    .adm-ounits-head { display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px 0; }
+    .adm-ounits-title { margin: 0; font-family: var(--serif, 'Fraunces', serif); font-size: 20px; font-weight: 400; }
+    .adm-ounits-month { width: auto; padding: 8px 12px; }
+    .adm-ounit { border-top: 1px solid var(--hair, rgba(242,235,224,0.14)); }
+    .adm-ounit > summary { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0; cursor: pointer; list-style: none; }
+    .adm-ounit > summary::-webkit-details-marker { display: none; }
+    .adm-ounit[data-empty] > summary { cursor: default; opacity: 0.55; }
+    .adm-ounit-l { display: flex; flex-direction: column; gap: 4px; font-size: 15px; }
+    .adm-ounit-sub { font-size: 11px; letter-spacing: 0.06em; }
+    .adm-ounit-v { font-family: var(--serif, 'Fraunces', serif); font-size: 26px; line-height: 1; }
+    .adm-ounit-models { list-style: none; margin: 0 0 14px; padding: 0; display: flex; flex-direction: column; gap: 6px; font-size: 12px; letter-spacing: 0.02em; }
+    .adm-ounit-models li { display: flex; flex-wrap: wrap; gap: 4px 10px; }
+    .adm-ounit-n { color: var(--gold, #c9a24a); }
+    .adm-ounits-total { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 0 0; border-top: 1px solid var(--hair-strong, rgba(242,235,224,0.32)); font-size: 12px; letter-spacing: 0.1em; text-transform: uppercase; }
+    .adm-ounits-note { margin: 10px 0 0; font-size: 11px; line-height: 1.5; letter-spacing: 0.04em; }
 
     @media (max-width: 860px) { .adm-orep { grid-template-columns: repeat(3, 1fr); } }
     @media (max-width: 560px) {

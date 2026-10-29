@@ -15,7 +15,8 @@
 
 import type { Order } from './orders';
 import { bucharestSector, canonicalCounty, judetFromPostalCode, invoiceTotal, orderUnits, round2 } from './orders';
-import { ADULT_SIZES, ONE_SIZE } from './products';
+import { ONE_SIZE } from './products';
+import { productKind } from './product-kind';
 
 /** O linie din `products` pe factura SmartBill (produs, serviciu sau discount). */
 interface SbLine {
@@ -41,9 +42,10 @@ interface SbLine {
 
 const BASE = 'https://ws.smartbill.ro/SBORO/api';
 
-// Denumiri generice de produs pe factură. Ilinca primește de la Ruvix doar 3 SKU-uri
-// generice — TRICOU ADULTI / TRICOU COPIL / PUNGA — indiferent de model/culoare, deci
-// factura folosește aceleași denumiri, iar modelul concret merge în descriere.
+// Denumiri generice de produs pe factură. Ilinca ține în SmartBill doar articole
+// generice — TRICOU ADULTI / TRICOU COPIL / Hanorac / Tote Bag (+ CARTOLINA pe CONSUM) —
+// indiferent de model/culoare, deci factura folosește aceleași denumiri, iar modelul
+// concret merge în descriere. Tipul liniei vine din lib/product-kind.ts.
 // DESCĂRCARE DE GESTIUNE (useStock): gated pe env. Default OPRIT — stocul e gestionat
 // în app. Se activează setând SMARTBILL_USE_STOCK=true + SMARTBILL_WAREHOUSE=<numele
 // gestiunii>. ⚠ Ca să nu spargă facturarea (cum a făcut prima dată), articolele generice
@@ -64,14 +66,19 @@ function warehouse(kind: 'sale' | 'cartolina'): { warehouseName?: string } {
     : env('SMARTBILL_WAREHOUSE');
   return { warehouseName: name };
 }
-function gestiuneName(size: string): string {
-  const s = String(size || '').trim();
+// Tote bag-ul și hanoracul au articole proprii în gestiunea VANZARE („Tote Bag”,
+// „Hanorac”, cererea contabilei din 28-10-2026); până atunci ieșeau TRICOU ADULTI.
+// Termosul rămâne deocamdată pe denumirea mărimii unice / de adult, tot la cererea ei.
+function gestiuneName(item: { slug?: string; name?: string; size?: string }): string {
+  const kind = productKind(item);
+  if (kind === 'tote') return env('SMARTBILL_NAME_TOTE') || 'Tote Bag';
+  if (kind === 'hanorac') return env('SMARTBILL_NAME_HOODIE') || 'Hanorac';
+  if (kind === 'copil') return env('SMARTBILL_NAME_KID') || 'TRICOU COPIL';
   // Mărimea unică nu e tricou de copil: ia denumirea ei, dacă e setată, altfel cea de adult.
-  if (s === ONE_SIZE) return env('SMARTBILL_NAME_ONESIZE') || env('SMARTBILL_NAME_ADULT') || 'TRICOU ADULTI';
-  const isKid = !!s && !(ADULT_SIZES as readonly string[]).includes(s);
-  return isKid
-    ? (env('SMARTBILL_NAME_KID') || 'TRICOU COPIL')
-    : (env('SMARTBILL_NAME_ADULT') || 'TRICOU ADULTI');
+  if (String(item.size || '').trim() === ONE_SIZE) {
+    return env('SMARTBILL_NAME_ONESIZE') || env('SMARTBILL_NAME_ADULT') || 'TRICOU ADULTI';
+  }
+  return env('SMARTBILL_NAME_ADULT') || 'TRICOU ADULTI';
 }
 
 function env(k: string): string {
@@ -107,7 +114,7 @@ function buildInvoice(order: Order, opts: IssueOptions = {}) {
     // gestiunea și să se facă scăderea automată.
     const optiune = [i.name, i.size, i.colorLabel].map((x) => String(x || '').trim()).filter(Boolean).join(' · ');
     return {
-      name: gestiuneName(i.size),          // ex. „TRICOU ADULTI" — identic cu gestiunea
+      name: gestiuneName(i),               // ex. „TRICOU ADULTI" / „Hanorac" — identic cu gestiunea
       productDescription: optiune,         // ex. „Asta e o Păpușă · M · Negru"
       measuringUnitName: 'buc',
       currency: order.currency || 'RON',
